@@ -18,12 +18,12 @@ module.exports = {
   async execute(interaction) {
     const embed = new EmbedBuilder()
       .setTitle("🎫 Support Ticket")
-      .setDescription("Premi il bottone per aprire un ticket supporto.")
+      .setDescription("Premi il bottone per aprire un ticket.")
       .setColor(0x2ECC71);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId("ticket_support")
+        .setCustomId("ticket_open")
         .setLabel("Apri Ticket")
         .setStyle(ButtonStyle.Primary)
     );
@@ -71,7 +71,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setTitle("🎫 Ticket Supporto")
-        .setDescription(`Ciao <@${user.id}>, descrivi il tuo problema.`)
+        .setDescription(`Ciao ${user}, descrivi il tuo problema.`)
         .setColor(0x00AEEF);
 
       await channel.send({

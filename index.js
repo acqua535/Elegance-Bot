@@ -1,4 +1,5 @@
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const fetch = require("node-fetch");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -7,7 +8,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// 🏓 PING
+// 🏓 PING (STABILE)
 // =====================
 client.commands.set("ping", async (interaction) => {
   await interaction.deferReply();
@@ -41,7 +42,7 @@ client.commands.set("verify", async (interaction) => {
 });
 
 // =====================
-// 😂 MEME (VERI)
+// 😂 MEME REALI
 // =====================
 client.commands.set("meme", async (interaction) => {
   await interaction.deferReply();
@@ -50,14 +51,14 @@ client.commands.set("meme", async (interaction) => {
     const res = await fetch("https://meme-api.com/gimme");
     const data = await res.json();
 
-    await interaction.editReply(`😂 **${data.title}**\n${data.url}`);
+    return interaction.editReply(`😂 **${data.title}**\n${data.url}`);
   } catch {
-    await interaction.editReply("❌ Errore meme");
+    return interaction.editReply("❌ Meme non disponibile");
   }
 });
 
 // =====================
-// 🎮 MINIGAME
+// 🎮 MINIGAME (COINFLIP)
 // =====================
 client.commands.set("coinflip", async (interaction) => {
   await interaction.deferReply();
@@ -66,24 +67,34 @@ client.commands.set("coinflip", async (interaction) => {
 
   const result = Math.random() < 0.5 ? "TESTA" : "CROCE";
 
-  await interaction.editReply(`🎮 Risultato: **${result}**`);
+  return interaction.editReply(`🎮 Risultato: **${result}**`);
 });
 
 // =====================
-// 🔥 HANDLER
+// ⚡ HANDLER PERFETTO (FIX “NOT RESPONDING”)
 // =====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
   const cmd = client.commands.get(interaction.commandName);
-  if (!cmd) return;
+
+  if (!cmd) {
+    return interaction.reply({
+      content: "❌ Comando non trovato",
+      ephemeral: true
+    });
+  }
 
   try {
     await cmd(interaction, client);
   } catch (err) {
     console.error(err);
-    if (!interaction.replied) {
-      await interaction.reply("❌ Errore comando");
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "❌ Errore comando",
+        ephemeral: true
+      });
     }
   }
 });

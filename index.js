@@ -1,53 +1,72 @@
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
 
-// 🧠 CLIENT
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 📦 COMMAND COLLECTION
+// COMMANDS CONTAINER
 client.commands = new Collection();
 
-// ==========================
-// 📁 LOAD COMMANDS
-// ==========================
-const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+// ===== COMMANDS =====
+client.commands.set("ping", async (interaction) => {
+  const msg = await interaction.reply({ content: "🏓 Ping...", fetchReply: true });
 
-for (const file of commandFiles) {
-  const filePath = path.join(commandsPath, file);
-  const command = require(filePath);
+  const ping = msg.createdTimestamp - interaction.createdTimestamp;
 
-  if (command.name) {
-    client.commands.set(command.name, command);
+  interaction.editReply(`🏓 Pong!\n⏱️ ${ping}ms`);
+});
+
+// VERIFY
+const VERIFIED_ROLE = "1522332009773404211";
+const UNVERIFIED_ROLE = "1505196345009635459";
+
+client.commands.set("verify", async (interaction) => {
+  const member = interaction.member;
+
+  if (member.roles.cache.has(VERIFIED_ROLE)) {
+    return interaction.reply("✅ Già verificato");
   }
-}
 
-// ==========================
-// 📁 LOAD EVENTS
-// ==========================
-const eventsPath = path.join(__dirname, "events");
-const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
-
-for (const file of eventFiles) {
-  const filePath = path.join(eventsPath, file);
-  const event = require(filePath);
-
-  if (event.name) {
-    client.on(event.name, (...args) => event.execute(...args, client));
+  await member.roles.add(VERIFIED_ROLE);
+  if (member.roles.cache.has(UNVERIFIED_ROLE)) {
+    await member.roles.remove(UNVERIFIED_ROLE);
   }
-}
 
-// ==========================
-// 🚀 READY EVENT
-// ==========================
+  return interaction.reply("🎉 Verificato!");
+});
+
+// CASE SEARCH (base)
+const cases = {};
+
+client.commands.set("case-search", async (interaction) => {
+  const id = interaction.options.getString("id");
+
+  if (!cases[id]) {
+    return interaction.reply("❌ Caso non trovato");
+  }
+
+  return interaction.reply(`📁 ${cases[id]}`);
+});
+
+// ===== EVENT HANDLER =====
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const cmd = client.commands.get(interaction.commandName);
+  if (!cmd) return;
+
+  try {
+    await cmd(interaction);
+  } catch (err) {
+    console.error(err);
+    interaction.reply("❌ Errore comando");
+  }
+});
+
+// READY
 client.once("ready", () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// ==========================
-// 🔑 LOGIN
-// ==========================
+// LOGIN
 client.login(process.env.TOKEN);

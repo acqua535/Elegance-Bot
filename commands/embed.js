@@ -3,9 +3,12 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("disc
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("embed")
-    .setDescription("Crea un embed")
-    .addStringOption(o =>
-      o.setName("text").setDescription("contenuto").setRequired(true)
+    .setDescription("Crea un embed personalizzato")
+    .addStringOption(option =>
+      option
+        .setName("text")
+        .setDescription("Contenuto dell'embed")
+        .setRequired(true)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
@@ -14,8 +17,9 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setDescription(text)
-      .setColor("Blue");
+      .setColor(0x3498db) // 🔵 blu HEX stabile
+      .setTimestamp();
 
-    interaction.reply({ embeds: [embed] });
+    await interaction.reply({ embeds: [embed] });
   }
 };

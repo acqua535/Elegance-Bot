@@ -1,13 +1,11 @@
-const { 
-  Client, 
-  GatewayIntentBits, 
-  Collection, 
-  REST, 
-  Routes, 
-  SlashCommandBuilder 
+const {
+  Client,
+  GatewayIntentBits,
+  Collection,
+  REST,
+  Routes,
+  SlashCommandBuilder
 } = require("discord.js");
-
-const fetch = require("node-fetch");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -16,7 +14,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// 📦 SLASH COMMAND LIST
+// 📦 SLASH COMMANDS REGISTRATION
 // =====================
 const commands = [
   new SlashCommandBuilder().setName("ping").setDescription("Ping bot"),
@@ -26,10 +24,8 @@ const commands = [
 ].map(c => c.toJSON());
 
 // =====================
-// 🚀 COMMANDS LOGIC
-// =====================
-
 // 🏓 PING
+// =====================
 client.commands.set("ping", async (interaction) => {
   await interaction.deferReply();
 
@@ -38,7 +34,9 @@ client.commands.set("ping", async (interaction) => {
   await interaction.editReply(`🏓 Pong!\n⏱️ ${ping}ms`);
 });
 
+// =====================
 // ✅ VERIFY
+// =====================
 const VERIFIED = "1522332009773404211";
 const UNVERIFIED = "1505196345009635459";
 
@@ -60,7 +58,9 @@ client.commands.set("verify", async (interaction) => {
   return interaction.editReply("🎉 Verifica completata!");
 });
 
-// 😂 MEME
+// =====================
+// 😂 MEME (NO LIBRERIE)
+// =====================
 client.commands.set("meme", async (interaction) => {
   await interaction.deferReply();
 
@@ -69,12 +69,15 @@ client.commands.set("meme", async (interaction) => {
     const data = await res.json();
 
     return interaction.editReply(`😂 **${data.title}**\n${data.url}`);
-  } catch {
+  } catch (err) {
+    console.error(err);
     return interaction.editReply("❌ Meme non disponibile");
   }
 });
 
+// =====================
 // 🎮 COINFLIP
+// =====================
 client.commands.set("coinflip", async (interaction) => {
   await interaction.deferReply();
 
@@ -86,7 +89,7 @@ client.commands.set("coinflip", async (interaction) => {
 });
 
 // =====================
-// ⚡ HANDLER
+// ⚡ INTERACTION HANDLER (FIX “NOT RESPONDING”)
 // =====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -115,7 +118,7 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 // =====================
-// 📌 REGISTER COMMANDS
+// 📌 REGISTER SLASH COMMANDS
 // =====================
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 

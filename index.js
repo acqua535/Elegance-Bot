@@ -1,77 +1,56 @@
+const fs = require("fs");
 const {
   Client,
   GatewayIntentBits,
-  REST,
-  Routes,
-  SlashCommandBuilder
+  Collection
 } = require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// =====================
-// 📦 COMANDI
-// =====================
-const commands = [
-  new SlashCommandBuilder().setName("ping").setDescription("Ping bot"),
-  new SlashCommandBuilder().setName("meme").setDescription("Meme casuale"),
-  new SlashCommandBuilder().setName("coinflip").setDescription("Testa o croce")
-].map(c => c.toJSON());
+client.commands = new Collection();
 
-// =====================
-// ⚡ INTERACTION HANDLER (FIX 100% RESPONDING)
-// =====================
+// 📦 CARICAMENTO COMANDI
+const folders = fs.readdirSync("./commands");
+
+for (const folder of folders) {
+  const path = `./commands/${folder}`;
+
+  // se è un file singolo (minigame.js, meme.js)
+  if (fs.lstatSync(path).isFile?.() || !fs.lstatSync(path).isDirectory()) continue;
+
+  const files = fs.readdirSync(path);
+
+  for (const file of files) {
+    if (!file.endsWith(".js")) continue;
+
+    const command = require(`${path}/${file}`);
+    client.commands.set(command.data.name, command);
+  }
+}
+
+// 📌 INTERACTION HANDLER
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
+  const command = client.commands.get(interaction.commandName);
+  if (!command) return;
+
   try {
-
-    if (interaction.commandName === "ping") {
-      return interaction.reply(`🏓 Pong! ${Date.now() - interaction.createdTimestamp}ms`);
-    }
-
-    if (interaction.commandName === "meme") {
-      const res = await fetch("https://meme-api.com/gimme");
-      const data = await res.json();
-      return interaction.reply(`${data.title}\n${data.url}`);
-    }
-
-    if (interaction.commandName === "coinflip") {
-      const r = Math.random() < 0.5 ? "TESTA" : "CROCE";
-      return interaction.reply(`🎮 ${r}`);
-    }
-
+    await command.execute(interaction, client);
   } catch (err) {
     console.error(err);
-
-    if (!interaction.replied) {
-      await interaction.reply("❌ Errore comando");
-    }
+    interaction.reply({
+      content: "❌ Errore interno Elegance System",
+      ephemeral: true
+    });
   }
 });
 
-// =====================
-// 🚀 REGISTRAZIONE GLOBALE (NO GUILD ID, NO ERRORI)
-// =====================
-const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
-
-client.once("ready", async () => {
-  console.log(`✅ Online come ${client.user.tag}`);
-
-  try {
-    await rest.put(
-      Routes.applicationCommands(client.user.id),
-      { body: commands }
-    );
-
-    console.log("📌 Comandi GLOBAL registrati");
-  } catch (err) {
-    console.error(err);
-  }
+// 🚀 READY
+client.once("ready", () => {
+  console.log(`✨ Elegance ONLINE come ${client.user.tag}`);
 });
 
-// =====================
-// 🔑 LOGIN
-// =====================
 client.login(process.env.TOKEN);

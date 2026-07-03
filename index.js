@@ -4,51 +4,74 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// COMMANDS CONTAINER
 client.commands = new Collection();
 
-// ===== COMMANDS =====
+// =====================
+// 🏓 PING
+// =====================
 client.commands.set("ping", async (interaction) => {
-  const msg = await interaction.reply({ content: "🏓 Ping...", fetchReply: true });
+  await interaction.deferReply();
 
-  const ping = msg.createdTimestamp - interaction.createdTimestamp;
+  const ping = Date.now() - interaction.createdTimestamp;
 
-  interaction.editReply(`🏓 Pong!\n⏱️ ${ping}ms`);
+  await interaction.editReply(`🏓 Pong!\n⏱️ ${ping}ms`);
 });
 
-// VERIFY
-const VERIFIED_ROLE = "1522332009773404211";
-const UNVERIFIED_ROLE = "1505196345009635459";
+// =====================
+// ✅ VERIFY
+// =====================
+const VERIFIED = "1522332009773404211";
+const UNVERIFIED = "1505196345009635459";
 
 client.commands.set("verify", async (interaction) => {
+  await interaction.deferReply();
+
   const member = interaction.member;
 
-  if (member.roles.cache.has(VERIFIED_ROLE)) {
-    return interaction.reply("✅ Già verificato");
+  if (member.roles.cache.has(VERIFIED)) {
+    return interaction.editReply("✅ Già verificato");
   }
 
-  await member.roles.add(VERIFIED_ROLE);
-  if (member.roles.cache.has(UNVERIFIED_ROLE)) {
-    await member.roles.remove(UNVERIFIED_ROLE);
+  await member.roles.add(VERIFIED);
+  if (member.roles.cache.has(UNVERIFIED)) {
+    await member.roles.remove(UNVERIFIED);
   }
 
-  return interaction.reply("🎉 Verificato!");
+  return interaction.editReply("🎉 Verifica completata!");
 });
 
-// CASE SEARCH (base)
-const cases = {};
+// =====================
+// 😂 MEME (VERI)
+// =====================
+client.commands.set("meme", async (interaction) => {
+  await interaction.deferReply();
 
-client.commands.set("case-search", async (interaction) => {
-  const id = interaction.options.getString("id");
+  try {
+    const res = await fetch("https://meme-api.com/gimme");
+    const data = await res.json();
 
-  if (!cases[id]) {
-    return interaction.reply("❌ Caso non trovato");
+    await interaction.editReply(`😂 **${data.title}**\n${data.url}`);
+  } catch {
+    await interaction.editReply("❌ Errore meme");
   }
-
-  return interaction.reply(`📁 ${cases[id]}`);
 });
 
-// ===== EVENT HANDLER =====
+// =====================
+// 🎮 MINIGAME
+// =====================
+client.commands.set("coinflip", async (interaction) => {
+  await interaction.deferReply();
+
+  await new Promise(r => setTimeout(r, 2000));
+
+  const result = Math.random() < 0.5 ? "TESTA" : "CROCE";
+
+  await interaction.editReply(`🎮 Risultato: **${result}**`);
+});
+
+// =====================
+// 🔥 HANDLER
+// =====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -56,17 +79,23 @@ client.on("interactionCreate", async (interaction) => {
   if (!cmd) return;
 
   try {
-    await cmd(interaction);
+    await cmd(interaction, client);
   } catch (err) {
     console.error(err);
-    interaction.reply("❌ Errore comando");
+    if (!interaction.replied) {
+      await interaction.reply("❌ Errore comando");
+    }
   }
 });
 
-// READY
+// =====================
+// ✅ READY
+// =====================
 client.once("ready", () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// LOGIN
+// =====================
+// 🔑 LOGIN
+// =====================
 client.login(process.env.TOKEN);

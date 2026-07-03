@@ -1,4 +1,10 @@
-const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  Collection,
+  Events
+} = require("discord.js");
+
 const fs = require("fs");
 const path = require("path");
 
@@ -45,11 +51,11 @@ client.on(Events.InteractionCreate, async interaction => {
       const ticket = client.commands.get("ticket");
       if (!ticket) return;
 
-      if (interaction.customId === "create_ticket") {
+      if (interaction.customId === "ticket_create") {
         return ticket.buttonHandler(interaction);
       }
 
-      if (interaction.customId === "close_ticket") {
+      if (interaction.customId === "ticket_close") {
         return ticket.closeHandler(interaction);
       }
     }

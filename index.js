@@ -1,27 +1,19 @@
-    const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
+client.on("interactionCreate", async interaction => {
+  if (!interaction.isButton()) return;
 
-const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
-});
+  const ticket = client.commands.get("ticket");
+  if (!ticket) return;
 
-client.commands = new Collection();
+  if (
+    interaction.customId === "ticket_support" ||
+    interaction.customId === "ticket_partner" ||
+    interaction.customId === "ticket_collab" ||
+    interaction.customId === "ticket_staff"
+  ) {
+    return ticket.buttonHandler(interaction);
+  }
 
-client.once(Events.ClientReady, () => {
-  console.log(`✅ Online come ${client.user.tag}`);
-});
-
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
-
-  try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error(err);
-    interaction.reply({ content: "❌ Errore comando", ephemeral: true });
+  if (interaction.customId === "ticket_close") {
+    return ticket.closeHandler(interaction);
   }
 });
-
-client.login(process.env.TOKEN);

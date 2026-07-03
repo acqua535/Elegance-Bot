@@ -3,19 +3,34 @@ const { SlashCommandBuilder } = require("discord.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("meme")
-    .setDescription("Meme casuale"),
+    .setDescription("Meme casuale da Reddit"),
 
   async execute(interaction) {
     try {
       const res = await fetch("https://meme-api.com/gimme");
+
+      if (!res.ok) {
+        return interaction.reply({
+          content: "❌ Errore API meme",
+          ephemeral: true
+        });
+      }
+
       const data = await res.json();
 
-      interaction.reply({
-        content: `${data.title}\n${data.url}`
+      return interaction.reply({
+        content: `😂 **${data.title}**\n${data.url}`
       });
 
     } catch (err) {
-      interaction.reply("❌ Errore nel caricamento meme");
+      console.error(err);
+
+      if (interaction.replied || interaction.deferred) return;
+
+      return interaction.reply({
+        content: "❌ Errore nel caricamento meme",
+        ephemeral: true
+      });
     }
   }
 };

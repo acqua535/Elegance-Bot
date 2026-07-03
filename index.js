@@ -72,5 +72,13 @@ client.once("ready", async () => {
   }
 });
 
+process.on("unhandledRejection", (err) => {
+  console.error("❌ Unhandled Rejection:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("❌ Uncaught Exception:", err);
+});
+
 // 🔐 LOGIN
 client.login(process.env.TOKEN);

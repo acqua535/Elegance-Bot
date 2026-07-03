@@ -1,38 +1,71 @@
-const { Client, GatewayIntentBits } = require("discord.js");
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require("discord.js");
 
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+  intents: [GatewayIntentBits.Guilds]
 });
 
-const prefix = "!";
+// =====================
+// SLASH COMMANDS
+// =====================
+const commands = [
+  new SlashCommandBuilder()
+    .setName("ping")
+    .setDescription("Risponde Pong!")
+    .toJSON(),
 
-client.once("ready", () => {
+  new SlashCommandBuilder()
+    .setName("serverinfo")
+    .setDescription("Mostra info del server")
+    .toJSON(),
+
+  new SlashCommandBuilder()
+    .setName("userinfo")
+    .setDescription("Mostra info utente")
+    .toJSON()
+];
+
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+// =====================
+// READY EVENT
+// =====================
+client.once("ready", async () => {
   console.log(`Bot online come ${client.user.tag}`);
+
+  try {
+    await rest.put(
+      Routes.applicationCommands(client.user.id),
+      { body: commands }
+    );
+    console.log("Slash commands registrati");
+  } catch (err) {
+    console.error(err);
+  }
 });
 
-client.on("messageCreate", (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith(prefix)) return;
+// =====================
+// INTERACTIONS
+// =====================
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-  const args = message.content.slice(prefix.length).trim().split(/ +/);
-  const command = args.shift().toLowerCase();
-
-  if (command === "ping") {
-    message.reply("🏓 Pong!");
+  // /ping
+  if (interaction.commandName === "ping") {
+    await interaction.reply("🏓 Pong!");
   }
 
-  if (command === "help") {
-    message.reply("Comandi: !ping !help !say");
+  // /serverinfo
+  if (interaction.commandName === "serverinfo") {
+    await interaction.reply(
+      `📊 Server: ${interaction.guild.name}\n👥 Membri: ${interaction.guild.memberCount}`
+    );
   }
 
-  if (command === "say") {
-    const text = args.join(" ");
-    if (!text) return message.reply("Scrivi qualcosa dopo !say");
-    message.channel.send(text);
+  // /userinfo
+  if (interaction.commandName === "userinfo") {
+    await interaction.reply(
+      `👤 Utente: ${interaction.user.tag}\n🆔 ID: ${interaction.user.id}`
+    );
   }
 });
 

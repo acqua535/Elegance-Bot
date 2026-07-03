@@ -1,9 +1,5 @@
 const fs = require("fs");
-const {
-  Client,
-  GatewayIntentBits,
-  Collection
-} = require("discord.js");
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -11,26 +7,15 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// 📦 CARICAMENTO COMANDI
-const folders = fs.readdirSync("./commands");
+// 📦 LEGGE TUTTI I FILE DIRETTAMENTE DA /commands
+const files = fs.readdirSync("./commands").filter(f => f.endsWith(".js"));
 
-for (const folder of folders) {
-  const path = `./commands/${folder}`;
-
-  // se è un file singolo (minigame.js, meme.js)
-  if (fs.lstatSync(path).isFile?.() || !fs.lstatSync(path).isDirectory()) continue;
-
-  const files = fs.readdirSync(path);
-
-  for (const file of files) {
-    if (!file.endsWith(".js")) continue;
-
-    const command = require(`${path}/${file}`);
-    client.commands.set(command.data.name, command);
-  }
+for (const file of files) {
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.data.name, command);
 }
 
-// 📌 INTERACTION HANDLER
+// ⚡ INTERACTION HANDLER
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -42,7 +27,7 @@ client.on("interactionCreate", async (interaction) => {
   } catch (err) {
     console.error(err);
     interaction.reply({
-      content: "❌ Errore interno Elegance System",
+      content: "❌ Errore Elegance System",
       ephemeral: true
     });
   }

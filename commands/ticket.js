@@ -8,7 +8,7 @@ const {
   ChannelType
 } = require("discord.js");
 
-const STAFF_ROLE_ID = "1505192964769714287"; // ruolo staff (UNO SOLO per semplicità)
+const STAFF_ROLE_ID = "1505192718068879430" "1505192964769714287"; // ruolo staff (UNO SOLO per semplicità)
 
 module.exports = {
   data: new SlashCommandBuilder()

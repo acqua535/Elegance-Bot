@@ -1,99 +1,96 @@
-const fs = require("fs");
 const {
   Client,
   GatewayIntentBits,
   Collection,
-  REST,
-  Routes
+  Events
 } = require("discord.js");
 
+const fs = require("fs");
+const path = require("path");
+
+// ================= CLIENT =================
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages
+  ]
 });
 
+// ================= COMMANDS =================
 client.commands = new Collection();
 
-// 📦 LOAD COMMANDS
-const files = fs.readdirSync("./commands").filter(f => f.endsWith(".js"));
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
 
-for (const file of files) {
+for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  if (!command?.data?.name) {
-    console.log(`⚠️ Comando ignorato: ${file}`);
-    continue;
-  }
   client.commands.set(command.data.name, command);
 }
 
-// ⚡ INTERACTION HANDLER
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
+console.log(`📌 Comandi caricati: ${client.commands.size}`);
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+// ================= READY =================
+client.once(Events.ClientReady, () => {
+  console.log(`✅ Online come ${client.user.tag}`);
+});
 
+// ================= SLASH COMMANDS =================
+client.on(Events.InteractionCreate, async interaction => {
   try {
-    await command.execute(interaction, client);
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+
+      if (!command) return;
+
+      await command.execute(interaction);
+    }
   } catch (err) {
-    console.error(err);
+    console.error("❌ Slash command error:", err);
+
+    if (interaction.replied || interaction.deferred) return;
+
     interaction.reply({
-      content: "❌ Errore Elegance System",
+      content: "❌ Errore durante l'esecuzione del comando",
       ephemeral: true
     });
   }
 });
 
-// 🚀 READY + REGISTER COMMANDS
-client.once("ready", async () => {
-  console.log(`✅ Online come ${client.user.tag}`);
-  console.log(`📌 Comandi caricati: ${client.commands.size}`);
-
-  const TOKEN = process.env.TOKEN;
-  const CLIENT_ID = process.env.CLIENT_ID;
-
-  if (!TOKEN || !CLIENT_ID) {
-    console.error("❌ TOKEN o CLIENT_ID mancanti in ENV");
-    return;
-  }
-
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
-
+// ================= BUTTONS =================
+client.on(Events.InteractionCreate, async interaction => {
   try {
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      {
-        body: client.commands.map(cmd => cmd.data.toJSON())
-      }
-    );
+    if (!interaction.isButton()) return;
 
-    console.log("📌 Comandi GLOBAL registrati");
+    const ticketCommand = client.commands.get("ticket");
+    if (!ticketCommand) return;
+
+    // ticket creation buttons
+    if (
+      interaction.customId === "ticket_support" ||
+      interaction.customId === "ticket_partner" ||
+      interaction.customId === "ticket_collab" ||
+      interaction.customId === "ticket_staff"
+    ) {
+      return await ticketCommand.buttonHandler(interaction);
+    }
+
+    // close ticket button
+    if (interaction.customId === "ticket_close") {
+      return await ticketCommand.closeHandler(interaction);
+    }
+
   } catch (err) {
-    console.error("❌ Errore registrazione comandi:", err);
+    console.error("❌ Button error:", err);
+
+    if (!interaction.replied) {
+      interaction.reply({
+        content: "❌ Errore interazione bottone",
+        ephemeral: true
+      });
+    }
   }
 });
 
-process.on("unhandledRejection", (err) => {
-  console.error("❌ Unhandled Rejection:", err);
-});
-
-process.on("uncaughtException", (err) => {
-  console.error("❌ Uncaught Exception:", err);
-});
-
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isButton()) return;
-
-  const cmd = client.commands.get("ticket");
-  if (!cmd) return;
-
-  if (interaction.customId === "ticket_create") {
-    return cmd.buttonHandler(interaction);
-  }
-
-  if (interaction.customId === "ticket_close") {
-    return cmd.closeHandler(interaction);
-  }
-});
-
-// 🔐 LOGIN
+// ================= LOGIN =================
 client.login(process.env.TOKEN);

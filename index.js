@@ -1,5 +1,11 @@
 const fs = require("fs");
-const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord.js");
+const {
+  Client,
+  GatewayIntentBits,
+  Collection,
+  REST,
+  Routes
+} = require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
@@ -7,11 +13,15 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// 📦 CARICA COMANDI
+// 📦 LOAD COMMANDS
 const files = fs.readdirSync("./commands").filter(f => f.endsWith(".js"));
 
 for (const file of files) {
   const command = require(`./commands/${file}`);
+  if (!command?.data?.name) {
+    console.log(`⚠️ Comando ignorato: ${file}`);
+    continue;
+  }
   client.commands.set(command.data.name, command);
 }
 
@@ -33,8 +43,8 @@ client.on("interactionCreate", async (interaction) => {
   }
 });
 
-// 🚀 READY + SLASH REGISTRATION
-client.once("clientReady", async () => {
+// 🚀 READY + REGISTER COMMANDS
+client.once("ready", async () => {
   console.log(`✅ Online come ${client.user.tag}`);
   console.log(`📌 Comandi caricati: ${client.commands.size}`);
 
@@ -42,7 +52,7 @@ client.once("clientReady", async () => {
   const CLIENT_ID = process.env.CLIENT_ID;
 
   if (!TOKEN || !CLIENT_ID) {
-    console.error("❌ TOKEN o CLIENT_ID mancanti nelle variabili ENV");
+    console.error("❌ TOKEN o CLIENT_ID mancanti in ENV");
     return;
   }
 

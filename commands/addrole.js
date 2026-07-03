@@ -3,12 +3,18 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("aggiungi-ruolo")
-    .setDescription("Aggiunge un ruolo a un utente")
-    .addUserOption(o =>
-      o.setName("user").setDescription("utente").setRequired(true)
+    .setDescription("Aggiunge un ruolo a un utente del server")
+    .addUserOption(option =>
+      option
+        .setName("user")
+        .setDescription("Utente a cui aggiungere il ruolo")
+        .setRequired(true)
     )
-    .addRoleOption(o =>
-      o.setName("role").setDescription("ruolo").setRequired(true)
+    .addRoleOption(option =>
+      option
+        .setName("role")
+        .setDescription("Ruolo da assegnare all'utente")
+        .setRequired(true)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageRoles),
 
@@ -20,6 +26,9 @@ module.exports = {
 
     await member.roles.add(role);
 
-    interaction.reply(`➕ Ruolo ${role.name} aggiunto a ${user.tag}`);
+    await interaction.reply({
+      content: `➕ Ruolo **${role.name}** aggiunto a **${user.tag}**`,
+      ephemeral: true
+    });
   }
 };

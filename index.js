@@ -1,24 +1,53 @@
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("fs");
+const path = require("path");
 
-const client = new Client({ intents: [GatewayIntentBits.Guilds] });
+// 🧠 CLIENT
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds]
+});
 
+// 📦 COMMAND COLLECTION
 client.commands = new Collection();
 
-// LOAD COMMANDS
-for (const file of fs.readdirSync("./commands")) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.name, command);
+// ==========================
+// 📁 LOAD COMMANDS
+// ==========================
+const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+
+for (const file of commandFiles) {
+  const filePath = path.join(commandsPath, file);
+  const command = require(filePath);
+
+  if (command.name) {
+    client.commands.set(command.name, command);
+  }
 }
 
-// LOAD EVENTS
-for (const file of fs.readdirSync("./events")) {
-  const event = require(`./events/${file}`);
-  client.on(event.name, (...args) => event.execute(...args, client));
+// ==========================
+// 📁 LOAD EVENTS
+// ==========================
+const eventsPath = path.join(__dirname, "events");
+const eventFiles = fs.readdirSync(eventsPath).filter(file => file.endsWith(".js"));
+
+for (const file of eventFiles) {
+  const filePath = path.join(eventsPath, file);
+  const event = require(filePath);
+
+  if (event.name) {
+    client.on(event.name, (...args) => event.execute(...args, client));
+  }
 }
 
+// ==========================
+// 🚀 READY EVENT
+// ==========================
 client.once("ready", () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
+// ==========================
+// 🔑 LOGIN
+// ==========================
 client.login(process.env.TOKEN);

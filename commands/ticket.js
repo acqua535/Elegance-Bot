@@ -4,11 +4,9 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  PermissionFlagsBits,
   ChannelType
 } = require("discord.js");
 
-// 👇 CATEGORIE (LE TUE)
 const CATEGORIES = {
   support: "1522720225664176128",
   partner: "1522719621889789992",
@@ -24,45 +22,33 @@ const STAFF_ROLES = [
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ticket")
-    .setDescription("🎫 Sistema Ticket Elegance PRO")
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
+    .setDescription("🎫 Sistema Ticket Elegance"),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
-      .setTitle("🎫 Elegance Ticket System")
-      .setDescription(
-        "Seleziona il tipo di richiesta:\n\n" +
-        "🎫 Support\n" +
-        "🤝 Partner\n" +
-        "⚡ Collab\n" +
-        "🛡️ Staff Bando"
-      )
-      .setColor(0x2ECC71)
-      .setTimestamp();
+      .setTitle("🎫 Ticket System")
+      .setDescription("Seleziona una categoria:")
+      .setColor(0x2ECC71);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("ticket_support")
         .setLabel("Support")
-        .setEmoji("🎫")
         .setStyle(ButtonStyle.Primary),
 
       new ButtonBuilder()
         .setCustomId("ticket_partner")
         .setLabel("Partner")
-        .setEmoji("🤝")
         .setStyle(ButtonStyle.Success),
 
       new ButtonBuilder()
         .setCustomId("ticket_collab")
         .setLabel("Collab")
-        .setEmoji("⚡")
         .setStyle(ButtonStyle.Secondary),
 
       new ButtonBuilder()
         .setCustomId("ticket_staff")
         .setLabel("Staff")
-        .setEmoji("🛡️")
         .setStyle(ButtonStyle.Danger)
     );
 
@@ -73,10 +59,10 @@ module.exports = {
   },
 
   async buttonHandler(interaction) {
-    const userId = interaction.user.id;
+    const user = interaction.user;
 
     const existing = interaction.guild.channels.cache.find(
-      c => c.name.includes(userId)
+      c => c.name.includes(user.id)
     );
 
     if (existing) {
@@ -93,7 +79,7 @@ module.exports = {
     if (interaction.customId === "ticket_staff") type = "staff";
 
     const channel = await interaction.guild.channels.create({
-      name: `ticket-${type}-${interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
+      name: `ticket-${type}-${user.username.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
       type: ChannelType.GuildText,
       parent: CATEGORIES[type],
       permissionOverwrites: [
@@ -102,7 +88,7 @@ module.exports = {
           deny: ["ViewChannel"]
         },
         {
-          id: userId,
+          id: user.id,
           allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
         },
         ...STAFF_ROLES.map(roleId => ({
@@ -114,32 +100,18 @@ module.exports = {
 
     const embed = new EmbedBuilder()
       .setTitle(`🎫 Ticket ${type.toUpperCase()}`)
-      .setDescription(
-        type === "staff"
-          ? "🛡️ Candidatura staff aperta. Lo staff ti valuterà presto."
-          : "Lo staff ti risponderà il prima possibile."
-      )
-      .setColor(
-        type === "partner"
-          ? 0x5865F2
-          : type === "collab"
-          ? 0x9B59B6
-          : type === "staff"
-          ? 0xE74C3C
-          : 0x3498DB
-      )
-      .setTimestamp();
+      .setDescription(`Ciao ${user}, lo staff ti risponderà presto.`)
+      .setColor(0x3498DB);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("ticket_close")
         .setLabel("Chiudi Ticket")
-        .setEmoji("🔒")
         .setStyle(ButtonStyle.Danger)
     );
 
     await channel.send({
-      content: `<@${interaction.user.id}>`,
+      content: `<@${user.id}>`,
       embeds: [embed],
       components: [row]
     });

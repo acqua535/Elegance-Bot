@@ -16,3 +16,7 @@
     "node-fetch": "^3.3.2"
   }
 }
+"scripts": {
+  "start": "node index.js",
+  "deploy": "node deploy-commands.js"
+}

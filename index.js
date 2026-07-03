@@ -80,5 +80,20 @@ process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught Exception:", err);
 });
 
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isButton()) return;
+
+  const cmd = client.commands.get("ticket");
+  if (!cmd) return;
+
+  if (interaction.customId === "ticket_create") {
+    return cmd.buttonHandler(interaction);
+  }
+
+  if (interaction.customId === "ticket_close") {
+    return cmd.closeHandler(interaction);
+  }
+});
+
 // 🔐 LOGIN
 client.login(process.env.TOKEN);

@@ -12,18 +12,20 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// ================= COMMAND HANDLER =================
+// ================= COMMAND LOADER =================
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.existsSync(commandsPath)
-  ? fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"))
-  : [];
 
-for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  if (command?.data?.name) {
-    client.commands.set(command.data.name, command);
+if (fs.existsSync(commandsPath)) {
+  const files = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+
+  for (const file of files) {
+    const command = require(`./commands/${file}`);
+
+    if (command?.data?.name && typeof command.execute === "function") {
+      client.commands.set(command.data.name, command);
+    }
   }
 }
 
@@ -34,21 +36,69 @@ client.once(Events.ClientReady, () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// ================= SLASH COMMANDS =================
-client.on(Events.InteractionCreate, async interaction => {
-  if (!interaction.isChatInputCommand()) return;
+// ================= ERROR HANDLERS (ANTI CRASH) =================
+process.on("uncaughtException", err => {
+  console.error("❌ Uncaught Exception:", err);
+});
 
-  const command = client.commands.get(interaction.commandName);
-  if (!command) return;
+process.on("unhandledRejection", err => {
+  console.error("❌ Unhandled Rejection:", err);
+});
+
+// ================= INTERACTIONS =================
+client.on(Events.InteractionCreate, async interaction => {
 
   try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error("❌ Error:", err);
 
-    if (!interaction.replied) {
-      interaction.reply({
-        content: "❌ Errore comando",
+    // ================= SLASH COMMANDS =================
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
+
+      try {
+        await command.execute(interaction);
+      } catch (err) {
+        console.error("❌ Slash error:", err);
+
+        if (!interaction.replied && !interaction.deferred) {
+          await interaction.reply({
+            content: "❌ Errore comando",
+            ephemeral: true
+          });
+        }
+      }
+    }
+
+    // ================= BUTTONS =================
+    if (interaction.isButton()) {
+      const ticket = client.commands.get("ticket");
+      if (!ticket) return;
+
+      const id = interaction.customId;
+
+      // ticket buttons
+      const ticketButtons = [
+        "ticket_support",
+        "ticket_partner",
+        "ticket_collab",
+        "ticket_staff"
+      ];
+
+      if (ticketButtons.includes(id)) {
+        return await ticket.buttonHandler(interaction);
+      }
+
+      if (id === "ticket_close") {
+        return await ticket.closeHandler(interaction);
+      }
+    }
+
+  } catch (err) {
+    console.error("❌ Interaction error:", err);
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "❌ Errore interazione",
         ephemeral: true
       });
     }

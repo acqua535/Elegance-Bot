@@ -1,10 +1,4 @@
-const {
-  Client,
-  GatewayIntentBits,
-  Collection,
-  Events
-} = require("discord.js");
-
+const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
@@ -17,14 +11,12 @@ client.commands = new Collection();
 // ================= LOAD COMMANDS =================
 const commandsPath = path.join(__dirname, "commands");
 
-if (fs.existsSync(commandsPath)) {
-  const files = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+fs.readdirSync(commandsPath).forEach(file => {
+  if (!file.endsWith(".js")) return;
 
-  for (const file of files) {
-    const command = require(`./commands/${file}`);
-    client.commands.set(command.data.name, command);
-  }
-}
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.data.name, command);
+});
 
 console.log(`📌 Comandi caricati: ${client.commands.size}`);
 
@@ -35,7 +27,6 @@ client.once(Events.ClientReady, () => {
 
 // ================= INTERACTIONS =================
 client.on(Events.InteractionCreate, async interaction => {
-
   try {
 
     // SLASH COMMANDS
@@ -43,7 +34,7 @@ client.on(Events.InteractionCreate, async interaction => {
       const command = client.commands.get(interaction.commandName);
       if (!command) return;
 
-      await command.execute(interaction);
+      return await command.execute(interaction);
     }
 
     // BUTTONS
@@ -52,11 +43,11 @@ client.on(Events.InteractionCreate, async interaction => {
       if (!ticket) return;
 
       if (interaction.customId === "ticket_create") {
-        return ticket.buttonHandler(interaction);
+        return await ticket.buttonHandler(interaction);
       }
 
       if (interaction.customId === "ticket_close") {
-        return ticket.closeHandler(interaction);
+        return await ticket.closeHandler(interaction);
       }
     }
 

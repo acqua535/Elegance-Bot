@@ -1,4 +1,12 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { 
+  Client, 
+  GatewayIntentBits, 
+  Collection, 
+  REST, 
+  Routes, 
+  SlashCommandBuilder 
+} = require("discord.js");
+
 const fetch = require("node-fetch");
 
 const client = new Client({
@@ -8,8 +16,20 @@ const client = new Client({
 client.commands = new Collection();
 
 // =====================
-// 🏓 PING (STABILE)
+// 📦 SLASH COMMAND LIST
 // =====================
+const commands = [
+  new SlashCommandBuilder().setName("ping").setDescription("Ping bot"),
+  new SlashCommandBuilder().setName("verify").setDescription("Verifica utente"),
+  new SlashCommandBuilder().setName("meme").setDescription("Meme casuale"),
+  new SlashCommandBuilder().setName("coinflip").setDescription("Testa o croce")
+].map(c => c.toJSON());
+
+// =====================
+// 🚀 COMMANDS LOGIC
+// =====================
+
+// 🏓 PING
 client.commands.set("ping", async (interaction) => {
   await interaction.deferReply();
 
@@ -18,9 +38,7 @@ client.commands.set("ping", async (interaction) => {
   await interaction.editReply(`🏓 Pong!\n⏱️ ${ping}ms`);
 });
 
-// =====================
 // ✅ VERIFY
-// =====================
 const VERIFIED = "1522332009773404211";
 const UNVERIFIED = "1505196345009635459";
 
@@ -34,6 +52,7 @@ client.commands.set("verify", async (interaction) => {
   }
 
   await member.roles.add(VERIFIED);
+
   if (member.roles.cache.has(UNVERIFIED)) {
     await member.roles.remove(UNVERIFIED);
   }
@@ -41,9 +60,7 @@ client.commands.set("verify", async (interaction) => {
   return interaction.editReply("🎉 Verifica completata!");
 });
 
-// =====================
-// 😂 MEME REALI
-// =====================
+// 😂 MEME
 client.commands.set("meme", async (interaction) => {
   await interaction.deferReply();
 
@@ -57,13 +74,11 @@ client.commands.set("meme", async (interaction) => {
   }
 });
 
-// =====================
-// 🎮 MINIGAME (COINFLIP)
-// =====================
+// 🎮 COINFLIP
 client.commands.set("coinflip", async (interaction) => {
   await interaction.deferReply();
 
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 1500));
 
   const result = Math.random() < 0.5 ? "TESTA" : "CROCE";
 
@@ -71,7 +86,7 @@ client.commands.set("coinflip", async (interaction) => {
 });
 
 // =====================
-// ⚡ HANDLER PERFETTO (FIX “NOT RESPONDING”)
+// ⚡ HANDLER
 // =====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
@@ -100,10 +115,23 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 // =====================
-// ✅ READY
+// 📌 REGISTER COMMANDS
 // =====================
-client.once("ready", () => {
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+client.once("ready", async () => {
   console.log(`✅ Online come ${client.user.tag}`);
+
+  try {
+    await rest.put(
+      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
+      { body: commands }
+    );
+
+    console.log("📌 Slash commands registrati");
+  } catch (err) {
+    console.error(err);
+  }
 });
 
 // =====================

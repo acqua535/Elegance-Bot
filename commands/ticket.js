@@ -8,7 +8,7 @@ const {
   PermissionFlagsBits
 } = require("discord.js");
 
-// ================= STAFF ROLES =================
+// 👇 RUOLI STAFF (i tuoi 2 ruoli)
 const STAFF_ROLES = [
   "1505192718068879430",
   "1505192964769714287"
@@ -17,7 +17,7 @@ const STAFF_ROLES = [
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ticket")
-    .setDescription("🎫 Sistema ticket semplice e stabile"),
+    .setDescription("🎫 Sistema ticket semplice"),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
@@ -41,9 +41,14 @@ module.exports = {
 
   async buttonHandler(interaction) {
     try {
+      // ✔ nome ticket SOLO username (pulito)
+      const channelName = `ticket-${interaction.user.username
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "")}`;
 
+      // ✔ controllo ticket già aperto
       const existing = interaction.guild.channels.cache.find(
-        c => c.name: `ticket-${interaction.user.username.toLowerCase`
+        c => c.name === channelName
       );
 
       if (existing) {
@@ -53,8 +58,9 @@ module.exports = {
         });
       }
 
+      // ✔ crea canale
       const channel = await interaction.guild.channels.create({
-        name: `ticket-${interaction.user.id}`,
+        name: channelName,
         type: ChannelType.GuildText,
         permissionOverwrites: [
           {
@@ -82,7 +88,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setTitle("🎫 Ticket Aperto")
-        .setDescription(`Ciao <@${interaction.user.id}>, scrivi il tuo problema.`)
+        .setDescription(`Ciao <@${interaction.user.id}>, descrivi il tuo problema.`)
         .setColor(0x3498DB);
 
       const row = new ActionRowBuilder().addComponents(
@@ -128,7 +134,7 @@ module.exports = {
       }, 2000);
 
     } catch (err) {
-      console.error(err);
+      console.error("Close error:", err);
     }
   }
 };

@@ -43,7 +43,7 @@ module.exports = {
     try {
 
       const existing = interaction.guild.channels.cache.find(
-        c => c.name === `ticket-${interaction.user.id}`
+        c => c.name: `ticket-${interaction.user.username.toLowerCase`
       );
 
       if (existing) {

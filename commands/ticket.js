@@ -8,55 +8,29 @@ const {
   PermissionsBitField
 } = require("discord.js");
 
-const CATEGORIES = {
-  support: "1522720225664176128",
-  partner: "1522719621889789992",
-  collab: "1522719710162980884",
-  staff: "1522719774226907227"
-};
-
-const STAFF_ROLES = [
-  "1505192964769714287",
-  "1505192718068879430"
-];
+const SUPPORT_CATEGORY = "1522720225664176128";
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ticket")
-    .setDescription("🎫 Apri il pannello ticket"),
+    .setDescription("🎫 Apri un ticket supporto"),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
-      .setTitle("🎫 Sistema Ticket")
-      .setDescription("Seleziona una categoria per aprire un ticket:")
-      .setColor(0x2B2D31);
+      .setTitle("🎫 Support Ticket")
+      .setDescription("Premi il bottone per aprire un ticket supporto.")
+      .setColor(0x2ECC71);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("ticket_support")
-        .setLabel("Support")
-        .setStyle(ButtonStyle.Primary),
-
-      new ButtonBuilder()
-        .setCustomId("ticket_partner")
-        .setLabel("Partner")
-        .setStyle(ButtonStyle.Success),
-
-      new ButtonBuilder()
-        .setCustomId("ticket_collab")
-        .setLabel("Collab")
-        .setStyle(ButtonStyle.Secondary),
-
-      new ButtonBuilder()
-        .setCustomId("ticket_staff")
-        .setLabel("Staff")
-        .setStyle(ButtonStyle.Danger)
+        .setLabel("Apri Ticket")
+        .setStyle(ButtonStyle.Primary)
     );
 
     await interaction.reply({
       embeds: [embed],
-      components: [row],
-      ephemeral: false
+      components: [row]
     });
   },
 
@@ -64,7 +38,6 @@ module.exports = {
     try {
       const user = interaction.user;
 
-      // evita doppio ticket
       const existing = interaction.guild.channels.cache.find(
         c => c.name.includes(user.id)
       );
@@ -76,17 +49,10 @@ module.exports = {
         });
       }
 
-      let type = "support";
-
-      if (interaction.customId === "ticket_partner") type = "partner";
-      if (interaction.customId === "ticket_collab") type = "collab";
-      if (interaction.customId === "ticket_staff") type = "staff";
-
-      // crea canale
       const channel = await interaction.guild.channels.create({
-        name: `ticket-${type}-${user.username.toLowerCase()}-${user.id}`,
+        name: `ticket-${user.username}-${user.id}`,
         type: ChannelType.GuildText,
-        parent: CATEGORIES[type],
+        parent: SUPPORT_CATEGORY,
         permissionOverwrites: [
           {
             id: interaction.guild.id,
@@ -99,37 +65,20 @@ module.exports = {
               PermissionsBitField.Flags.SendMessages,
               PermissionsBitField.Flags.ReadMessageHistory
             ]
-          },
-          ...STAFF_ROLES.map(role => ({
-            id: role,
-            allow: [
-              PermissionsBitField.Flags.ViewChannel,
-              PermissionsBitField.Flags.SendMessages,
-              PermissionsBitField.Flags.ReadMessageHistory
-            ]
-          }))
+          }
         ]
       });
 
       const embed = new EmbedBuilder()
-        .setTitle(`🎫 Ticket ${type.toUpperCase()}`)
+        .setTitle("🎫 Ticket Supporto")
         .setDescription(`Ciao <@${user.id}>, descrivi il tuo problema.`)
         .setColor(0x00AEEF);
 
-      const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("ticket_close")
-          .setLabel("🔒 Chiudi Ticket")
-          .setStyle(ButtonStyle.Danger)
-      );
-
       await channel.send({
         content: `<@${user.id}>`,
-        embeds: [embed],
-        components: [row]
+        embeds: [embed]
       });
 
-      // IMPORTANTISSIMO: risposta immediata
       await interaction.reply({
         content: `✅ Ticket creato: ${channel}`,
         ephemeral: true
@@ -145,18 +94,5 @@ module.exports = {
         });
       }
     }
-  },
-
-  async closeHandler(interaction) {
-    if (interaction.customId !== "ticket_close") return;
-
-    await interaction.reply({
-      content: "🔒 Ticket chiuso...",
-      ephemeral: true
-    });
-
-    setTimeout(() => {
-      interaction.channel.delete().catch(() => {});
-    }, 2000);
   }
 };

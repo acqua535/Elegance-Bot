@@ -5,8 +5,8 @@ let lastGame = null;
 const games = ["coinflip", "rps", "number"];
 
 function pickGame() {
-  let filtered = games.filter(g => g !== lastGame);
-  let game = filtered[Math.floor(Math.random() * filtered.length)];
+  const filtered = games.filter(g => g !== lastGame);
+  const game = filtered[Math.floor(Math.random() * filtered.length)];
   lastGame = game;
   return game;
 }
@@ -14,20 +14,33 @@ function pickGame() {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("minigame")
-    .setDescription("Gioco casuale"),
+    .setDescription("Gioco casuale tra più minigame"),
 
   async execute(interaction) {
-    const game = pickGame();
+    try {
+      const game = pickGame();
 
-    if (game === "coinflip") {
-      return interaction.reply(Math.random() < 0.5 ? "🪙 TESTA" : "🪙 CROCE");
+      if (game === "coinflip") {
+        const result = Math.random() < 0.5 ? "🪙 TESTA" : "🪙 CROCE";
+        return interaction.reply(result);
+      }
+
+      if (game === "rps") {
+        const arr = ["sasso", "carta", "forbice"];
+        const pick = arr[Math.floor(Math.random() * arr.length)];
+        return interaction.reply(`🎮 RPS: ${pick}`);
+      }
+
+      const number = Math.floor(Math.random() * 10);
+      return interaction.reply(`🎲 Numero: ${number}`);
+
+    } catch (err) {
+      console.error(err);
+
+      return interaction.reply({
+        content: "❌ Errore minigame",
+        ephemeral: true
+      });
     }
-
-    if (game === "rps") {
-      const arr = ["sasso", "carta", "forbice"];
-      return interaction.reply(`🎮 ${arr[Math.floor(Math.random() * 3)]}`);
-    }
-
-    return interaction.reply("🎲 numero: " + Math.floor(Math.random() * 10));
   }
 };

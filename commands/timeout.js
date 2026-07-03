@@ -3,12 +3,18 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("timeout")
-    .setDescription("Metti timeout a un utente")
-    .addUserOption(opt =>
-      opt.setName("user").setRequired(true)
+    .setDescription("Metti un utente in timeout")
+    .addUserOption(option =>
+      option
+        .setName("user")
+        .setDescription("Utente da mettere in timeout")
+        .setRequired(true)
     )
-    .addIntegerOption(opt =>
-      opt.setName("minutes").setRequired(true)
+    .addIntegerOption(option =>
+      option
+        .setName("minutes")
+        .setDescription("Durata del timeout in minuti")
+        .setRequired(true)
     )
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
 
@@ -20,6 +26,9 @@ module.exports = {
 
     await member.timeout(minutes * 60 * 1000);
 
-    interaction.reply(`⏱️ ${user.tag} in timeout per ${minutes} min`);
+    await interaction.reply({
+      content: `⏱️ ${user.tag} è stato messo in timeout per ${minutes} minuti.`,
+      ephemeral: true
+    });
   }
 };

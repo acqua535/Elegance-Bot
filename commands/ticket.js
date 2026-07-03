@@ -8,6 +8,14 @@ const {
   ChannelType
 } = require("discord.js");
 
+// 👇 CATEGORIE (LE TUE)
+const CATEGORIES = {
+  support: "1522720225664176128",
+  partner: "1522719621889789992",
+  collab: "1522719710162980884",
+  staff: "1522719774226907227"
+};
+
 const STAFF_ROLES = [
   "1505192964769714287",
   "1505192718068879430"
@@ -16,23 +24,46 @@ const STAFF_ROLES = [
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ticket")
-    .setDescription("🎫 Sistema Ticket Premium Elegance")
+    .setDescription("🎫 Sistema Ticket Elegance PRO")
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
-      .setTitle("🎫 Supporto Elegance")
-      .setDescription("Clicca il bottone qui sotto per aprire un ticket privato con lo staff.")
+      .setTitle("🎫 Elegance Ticket System")
+      .setDescription(
+        "Seleziona il tipo di richiesta:\n\n" +
+        "🎫 Support\n" +
+        "🤝 Partner\n" +
+        "⚡ Collab\n" +
+        "🛡️ Staff Bando"
+      )
       .setColor(0x2ECC71)
-      .setFooter({ text: "Elegance Ticket System" })
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId("ticket_create")
-        .setLabel("Apri Ticket")
+        .setCustomId("ticket_support")
+        .setLabel("Support")
         .setEmoji("🎫")
-        .setStyle(ButtonStyle.Primary)
+        .setStyle(ButtonStyle.Primary),
+
+      new ButtonBuilder()
+        .setCustomId("ticket_partner")
+        .setLabel("Partner")
+        .setEmoji("🤝")
+        .setStyle(ButtonStyle.Success),
+
+      new ButtonBuilder()
+        .setCustomId("ticket_collab")
+        .setLabel("Collab")
+        .setEmoji("⚡")
+        .setStyle(ButtonStyle.Secondary),
+
+      new ButtonBuilder()
+        .setCustomId("ticket_staff")
+        .setLabel("Staff")
+        .setEmoji("🛡️")
+        .setStyle(ButtonStyle.Danger)
     );
 
     await interaction.reply({
@@ -42,10 +73,10 @@ module.exports = {
   },
 
   async buttonHandler(interaction) {
-    if (interaction.customId !== "ticket_create") return;
+    const userId = interaction.user.id;
 
     const existing = interaction.guild.channels.cache.find(
-      c => c.name === `ticket-${interaction.user.id}`
+      c => c.name.includes(userId)
     );
 
     if (existing) {
@@ -55,16 +86,23 @@ module.exports = {
       });
     }
 
+    let type = "support";
+
+    if (interaction.customId === "ticket_partner") type = "partner";
+    if (interaction.customId === "ticket_collab") type = "collab";
+    if (interaction.customId === "ticket_staff") type = "staff";
+
     const channel = await interaction.guild.channels.create({
-      name: `ticket-${interaction.user.id}`,
+      name: `ticket-${type}-${interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, "")}`,
       type: ChannelType.GuildText,
+      parent: CATEGORIES[type],
       permissionOverwrites: [
         {
           id: interaction.guild.id,
           deny: ["ViewChannel"]
         },
         {
-          id: interaction.user.id,
+          id: userId,
           allow: ["ViewChannel", "SendMessages", "ReadMessageHistory"]
         },
         ...STAFF_ROLES.map(roleId => ({
@@ -75,11 +113,21 @@ module.exports = {
     });
 
     const embed = new EmbedBuilder()
-      .setTitle("🎫 Ticket Aperto")
+      .setTitle(`🎫 Ticket ${type.toUpperCase()}`)
       .setDescription(
-        `👋 Ciao ${interaction.user}!\n\nLo staff ti risponderà il prima possibile.\nUsa il bottone sotto per chiudere il ticket.`
+        type === "staff"
+          ? "🛡️ Candidatura staff aperta. Lo staff ti valuterà presto."
+          : "Lo staff ti risponderà il prima possibile."
       )
-      .setColor(0x3498DB)
+      .setColor(
+        type === "partner"
+          ? 0x5865F2
+          : type === "collab"
+          ? 0x9B59B6
+          : type === "staff"
+          ? 0xE74C3C
+          : 0x3498DB
+      )
       .setTimestamp();
 
     const row = new ActionRowBuilder().addComponents(
@@ -105,7 +153,7 @@ module.exports = {
   async closeHandler(interaction) {
     if (interaction.customId !== "ticket_close") return;
 
-    await interaction.reply("🔒 Chiusura ticket in corso...");
+    await interaction.reply("🔒 Chiusura ticket...");
     setTimeout(() => interaction.channel.delete().catch(() => {}), 2000);
   }
 };

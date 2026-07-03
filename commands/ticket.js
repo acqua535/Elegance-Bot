@@ -4,28 +4,29 @@ const {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
-  ChannelType,
-  PermissionsBitField
+  PermissionFlagsBits,
+  ChannelType
 } = require("discord.js");
 
-const SUPPORT_CATEGORY = "1522720225664176128";
+const STAFF_ROLE_ID = "1505192964769714287"; // ruolo staff (UNO SOLO per semplicità)
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("ticket")
-    .setDescription("🎫 Apri un ticket supporto"),
+    .setDescription("🎫 Sistema ticket semplice e stabile"),
 
   async execute(interaction) {
     const embed = new EmbedBuilder()
       .setTitle("🎫 Support Ticket")
-      .setDescription("Premi il bottone per aprire un ticket.")
+      .setDescription("Premi il bottone per aprire un ticket privato.")
       .setColor(0x2ECC71);
 
     const row = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-        .setCustomId("ticket_open")
+        .setCustomId("create_ticket")
         .setLabel("Apri Ticket")
         .setStyle(ButtonStyle.Primary)
+        .setEmoji("🎫")
     );
 
     await interaction.reply({
@@ -35,64 +36,78 @@ module.exports = {
   },
 
   async buttonHandler(interaction) {
-    try {
-      const user = interaction.user;
+    if (interaction.customId !== "create_ticket") return;
 
-      const existing = interaction.guild.channels.cache.find(
-        c => c.name.includes(user.id)
-      );
+    const existing = interaction.guild.channels.cache.find(
+      c => c.name === `ticket-${interaction.user.id}`
+    );
 
-      if (existing) {
-        return interaction.reply({
-          content: "❌ Hai già un ticket aperto!",
-          ephemeral: true
-        });
-      }
-
-      const channel = await interaction.guild.channels.create({
-        name: `ticket-${user.username}-${user.id}`,
-        type: ChannelType.GuildText,
-        parent: SUPPORT_CATEGORY,
-        permissionOverwrites: [
-          {
-            id: interaction.guild.id,
-            deny: [PermissionsBitField.Flags.ViewChannel]
-          },
-          {
-            id: user.id,
-            allow: [
-              PermissionsBitField.Flags.ViewChannel,
-              PermissionsBitField.Flags.SendMessages,
-              PermissionsBitField.Flags.ReadMessageHistory
-            ]
-          }
-        ]
-      });
-
-      const embed = new EmbedBuilder()
-        .setTitle("🎫 Ticket Supporto")
-        .setDescription(`Ciao ${user}, descrivi il tuo problema.`)
-        .setColor(0x00AEEF);
-
-      await channel.send({
-        content: `<@${user.id}>`,
-        embeds: [embed]
-      });
-
-      await interaction.reply({
-        content: `✅ Ticket creato: ${channel}`,
+    if (existing) {
+      return interaction.reply({
+        content: "❌ Hai già un ticket aperto!",
         ephemeral: true
       });
-
-    } catch (err) {
-      console.error("Ticket error:", err);
-
-      if (!interaction.replied) {
-        await interaction.reply({
-          content: "❌ Errore creazione ticket",
-          ephemeral: true
-        });
-      }
     }
+
+    const channel = await interaction.guild.channels.create({
+      name: `ticket-${interaction.user.id}`,
+      type: ChannelType.GuildText,
+      permissionOverwrites: [
+        {
+          id: interaction.guild.id,
+          deny: [PermissionFlagsBits.ViewChannel]
+        },
+        {
+          id: interaction.user.id,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        },
+        {
+          id: STAFF_ROLE_ID,
+          allow: [
+            PermissionFlagsBits.ViewChannel,
+            PermissionFlagsBits.SendMessages,
+            PermissionFlagsBits.ReadMessageHistory
+          ]
+        }
+      ]
+    });
+
+    const embed = new EmbedBuilder()
+      .setTitle("🎫 Ticket Aperto")
+      .setDescription(`Ciao ${interaction.user}, scrivi il tuo problema.`)
+      .setColor(0x3498DB);
+
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("close_ticket")
+        .setLabel("Chiudi Ticket")
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji("🔒")
+    );
+
+    await channel.send({
+      content: `<@${interaction.user.id}>`,
+      embeds: [embed],
+      components: [row]
+    });
+
+    await interaction.reply({
+      content: `✅ Ticket creato: ${channel}`,
+      ephemeral: true
+    });
+  },
+
+  async closeHandler(interaction) {
+    if (interaction.customId !== "close_ticket") return;
+
+    await interaction.reply("🔒 Ticket chiuso...");
+
+    setTimeout(() => {
+      interaction.channel.delete().catch(() => {});
+    }, 2000);
   }
 };

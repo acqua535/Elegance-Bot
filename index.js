@@ -1,4 +1,3 @@
-
 const {
   Client,
   GatewayIntentBits,
@@ -12,7 +11,7 @@ const client = new Client({
 });
 
 // =====================
-// 📦 SOLO COMANDI PULITI
+// 📦 COMANDI
 // =====================
 const commands = [
   new SlashCommandBuilder().setName("ping").setDescription("Ping bot"),
@@ -21,34 +20,39 @@ const commands = [
 ].map(c => c.toJSON());
 
 // =====================
-// ⚡ LOGICA
+// ⚡ INTERACTION HANDLER (FIX 100% RESPONDING)
 // =====================
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
-  if (interaction.commandName === "ping") {
-    const ping = Date.now() - interaction.createdTimestamp;
-    return interaction.reply(`🏓 Pong! ${ping}ms`);
-  }
+  try {
 
-  if (interaction.commandName === "meme") {
-    try {
+    if (interaction.commandName === "ping") {
+      return interaction.reply(`🏓 Pong! ${Date.now() - interaction.createdTimestamp}ms`);
+    }
+
+    if (interaction.commandName === "meme") {
       const res = await fetch("https://meme-api.com/gimme");
       const data = await res.json();
       return interaction.reply(`${data.title}\n${data.url}`);
-    } catch {
-      return interaction.reply("❌ Meme non disponibile");
     }
-  }
 
-  if (interaction.commandName === "coinflip") {
-    const result = Math.random() < 0.5 ? "TESTA" : "CROCE";
-    return interaction.reply(`🎮 ${result}`);
+    if (interaction.commandName === "coinflip") {
+      const r = Math.random() < 0.5 ? "TESTA" : "CROCE";
+      return interaction.reply(`🎮 ${r}`);
+    }
+
+  } catch (err) {
+    console.error(err);
+
+    if (!interaction.replied) {
+      await interaction.reply("❌ Errore comando");
+    }
   }
 });
 
 // =====================
-// 🚀 REGISTRAZIONE COMANDI (CHIAVE FIX)
+// 🚀 REGISTRAZIONE GLOBALE (NO GUILD ID, NO ERRORI)
 // =====================
 const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
@@ -57,11 +61,11 @@ client.once("ready", async () => {
 
   try {
     await rest.put(
-      Routes.applicationGuildCommands(client.user.id, process.env.GUILD_ID),
+      Routes.applicationCommands(client.user.id),
       { body: commands }
     );
 
-    console.log("📌 Comandi sincronizzati da zero");
+    console.log("📌 Comandi GLOBAL registrati");
   } catch (err) {
     console.error(err);
   }

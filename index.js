@@ -1,15 +1,14 @@
 const fs = require("fs");
 const path = require("path");
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, REST, Routes } = require("discord.js");
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
-// 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-// 📂 CARICA COMANDI
+// 📦 CARICAMENTO COMANDI
 const commandsPath = path.join(__dirname, "commands");
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
@@ -24,7 +23,28 @@ for (const file of commandFiles) {
   }
 }
 
-// ⚡ INTERACTION HANDLER
+// ⚡ READY + REGISTRAZIONE COMANDI AUTOMATICA
+client.once("ready", async () => {
+  console.log(`✅ Online come ${client.user.tag}`);
+  console.log(`📌 Comandi caricati: ${client.commands.size}`);
+
+  const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+
+  try {
+    const commands = client.commands.map(cmd => cmd.data.toJSON());
+
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands }
+    );
+
+    console.log("📌 Comandi GLOBAL registrati");
+  } catch (err) {
+    console.error("❌ Errore registrazione comandi:", err);
+  }
+});
+
+// 💬 INTERACTION HANDLER
 client.on("interactionCreate", async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
 
@@ -53,12 +73,6 @@ client.on("interactionCreate", async (interaction) => {
       });
     }
   }
-});
-
-// 🚀 READY EVENT
-client.once("ready", () => {
-  console.log(`✅ Online come ${client.user.tag}`);
-  console.log(`📌 Comandi caricati: ${client.commands.size}`);
 });
 
 // 🔑 LOGIN

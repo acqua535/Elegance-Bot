@@ -1,9 +1,12 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const {
+  SlashCommandBuilder,
+  PermissionFlagsBits
+} = require("discord.js");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("say")
-    .setDescription("Il bot invia un messaggio nel canale")
+    .setDescription("Fa parlare il bot")
     .addStringOption(option =>
       option
         .setName("text")
@@ -13,30 +16,30 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   async execute(interaction) {
-    const text = interaction.options.getString("text");
-
-    if (!text || text.trim().length === 0) {
-      return interaction.reply({
-        content: "❌ Messaggio non valido",
-        ephemeral: true
-      });
-    }
-
     try {
-      await interaction.channel.send(text);
+      const text = interaction.options.getString("text");
 
-      return interaction.reply({
-        content: "✅ Messaggio inviato",
+      await interaction.channel.send({
+        content: text,
+        allowedMentions: {
+          parse: []
+        }
+      });
+
+      await interaction.reply({
+        content: "✅ Messaggio inviato.",
         ephemeral: true
       });
 
     } catch (err) {
       console.error(err);
 
-      return interaction.reply({
-        content: "❌ Errore nell'invio messaggio",
-        ephemeral: true
-      });
+      if (!interaction.replied) {
+        await interaction.reply({
+          content: "❌ Errore durante l'invio del messaggio.",
+          ephemeral: true
+        });
+      }
     }
   }
 };

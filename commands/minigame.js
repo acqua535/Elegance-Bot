@@ -1,98 +1,141 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const fs = require("fs");
 
 let lastGame = null;
 
-const games = ["coinflip", "rps", "number"];
+const FILE = "./utils/stats.json";
 
+function load() {
+  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, "{}");
+  return JSON.parse(fs.readFileSync(FILE, "utf8"));
+}
+
+function save(data) {
+  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+}
+
+// 🎮 GIOCHI
+const games = {
+  coinflip: {
+    name: "🪙 Coinflip",
+    desc: "Testa o croce. Vinci se indovini il risultato.",
+    result: () => (Math.random() < 0.5 ? "Testa" : "Croce")
+  },
+
+  rps: {
+    name: "✊ Sasso Carta Forbici",
+    desc: "Sasso batte forbici, forbici battono carta, carta batte sasso.",
+    result: () => {
+      const arr = ["Sasso", "Carta", "Forbici"];
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+  },
+
+  number: {
+    name: "🎲 Numero Random",
+    desc: "Numero da 0 a 10.",
+    result: () => Math.floor(Math.random() * 11)
+  },
+
+  dice: {
+    name: "🎯 Dado",
+    desc: "Dado da 6 facce.",
+    result: () => Math.floor(Math.random() * 6) + 1
+  },
+
+  luck: {
+    name: "🍀 Fortuna",
+    desc: "Gioco completamente casuale.",
+    result: () => (Math.random() < 0.5 ? "Fortunato" : "Sfortunato")
+  }
+};
+
+// 🔀 PICK GAME (no ripetizioni immediate)
 function pickGame() {
-  let filtered = games.filter(g => g !== lastGame);
-  let game = filtered[Math.floor(Math.random() * filtered.length)];
+  const keys = Object.keys(games);
+  let filtered = keys.filter(g => g !== lastGame);
+
+  if (filtered.length === 0) filtered = keys;
+
+  const game = filtered[Math.floor(Math.random() * filtered.length)];
   lastGame = game;
+
   return game;
 }
 
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise(r => setTimeout(r, ms));
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("minigame")
-    .setDescription("🎮 Minigioco casuale con countdown"),
+    .setDescription("🎮 Avvia un minigioco casuale"),
 
   async execute(interaction) {
     try {
-      const game = pickGame();
+      const key = pickGame();
+      const game = games[key];
 
-      // 🎮 ANNUNCIO GIOCO PRIMA DEL COUNTDOWN
+      // 📢 ANNUNCIO
       await interaction.reply({
-        content: `🎮 Il gioco scelto è: **${game.toUpperCase()}**`,
-        ephemeral: false
+        content: `🎮 ${game.name}\n📌 ${game.desc}`
       });
 
       const msg = await interaction.fetchReply();
 
-      const embed = new EmbedBuilder()
-        .setColor(0xF1C40F)
-        .setTitle("🎮 Minigioco in arrivo!")
-        .setDescription("⏳ Preparazione...")
-        .setFooter({ text: "Elegance Minigame System" })
-        .setTimestamp();
-
-      await msg.edit({ embeds: [embed] });
-
-      // 🔥 COUNTDOWN
+      // ⏳ COUNTDOWN
       for (let i = 10; i >= 1; i--) {
-        let statusText = "⏳ Inizio tra...";
+        const text =
+          i > 7 ? "Preparazione..." :
+          i > 4 ? "Quasi pronto..." :
+          i > 2 ? "Ultimi secondi..." :
+          "Inizio!";
 
-        if (i <= 7) statusText = "🔍 Estrazione in corso...";
-        if (i <= 4) statusText = "⚡ Quasi pronto...";
-        if (i <= 2) statusText = "🎲 Ultimo secondo...";
+        const embed = new EmbedBuilder()
+          .setTitle("🎮 Minigame")
+          .setDescription(`${text}\n⏱️ ${i}s`)
+          .setColor(0xF1C40F);
 
-        const update = new EmbedBuilder()
-          .setColor(0xE67E22)
-          .setTitle("🎮 Minigioco in arrivo!")
-          .setDescription(`${statusText}\n\n⏱️ **${i}** secondi`)
-          .setFooter({ text: "Elegance Countdown System" })
-          .setTimestamp();
-
-        await msg.edit({ embeds: [update] });
+        await msg.edit({ embeds: [embed] });
         await sleep(1000);
       }
 
       // 🎯 RISULTATO
-      let resultText = "";
-
-      if (game === "coinflip") {
-        resultText = Math.random() < 0.5 ? "🪙 TESTA" : "🪙 CROCE";
-      }
-
-      if (game === "rps") {
-        const arr = ["✊ Sasso", "✋ Carta", "✌️ Forbice"];
-        resultText = arr[Math.floor(Math.random() * arr.length)];
-      }
-
-      if (game === "number") {
-        resultText = `🎲 Numero: **${Math.floor(Math.random() * 10)}**`;
-      }
+      const result = game.result();
 
       const finalEmbed = new EmbedBuilder()
-        .setColor(0x2ECC71)
-        .setTitle("🎉 Minigioco estratto!")
+        .setTitle("🏁 Risultato Minigame")
         .setDescription(
-          `🎮 **Gioco:** ${game.toUpperCase()}\n\n🏆 **Risultato:**\n${resultText}`
+          `🎮 Gioco: ${game.name}\n\n🏆 Risultato: **${result}**`
         )
-        .setFooter({ text: "Elegance Minigame Completed" })
-        .setTimestamp();
+        .setColor(0x2ECC71);
 
       await msg.edit({ embeds: [finalEmbed] });
 
+      // 📊 STATS
+      const data = load();
+      const id = interaction.user.id;
+
+      if (!data[id]) {
+        data[id] = { wins: 0, games: 0 };
+      }
+
+      data[id].games += 1;
+
+      // semplice win random (poi migliorabile)
+      if (Math.random() < 0.5) {
+        data[id].wins += 1;
+      }
+
+      save(data);
+
     } catch (err) {
-      console.error("Minigame error:", err);
+      console.error(err);
 
       if (!interaction.replied) {
         await interaction.reply({
-          content: "❌ Errore nel minigioco",
+          content: "❌ Errore minigame",
           ephemeral: true
         });
       }

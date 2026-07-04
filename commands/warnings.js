@@ -11,7 +11,7 @@ function load() {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("warnings")
-    .setDescription("Mostra i warn di un utente")
+    .setDescription("📊 Mostra i warn di un utente")
     .addUserOption(o => o.setName("user").setRequired(true)),
 
   async execute(interaction) {
@@ -22,19 +22,22 @@ module.exports = {
 
     if (warns.length === 0) {
       return interaction.reply({
-        content: "✅ Nessun warn",
+        content: `✅ **${user.tag}** non ha warn.`,
         ephemeral: true
       });
     }
 
     const list = warns.map((w, i) =>
-      `**${i + 1}.** ${w.reason} — ${w.moderator}`
+      `**${i + 1}.** ⚠️ ${w.reason} — 👮 ${w.moderator}`
     ).join("\n");
 
     const embed = new EmbedBuilder()
-      .setTitle(`⚠️ Warn di ${user.tag}`)
-      .setDescription(list)
-      .setColor(0xFEE75C);
+      .setTitle("📊 WARN HISTORY")
+      .setColor(0xFEE75C)
+      .setDescription(`👤 **${user.tag}**`)
+      .addFields(
+        { name: "📌 Lista Warn", value: list }
+      );
 
     return interaction.reply({ embeds: [embed] });
   }

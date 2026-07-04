@@ -16,20 +16,22 @@ function save(data) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("warn")
-    .setDescription("Dai un warn a un utente")
+    .setDescription("⚠️ Assegna un warn a un utente")
     .addUserOption(o => o.setName("user").setRequired(true))
     .addStringOption(o => o.setName("reason").setRequired(true)),
 
   async execute(interaction) {
     if (!isStaff(interaction.member)) {
-      return interaction.reply({ content: "❌ No perms", ephemeral: true });
+      return interaction.reply({
+        content: "❌ Non hai permessi.",
+        ephemeral: true
+      });
     }
 
     const user = interaction.options.getUser("user");
     const reason = interaction.options.getString("reason");
 
     const data = load();
-
     if (!data[user.id]) data[user.id] = [];
 
     data[user.id].push({
@@ -42,18 +44,17 @@ module.exports = {
     const total = data[user.id].length;
 
     const embed = new EmbedBuilder()
-      .setTitle("⚠️ Warn assegnato")
-      .setDescription(`${user.tag} ha ricevuto un warn`)
+      .setTitle("📜 NUOVO WARN")
+      .setColor(0xFEE75C)
+      .setDescription(`⚠️ **${user.tag}** ha ricevuto un warn`)
       .addFields(
-        { name: "Motivo", value: reason },
-        { name: "Totale Warn", value: `${total}/3` },
-        { name: "Staff", value: interaction.user.tag }
-      )
-      .setColor(0xFEE75C);
+        { name: "📌 Motivo", value: reason },
+        { name: "👮 Staff", value: interaction.user.tag },
+        { name: "📊 Warn Totali", value: `${total}/3` }
+      );
 
     await interaction.reply({ embeds: [embed] });
 
-    // 💣 AUTO KICK A 3 WARN
     if (total >= 3) {
       const member = await interaction.guild.members.fetch(user.id);
       await member.kick("3 warn raggiunti");

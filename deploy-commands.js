@@ -1,31 +1,50 @@
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("fs");
-const { REST, Routes } = require("discord.js");
+require("dotenv").config();
 
-const TOKEN = process.env.TOKEN;
-const CLIENT_ID = process.env.CLIENT_ID;
+const client = new Client({
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages
+  ]
+});
 
-const commands = [];
+client.commands = new Collection();
 
-const files = fs.readdirSync("./commands").filter(f => f.endsWith(".js"));
+// 📦 CARICA COMANDI
+const commandFiles = fs
+  .readdirSync("./commands")
+  .filter(file => file.endsWith(".js"));
 
-for (const file of files) {
+for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  commands.push(command.data.toJSON());
+  client.commands.set(command.data.name, command);
 }
 
-const rest = new REST({ version: "10" }).setToken(TOKEN);
+console.log(`📌 Comandi caricati: ${client.commands.size}`);
 
-(async () => {
+// ⚡ INTERACTION HANDLER
+client.on("interactionCreate", async interaction => {
+  if (!interaction.isChatInputCommand()) return;
+
+  const command = client.commands.get(interaction.commandName);
+
+  if (!command) return;
+
   try {
-    console.log("🔄 Aggiornamento comandi slash...");
-
-    await rest.put(
-      Routes.applicationCommands(CLIENT_ID),
-      { body: commands }
-    );
-
-    console.log("📌 Comandi GLOBAL registrati");
+    await command.execute(interaction);
   } catch (err) {
     console.error(err);
+
+    if (!interaction.replied) {
+      await interaction.reply({
+        content: "❌ Errore nel comando",
+        ephemeral: true
+      });
+    }
   }
-})();
+});
+
+// 🚀 LOGIN
+client.login(process.env.TOKEN);

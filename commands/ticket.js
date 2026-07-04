@@ -61,7 +61,7 @@ module.exports = {
 
       const embed = new EmbedBuilder()
         .setTitle("🎫 Ticket Aperto")
-        .setDescription("Lo staff ti risponderà presto.")
+        .setDescription("Lo staff ti assisterà presto.")
         .setColor(0x3498db);
 
       const row = new ActionRowBuilder().addComponents(
@@ -72,7 +72,7 @@ module.exports = {
 
         new ButtonBuilder()
           .setCustomId("ticket_close")
-          .setLabel("Chiudi")
+          .setLabel("Chiudi Ticket")
           .setStyle(ButtonStyle.Danger)
       );
 
@@ -91,6 +91,13 @@ module.exports = {
 
     } catch (err) {
       console.error("Ticket open error:", err);
+
+      if (!interaction.replied) {
+        await interaction.reply({
+          content: "❌ Errore creazione ticket",
+          ephemeral: true
+        });
+      }
     }
   },
 
@@ -102,6 +109,7 @@ module.exports = {
       });
 
       this.log(interaction.guild, `👮 TAKE | ${interaction.user.tag} | ${interaction.channel.name}`);
+
     } catch (err) {
       console.error("Ticket take error:", err);
     }
@@ -125,9 +133,13 @@ module.exports = {
 
   // ================= LOG SYSTEM =================
   log(guild, text) {
-    const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
-    if (!logChannel) return;
+    try {
+      const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
+      if (!logChannel) return;
 
-    logChannel.send(`🧾 ${text}`).catch(() => {});
+      logChannel.send(`🧾 ${text}`).catch(() => {});
+    } catch (e) {
+      console.error("Log error:", e);
+    }
   }
 };

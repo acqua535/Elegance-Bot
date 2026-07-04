@@ -1,81 +1,62 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
+const { isStaff } = require("../utils/staff");
 
 const file = "./utils/warns.json";
 
 function load() {
-  try {
-    if (!fs.existsSync(file)) fs.writeFileSync(file, "{}");
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return {};
-  }
+  if (!fs.existsSync(file)) fs.writeFileSync(file, "{}");
+  return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
 function save(data) {
-  try {
-    fs.writeFileSync(file, JSON.stringify(data, null, 2));
-  } catch (err) {
-    console.error("Errore salvataggio warns:", err);
-  }
+  fs.writeFileSync(file, JSON.stringify(data, null, 2));
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("warn")
     .setDescription("Dai un warn a un utente")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription("Utente da warnare")
-        .setRequired(true)
-    )
-    .addStringOption(option =>
-      option
-        .setName("reason")
-        .setDescription("Motivo del warn")
-        .setRequired(true)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
+    .addUserOption(o => o.setName("user").setRequired(true))
+    .addStringOption(o => o.setName("reason").setRequired(true)),
 
   async execute(interaction) {
-    try {
-      const user = interaction.options.getUser("user");
-      const reason = interaction.options.getString("reason");
+    if (!isStaff(interaction.member)) {
+      return interaction.reply({ content: "❌ No perms", ephemeral: true });
+    }
 
-      const data = load();
+    const user = interaction.options.getUser("user");
+    const reason = interaction.options.getString("reason");
 
-      if (!data[user.id]) data[user.id] = [];
+    const data = load();
 
-      const warnData = {
-        reason,
-        moderator: interaction.user.tag,
-        date: new Date().toISOString()
-      };
+    if (!data[user.id]) data[user.id] = [];
 
-      data[user.id].push(warnData);
-      save(data);
+    data[user.id].push({
+      reason,
+      moderator: interaction.user.tag
+    });
 
-      const embed = new EmbedBuilder()
-        .setTitle("⚠️ User Warned")
-        .setColor(0xFEE75C)
-        .addFields(
-          { name: "👤 Utente", value: `${user.tag}`, inline: true },
-          { name: "🛡️ Moderatore", value: `${interaction.user.tag}`, inline: true },
-          { name: "📌 Motivo", value: reason, inline: false },
-          { name: "📊 Totale Warn", value: `${data[user.id].length}`, inline: true }
-        )
-        .setTimestamp();
+    save(data);
 
-      return interaction.reply({ embeds: [embed] });
+    const total = data[user.id].length;
 
-    } catch (err) {
-      console.error(err);
+    const embed = new EmbedBuilder()
+      .setTitle("⚠️ Warn assegnato")
+      .setDescription(`${user.tag} ha ricevuto un warn`)
+      .addFields(
+        { name: "Motivo", value: reason },
+        { name: "Totale Warn", value: `${total}/3` },
+        { name: "Staff", value: interaction.user.tag }
+      )
+      .setColor(0xFEE75C);
 
-      return interaction.reply({
-        content: "❌ Errore durante l'assegnazione del warn",
-        ephemeral: true
-      });
+    await interaction.reply({ embeds: [embed] });
+
+    // 💣 AUTO KICK A 3 WARN
+    if (total >= 3) {
+      const member = await interaction.guild.members.fetch(user.id);
+      await member.kick("3 warn raggiunti");
     }
   }
 };

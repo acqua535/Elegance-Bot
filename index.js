@@ -15,12 +15,6 @@ fs.readdirSync(commandsPath).forEach(file => {
   if (!file.endsWith(".js")) return;
 
   const command = require(`./commands/${file}`);
-
-  if (!command?.data?.name) {
-    console.warn(`⚠️ Comando non valido: ${file}`);
-    return;
-  }
-
   client.commands.set(command.data.name, command);
 });
 
@@ -35,64 +29,28 @@ client.once(Events.ClientReady, () => {
 client.on(Events.InteractionCreate, async interaction => {
   try {
 
-    // ================= SLASH COMMANDS =================
+    // SLASH COMMANDS
     if (interaction.isChatInputCommand()) {
       const command = client.commands.get(interaction.commandName);
-
-      if (!command) {
-        return interaction.reply({
-          content: "❌ Comando non trovato",
-          ephemeral: true
-        });
-      }
+      if (!command) return;
 
       return await command.execute(interaction);
     }
 
-    // ================= BUTTONS =================
+    // BUTTONS (SENZA TICKET)
     if (interaction.isButton()) {
-      const ticket = client.commands.get("ticket");
-      if (!ticket) return;
-
-      const id = interaction.customId;
-
-      try {
-        if (id === "ticket_open") {
-          return await ticket.open(interaction);
-        }
-
-        if (id === "ticket_take") {
-          return await ticket.take(interaction);
-        }
-
-        if (id === "ticket_close") {
-          return await ticket.close(interaction);
-        }
-
-      } catch (err) {
-        console.error("❌ Button error:", err);
-
-        if (!interaction.replied && !interaction.deferred) {
-          await interaction.reply({
-            content: "❌ Errore bottone",
-            ephemeral: true
-          });
-        }
-      }
+      // nessun sistema ticket attivo
+      return;
     }
 
   } catch (err) {
-    console.error("❌ Interaction Error:", err);
+    console.error("❌ Error:", err);
 
-    try {
-      if (!interaction.replied && !interaction.deferred) {
-        await interaction.reply({
-          content: "❌ Errore interno bot",
-          ephemeral: true
-        });
-      }
-    } catch (e) {
-      console.error("❌ Critical reply error:", e);
+    if (!interaction.replied) {
+      await interaction.reply({
+        content: "❌ Errore interazione",
+        ephemeral: true
+      });
     }
   }
 });

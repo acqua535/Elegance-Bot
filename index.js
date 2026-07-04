@@ -63,5 +63,16 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
+const express = require("express");
+const app = express();
+
+app.get("/", (req, res) => {
+  res.send("Bot online");
+});
+
+app.listen(process.env.PORT || 3000, () => {
+  console.log("🌐 Server attivo");
+});
+
 // ================= LOGIN =================
 client.login(process.env.TOKEN);

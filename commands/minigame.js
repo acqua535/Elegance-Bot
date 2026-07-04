@@ -24,6 +24,14 @@ module.exports = {
     try {
       const game = pickGame();
 
+      // 🎮 ANNUNCIO GIOCO PRIMA DEL COUNTDOWN
+      await interaction.reply({
+        content: `🎮 Il gioco scelto è: **${game.toUpperCase()}**`,
+        ephemeral: false
+      });
+
+      const msg = await interaction.fetchReply();
+
       const embed = new EmbedBuilder()
         .setColor(0xF1C40F)
         .setTitle("🎮 Minigioco in arrivo!")
@@ -31,14 +39,12 @@ module.exports = {
         .setFooter({ text: "Elegance Minigame System" })
         .setTimestamp();
 
-      await interaction.reply({ embeds: [embed] });
+      await msg.edit({ embeds: [embed] });
 
-      const msg = await interaction.fetchReply();
-
-      // 🔥 COUNTDOWN ANIMATO
+      // 🔥 COUNTDOWN
       for (let i = 10; i >= 1; i--) {
         let statusText = "⏳ Inizio tra...";
-        
+
         if (i <= 7) statusText = "🔍 Estrazione in corso...";
         if (i <= 4) statusText = "⚡ Quasi pronto...";
         if (i <= 2) statusText = "🎲 Ultimo secondo...";

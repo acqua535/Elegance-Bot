@@ -1,51 +1,38 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
+const { isStaff } = require("../utils/staff");
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("kick")
-    .setDescription("Espelle un utente dal server")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription("Utente da kickare")
-        .setRequired(true)
-    )
-    .setDefaultMemberPermissions(PermissionFlagsBits.KickMembers),
+    .setDescription("👢 Espellere un utente dal server")
+    .addUserOption(o => o.setName("user").setRequired(true))
+    .addStringOption(o =>
+      o.setName("reason").setDescription("Motivo del kick")
+    ),
 
   async execute(interaction) {
+    if (!isStaff(interaction.member)) {
+      return interaction.reply({
+        content: "❌ Non hai permessi.",
+        ephemeral: true
+      });
+    }
+
     const user = interaction.options.getUser("user");
+    const reason = interaction.options.getString("reason") || "Nessun motivo";
 
-    if (!user) {
-      return interaction.reply({
-        content: "❌ Utente non valido",
-        ephemeral: true
-      });
-    }
+    const member = await interaction.guild.members.fetch(user.id);
+    await member.kick(reason);
 
-    try {
-      const member = await interaction.guild.members.fetch(user.id);
+    const embed = new EmbedBuilder()
+      .setTitle("👢 UTENTE KICKATO")
+      .setColor(0xF39C12)
+      .setDescription(`⚡ **${user.tag}** è stato espulso dal server`)
+      .addFields(
+        { name: "📌 Motivo", value: reason },
+        { name: "👮 Staff", value: interaction.user.tag }
+      );
 
-      if (!member) {
-        return interaction.reply({
-          content: "❌ Utente non trovato nel server",
-          ephemeral: true
-        });
-      }
-
-      await member.kick();
-
-      return interaction.reply({
-        content: `👢 ${user.tag} è stato espulso`,
-        ephemeral: true
-      });
-
-    } catch (err) {
-      console.error(err);
-
-      return interaction.reply({
-        content: "❌ Errore durante il kick",
-        ephemeral: true
-      });
-    }
+    return interaction.reply({ embeds: [embed] });
   }
 };

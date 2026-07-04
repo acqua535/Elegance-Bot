@@ -4,75 +4,38 @@ const fs = require("fs");
 const file = "./utils/warns.json";
 
 function load() {
-  try {
-    if (!fs.existsSync(file)) fs.writeFileSync(file, "{}");
-    return JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return {};
-  }
+  if (!fs.existsSync(file)) return {};
+  return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("warnings")
-    .setDescription("Mostra tutti i warn di un utente")
-    .addUserOption(option =>
-      option
-        .setName("user")
-        .setDescription("Utente da controllare")
-        .setRequired(true)
-    ),
+    .setDescription("Mostra i warn di un utente")
+    .addUserOption(o => o.setName("user").setRequired(true)),
 
   async execute(interaction) {
-    try {
-      const user = interaction.options.getUser("user");
-      const data = load();
+    const user = interaction.options.getUser("user");
+    const data = load();
 
-      const warns = data[user.id];
+    const warns = data[user.id] || [];
 
-      if (!warns || warns.length === 0) {
-        return interaction.reply({
-          content: `✅ **${user.tag}** non ha nessun warn.`,
-          ephemeral: true
-        });
-      }
-
-      const list = warns.slice(0, 10).map((w, i) => {
-        const date = w.date
-          ? `<t:${Math.floor(new Date(w.date).getTime() / 1000)}:R>`
-          : "data sconosciuta";
-
-        return `**${i + 1}.** ${w.reason}\n🛡️ ${w.moderator}\n📅 ${date}`;
-      }).join("\n\n");
-
-      const embed = new EmbedBuilder()
-        .setTitle(`⚠️ Warns di ${user.tag}`)
-        .setThumbnail(user.displayAvatarURL({ dynamic: true }))
-        .setColor(0xFEE75C)
-        .addFields(
-          {
-            name: "📊 Totale Warn",
-            value: `${warns.length}`,
-            inline: true
-          },
-          {
-            name: "📌 Ultimi Warn (max 10)",
-            value: list.length > 1024 ? "Troppi dati da mostrare" : list,
-            inline: false
-          }
-        )
-        .setFooter({ text: "Elegance Moderation System" })
-        .setTimestamp();
-
-      return interaction.reply({ embeds: [embed] });
-
-    } catch (err) {
-      console.error(err);
-
+    if (warns.length === 0) {
       return interaction.reply({
-        content: "❌ Errore nel caricamento warnings",
+        content: "✅ Nessun warn",
         ephemeral: true
       });
     }
+
+    const list = warns.map((w, i) =>
+      `**${i + 1}.** ${w.reason} — ${w.moderator}`
+    ).join("\n");
+
+    const embed = new EmbedBuilder()
+      .setTitle(`⚠️ Warn di ${user.tag}`)
+      .setDescription(list)
+      .setColor(0xFEE75C);
+
+    return interaction.reply({ embeds: [embed] });
   }
 };

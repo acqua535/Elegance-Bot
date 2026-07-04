@@ -1,7 +1,7 @@
 {
   "name": "elegance-bot",
   "version": "1.0.0",
-  "description": "Discord bot stabile per Elegance",
+  "description": "Discord bot stabile per Elegance Sponsoring",
   "main": "index.js",
   "type": "commonjs",
   "scripts": {
@@ -12,6 +12,6 @@
   },
   "dependencies": {
     "discord.js": "^14.16.3",
-    "node-fetch": "^3.3.2"
+    "discord-html-transcripts": "^3.2.0"
   }
 }

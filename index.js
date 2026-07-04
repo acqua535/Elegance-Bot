@@ -6,54 +6,44 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds]
 });
 
+// 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-// ================= LOAD COMMANDS =================
+// 📂 CARICAMENTO AUTOMATICO COMANDI
 const commandsPath = path.join(__dirname, "commands");
+const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
 
-fs.readdirSync(commandsPath).forEach(file => {
-  if (!file.endsWith(".js")) return;
-
+for (const file of commandFiles) {
   const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
-});
+  if (command.data && command.execute) {
+    client.commands.set(command.data.name, command);
+  }
+}
 
-console.log(`📌 Comandi caricati: ${client.commands.size}`);
-
-// ================= READY =================
 client.once(Events.ClientReady, () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// ================= INTERACTIONS =================
+// ⚡ INTERACTIONS FIX
 client.on(Events.InteractionCreate, async interaction => {
   try {
+    if (!interaction.isChatInputCommand()) return;
 
-    // SLASH COMMANDS
-    if (interaction.isChatInputCommand()) {
-      const command = client.commands.get(interaction.commandName);
-      if (!command) return;
+    const command = client.commands.get(interaction.commandName);
+    if (!command) return;
 
-      return await command.execute(interaction);
-    }
-
-    // BUTTONS (SENZA TICKET)
-    if (interaction.isButton()) {
-      // nessun sistema ticket attivo
-      return;
-    }
+    await command.execute(interaction);
 
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("❌ Interaction error:", err);
 
-    if (!interaction.replied) {
-      await interaction.reply({
-        content: "❌ Errore interazione",
-        ephemeral: true
-      });
-    }
+    if (interaction.replied || interaction.deferred) return;
+
+    await interaction.reply({
+      content: "❌ Errore interno comando",
+      ephemeral: true
+    }).catch(() => {}); 
   }
 });
 
-// ================= LOGIN =================
 client.login(process.env.TOKEN);

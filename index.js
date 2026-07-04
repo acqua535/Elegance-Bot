@@ -42,36 +42,29 @@ client.on(Events.InteractionCreate, async interaction => {
       const ticket = client.commands.get("ticket");
       if (!ticket) return;
 
-      if (interaction.customId === "ticket_create") {
+      if (interaction.customId === "create_ticket") {
         return await ticket.buttonHandler(interaction);
       }
 
-      if (interaction.customId === "ticket_close") {
+      if (interaction.customId === "close_ticket") {
         return await ticket.closeHandler(interaction);
       }
     }
 
   } catch (err) {
-    console.error("❌ Error:", err);
+    console.error("❌ Interaction Error:", err);
 
-    if (!interaction.replied) {
+    try {
+      if (interaction.replied || interaction.deferred) return;
+
       await interaction.reply({
         content: "❌ Errore interazione",
         ephemeral: true
       });
+    } catch (e) {
+      console.error("❌ Reply error:", e);
     }
   }
-});
-
-const express = require("express");
-const app = express();
-
-app.get("/", (req, res) => {
-  res.send("Bot online");
-});
-
-app.listen(process.env.PORT || 3000, () => {
-  console.log("🌐 Server attivo");
 });
 
 // ================= LOGIN =================

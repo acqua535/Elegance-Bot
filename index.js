@@ -9,7 +9,7 @@ const client = new Client({
 // 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-// 📂 CARICAMENTO COMANDI (SAFE)
+// 📂 CARICAMENTO COMANDI (SAFE PER HOSTING)
 const commandsPath = path.join(__dirname, "commands");
 
 let commandFiles = [];
@@ -24,6 +24,7 @@ try {
   console.log("⚠️ Errore lettura commands:", err.message);
 }
 
+// 🔁 LOAD COMANDI
 for (const file of commandFiles) {
   try {
     const command = require(`./commands/${file}`);
@@ -35,7 +36,7 @@ for (const file of commandFiles) {
   }
 }
 
-// ✅ BOT READY
+// ✅ READY EVENT
 client.once(Events.ClientReady, () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });

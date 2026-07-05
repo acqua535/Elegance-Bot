@@ -1,50 +1,33 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { REST, Routes } = require("discord.js");
 const fs = require("fs");
-require("dotenv").config();
+const path = require("path");
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages
-  ]
-});
+const commands = [];
 
-client.commands = new Collection();
-
-// 📦 CARICA COMANDI
 const commandFiles = fs
-  .readdirSync("./commands")
-  .filter(file => file.endsWith(".js"));
+  .readdirSync(__dirname)
+  .filter(file => file.endsWith(".js") && file !== "index.js" && file !== "deploy-commands.js");
 
 for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+  const command = require(`./${file}`);
+  if (command.data) {
+    commands.push(command.data.toJSON());
+  }
 }
 
-console.log(`📌 Comandi caricati: ${client.commands.size}`);
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
-// ⚡ INTERACTION HANDLER
-client.on("interactionCreate", async interaction => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) return;
-
+(async () => {
   try {
-    await command.execute(interaction);
+    console.log("🚀 Deploying slash commands...");
+
+    await rest.put(
+      Routes.applicationCommands(process.env.CLIENT_ID),
+      { body: commands }
+    );
+
+    console.log("✅ Slash commands deployed!");
   } catch (err) {
     console.error(err);
-
-    if (!interaction.replied) {
-      await interaction.reply({
-        content: "❌ Errore nel comando",
-        ephemeral: true
-      });
-    }
   }
-});
-
-// 🚀 LOGIN
-client.login(process.env.TOKEN);
+})();

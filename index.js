@@ -9,22 +9,38 @@ const client = new Client({
 // 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-// 📂 CARICAMENTO AUTOMATICO COMANDI
+// 📂 CARICAMENTO COMANDI (SAFE)
 const commandsPath = path.join(__dirname, "commands");
-const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+
+let commandFiles = [];
+
+try {
+  if (fs.existsSync(commandsPath)) {
+    commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+  } else {
+    console.log("⚠️ Cartella commands non trovata");
+  }
+} catch (err) {
+  console.log("⚠️ Errore lettura commands:", err.message);
+}
 
 for (const file of commandFiles) {
-  const command = require(`./commands/${file}`);
-  if (command.data && command.execute) {
-    client.commands.set(command.data.name, command);
+  try {
+    const command = require(`./commands/${file}`);
+    if (command.data && command.execute) {
+      client.commands.set(command.data.name, command);
+    }
+  } catch (err) {
+    console.log(`❌ Errore comando ${file}:`, err.message);
   }
 }
 
+// ✅ BOT READY
 client.once(Events.ClientReady, () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// ⚡ INTERACTIONS FIX
+// ⚡ INTERACTIONS SAFE
 client.on(Events.InteractionCreate, async interaction => {
   try {
     if (!interaction.isChatInputCommand()) return;
@@ -42,8 +58,13 @@ client.on(Events.InteractionCreate, async interaction => {
     await interaction.reply({
       content: "❌ Errore interno comando",
       ephemeral: true
-    }).catch(() => {}); 
+    }).catch(() => {});
   }
 });
 
-client.login(process.env.TOKEN);
+// 🔑 LOGIN SAFE
+if (!process.env.TOKEN) {
+  console.log("❌ TOKEN mancante nelle variabili ambiente");
+} else {
+  client.login(process.env.TOKEN);
+}

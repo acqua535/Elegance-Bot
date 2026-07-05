@@ -72,8 +72,6 @@ client.on(Events.InteractionCreate, async interaction => {
   }
 });
 
-require("./deployOnce.js");
-
 // 🔑 LOGIN SAFE
 if (!process.env.TOKEN) {
   console.log("❌ TOKEN mancante nelle variabili ambiente Discloud");

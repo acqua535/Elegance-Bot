@@ -1,18 +1,20 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 
-const file = "./utils/warns.json";
+const FILE = "./utils/warns.json";
 
 function load() {
-  if (!fs.existsSync(file)) return {};
-  return JSON.parse(fs.readFileSync(file, "utf8"));
+  if (!fs.existsSync(FILE)) return {};
+  return JSON.parse(fs.readFileSync(FILE, "utf8"));
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("warnings")
-    .setDescription("📊 Mostra i warn di un utente")
-    .addUserOption(o => o.setName("user").setRequired(true)),
+    .setDescription("📊 Mostra warn utente")
+    .addUserOption(o =>
+      o.setName("user").setDescription("Utente").setRequired(true)
+    ),
 
   async execute(interaction) {
     const user = interaction.options.getUser("user");
@@ -32,12 +34,13 @@ module.exports = {
     ).join("\n");
 
     const embed = new EmbedBuilder()
-      .setTitle("📊 WARN HISTORY")
+      .setTitle("📊 WARN LIST")
       .setColor(0xFEE75C)
-      .setDescription(`👤 **${user.tag}**`)
-      .addFields(
-        { name: "📌 Lista Warn", value: list }
-      );
+      .setDescription(`👤 ${user.tag}`)
+      .addFields({
+        name: "📌 Lista Warn",
+        value: list
+      });
 
     return interaction.reply({ embeds: [embed] });
   }

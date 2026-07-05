@@ -1,12 +1,13 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
+const { checkWeeklyReset } = require("../utils/resetStats");
 
 const FILE = "./utils/stats.json";
 const CHANNEL_ID = "1522610038831845518";
 
 function load() {
-  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, "{}");
-  return JSON.parse(fs.readFileSync(FILE));
+  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, JSON.stringify({ start: Date.now(), users: {} }, null, 2));
+  return JSON.parse(fs.readFileSync(FILE, "utf8"));
 }
 
 function save(data) {
@@ -16,7 +17,7 @@ function save(data) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("collab")
-    .setDescription("Invia richiesta collab")
+    .setDescription("⚡ Invia richiesta collab")
     .addStringOption(o =>
       o.setName("text")
         .setDescription("Messaggio collab")
@@ -28,13 +29,13 @@ module.exports = {
       const text = interaction.options.getString("text");
       const userId = interaction.user.id;
 
-      const data = load();
+      const data = checkWeeklyReset();
 
-      if (!data[userId]) {
-        data[userId] = { partner: 0, collab: 0 };
+      if (!data.users[userId]) {
+        data.users[userId] = { partner: 0, collab: 0 };
       }
 
-      data[userId].collab += 1;
+      data.users[userId].collab += 1;
       save(data);
 
       const embed = new EmbedBuilder()
@@ -42,7 +43,7 @@ module.exports = {
         .setDescription(text)
         .addFields(
           { name: "👤 Utente", value: interaction.user.tag, inline: true },
-          { name: "📊 Collab totali", value: `${data[userId].collab}`, inline: true }
+          { name: "⚡ Collab totali (settimana)", value: `${data.users[userId].collab}`, inline: true }
         )
         .setColor(0x9B59B6)
         .setTimestamp();
@@ -58,7 +59,7 @@ module.exports = {
 
       await channel.send({ embeds: [embed] });
 
-      await interaction.reply({
+      return interaction.reply({
         content: "📨 Collab inviata!",
         ephemeral: true
       });
@@ -67,7 +68,7 @@ module.exports = {
       console.error(err);
 
       if (!interaction.replied) {
-        await interaction.reply({
+        return interaction.reply({
           content: "❌ Errore collab",
           ephemeral: true
         });

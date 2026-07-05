@@ -1,80 +1,85 @@
-const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
+const { Client, Collection, GatewayIntentBits } = require("discord.js");
 
+// ==========================
+// CLIENT SETUP
+// ==========================
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.GuildMessages
+  ]
 });
 
-// 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-/*
-📂 LOAD COMANDI (ROOT MODE - DISCLOUD SAFE)
-👉 legge tutti i .js nella cartella principale
-👉 esclude index.js
-*/
-let commandFiles = [];
+// ==========================
+// LOAD COMMANDS
+// ==========================
+const commandsPath = path.join(__dirname, "commands");
 
-try {
-  commandFiles = fs
-    .readdirSync(__dirname)
-    .filter(file => file.endsWith(".js") && file !== "index.js");
-} catch (err) {
-  console.log("❌ Errore lettura file comandi:", err.message);
-}
+if (fs.existsSync(commandsPath)) {
+  const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
-// 🔁 REGISTRA COMANDI
-for (const file of commandFiles) {
-  try {
-    const command = require(`./${file}`);
+  for (const file of commandFiles) {
+    const filePath = path.join(commandsPath, file);
 
-    if (command.data && command.execute) {
-      client.commands.set(command.data.name, command);
-    } else {
-      console.log(`⚠️ File ignorato (non comando valido): ${file}`);
+    try {
+      const command = require(filePath);
+
+      if (command?.data?.name && command?.execute) {
+        client.commands.set(command.data.name, command);
+        console.log(`✅ Comando caricato: ${command.data.name}`);
+      } else {
+        console.log(`⚠️ File ignorato (non valido): ${file}`);
+      }
+    } catch (err) {
+      console.error(`❌ Errore caricando ${file}:`, err);
     }
-
-  } catch (err) {
-    console.log(`❌ Errore caricando ${file}:`, err.message);
   }
+} else {
+  console.warn("⚠️ Cartella commands non trovata");
 }
 
-// ✅ READY EVENT
-client.once(Events.ClientReady, () => {
+// ==========================
+// READY EVENT
+// ==========================
+client.once("ready", () => {
   console.log(`✅ Online come ${client.user.tag}`);
 });
 
-// ⚡ INTERACTIONS SAFE
-client.on(Events.InteractionCreate, async interaction => {
-  try {
-    if (!interaction.isChatInputCommand()) return;
+// ==========================
+// INTERACTION HANDLER
+// ==========================
+client.on("interactionCreate", async (interaction) => {
+  if (!interaction.isChatInputCommand()) return;
 
-    const command = client.commands.get(interaction.commandName);
-    if (!command) {
-      return interaction.reply({
-        content: "❌ Comando non trovato",
-        ephemeral: true
-      }).catch(() => {});
-    }
+  const command = client.commands.get(interaction.commandName);
 
-    await command.execute(interaction);
-
-  } catch (err) {
-    console.error("❌ Interaction error:", err);
-
-    if (interaction.replied || interaction.deferred) return;
-
-    await interaction.reply({
-      content: "❌ Errore interno comando",
+  if (!command) {
+    return interaction.reply({
+      content: "❌ Comando non trovato.",
       ephemeral: true
-    }).catch(() => {});
+    });
+  }
+
+  try {
+    await command.execute(interaction);
+  } catch (err) {
+    console.error(`❌ Errore comando ${interaction.commandName}:`, err);
+
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "❌ Errore durante l'esecuzione del comando.",
+        ephemeral: true
+      });
+    }
   }
 });
 
-// 🔑 LOGIN SAFE
-if (!process.env.TOKEN) {
-  console.log("❌ TOKEN mancante nelle variabili ambiente Discloud");
-} else {
-  client.login(process.env.TOKEN);
-}
+// ==========================
+// LOGIN
+// ==========================
+client.login(process.env.TOKEN);

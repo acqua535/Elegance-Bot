@@ -4,10 +4,16 @@ const { isStaff } = require("../utils/staff");
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("kick")
-    .setDescription("👢 Espellere un utente dal server")
-    .addUserOption(o => o.setName("user").setRequired(true))
+    .setDescription("👢 Espelle un utente dal server")
+    .addUserOption(o =>
+      o.setName("user")
+        .setDescription("Utente da kickare")
+        .setRequired(true)
+    )
     .addStringOption(o =>
-      o.setName("reason").setDescription("Motivo del kick")
+      o.setName("reason")
+        .setDescription("Motivo del kick")
+        .setRequired(false)
     ),
 
   async execute(interaction) {
@@ -22,6 +28,21 @@ module.exports = {
     const reason = interaction.options.getString("reason") || "Nessun motivo";
 
     const member = await interaction.guild.members.fetch(user.id);
+
+    if (!member) {
+      return interaction.reply({
+        content: "❌ Utente non trovato nel server.",
+        ephemeral: true
+      });
+    }
+
+    if (!member.kickable) {
+      return interaction.reply({
+        content: "❌ Non posso kickare questo utente (ruolo più alto).",
+        ephemeral: true
+      });
+    }
+
     await member.kick(reason);
 
     const embed = new EmbedBuilder()
@@ -31,7 +52,8 @@ module.exports = {
       .addFields(
         { name: "📌 Motivo", value: reason },
         { name: "👮 Staff", value: interaction.user.tag }
-      );
+      )
+      .setTimestamp();
 
     return interaction.reply({ embeds: [embed] });
   }

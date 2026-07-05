@@ -7,47 +7,25 @@ const {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("embed")
-    .setDescription("Crea un embed personalizzato")
-
-    .addStringOption(option =>
-      option
-        .setName("title")
-        .setDescription("Titolo dell'embed")
-        .setRequired(true)
+    .setDescription("📦 Crea un embed")
+    .addStringOption(o =>
+      o.setName("title").setRequired(true)
     )
-
-    .addStringOption(option =>
-      option
-        .setName("description")
-        .setDescription("Descrizione dell'embed")
-        .setRequired(true)
+    .addStringOption(o =>
+      o.setName("description").setRequired(true)
     )
-
-    .addStringOption(option =>
-      option
-        .setName("color")
-        .setDescription("Colore HEX (es: #5865F2)")
-        .setRequired(false)
+    .addStringOption(o =>
+      o.setName("color").setRequired(false)
     )
-
-    .addStringOption(option =>
-      option
-        .setName("footer")
-        .setDescription("Testo del footer")
-        .setRequired(false)
+    .addStringOption(o =>
+      o.setName("footer").setRequired(false)
     )
-
-    .addStringOption(option =>
-      option
-        .setName("image")
-        .setDescription("URL immagine")
-        .setRequired(false)
+    .addStringOption(o =>
+      o.setName("image").setRequired(false)
     )
-
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   async execute(interaction) {
-
     const title = interaction.options.getString("title");
     const description = interaction.options.getString("description");
     const color = interaction.options.getString("color") || "#5865F2";
@@ -60,22 +38,14 @@ module.exports = {
       .setColor(color)
       .setTimestamp();
 
-    if (footer) {
-      embed.setFooter({ text: footer });
-    }
-
-    if (image) {
-      embed.setImage(image);
-    }
+    if (footer) embed.setFooter({ text: footer });
+    if (image) embed.setImage(image);
 
     await interaction.reply({
-      content: "✅ Embed inviato!",
+      content: "✅ Embed creato",
       ephemeral: true
     });
 
-    await interaction.channel.send({
-      embeds: [embed]
-    });
-
+    await interaction.channel.send({ embeds: [embed] });
   }
 };

@@ -9,30 +9,34 @@ const client = new Client({
 // 📦 COLLEZIONE COMANDI
 client.commands = new Collection();
 
-// 📂 CARICAMENTO COMANDI (SAFE PER HOSTING)
-const commandsPath = path.join(__dirname, "commands");
-
+/*
+📂 LOAD COMANDI (ROOT MODE - DISCLOUD SAFE)
+👉 legge tutti i .js nella cartella principale
+👉 esclude index.js
+*/
 let commandFiles = [];
 
 try {
-  if (fs.existsSync(commandsPath)) {
-    commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
-  } else {
-    console.log("⚠️ Cartella commands non trovata");
-  }
+  commandFiles = fs
+    .readdirSync(__dirname)
+    .filter(file => file.endsWith(".js") && file !== "index.js");
 } catch (err) {
-  console.log("⚠️ Errore lettura commands:", err.message);
+  console.log("❌ Errore lettura file comandi:", err.message);
 }
 
-// 🔁 LOAD COMANDI
+// 🔁 REGISTRA COMANDI
 for (const file of commandFiles) {
   try {
-    const command = require(`./commands/${file}`);
+    const command = require(`./${file}`);
+
     if (command.data && command.execute) {
       client.commands.set(command.data.name, command);
+    } else {
+      console.log(`⚠️ File ignorato (non comando valido): ${file}`);
     }
+
   } catch (err) {
-    console.log(`❌ Errore comando ${file}:`, err.message);
+    console.log(`❌ Errore caricando ${file}:`, err.message);
   }
 }
 
@@ -47,7 +51,12 @@ client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     const command = client.commands.get(interaction.commandName);
-    if (!command) return;
+    if (!command) {
+      return interaction.reply({
+        content: "❌ Comando non trovato",
+        ephemeral: true
+      }).catch(() => {});
+    }
 
     await command.execute(interaction);
 
@@ -65,7 +74,7 @@ client.on(Events.InteractionCreate, async interaction => {
 
 // 🔑 LOGIN SAFE
 if (!process.env.TOKEN) {
-  console.log("❌ TOKEN mancante nelle variabili ambiente");
+  console.log("❌ TOKEN mancante nelle variabili ambiente Discloud");
 } else {
   client.login(process.env.TOKEN);
 }

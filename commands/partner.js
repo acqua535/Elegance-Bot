@@ -1,12 +1,13 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 const fs = require("fs");
+const { checkWeeklyReset } = require("../utils/resetStats");
 
 const FILE = "./utils/stats.json";
 const CHANNEL_ID = "1508774443286003815";
 
 function load() {
-  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, "{}");
-  return JSON.parse(fs.readFileSync(FILE));
+  if (!fs.existsSync(FILE)) fs.writeFileSync(FILE, JSON.stringify({ start: Date.now(), users: {} }, null, 2));
+  return JSON.parse(fs.readFileSync(FILE, "utf8"));
 }
 
 function save(data) {
@@ -16,7 +17,7 @@ function save(data) {
 module.exports = {
   data: new SlashCommandBuilder()
     .setName("partner")
-    .setDescription("Invia richiesta partner")
+    .setDescription("🤝 Invia richiesta partner")
     .addStringOption(o =>
       o.setName("text")
         .setDescription("Messaggio partner")
@@ -28,13 +29,13 @@ module.exports = {
       const text = interaction.options.getString("text");
       const userId = interaction.user.id;
 
-      const data = load();
+      const data = checkWeeklyReset();
 
-      if (!data[userId]) {
-        data[userId] = { partner: 0, collab: 0 };
+      if (!data.users[userId]) {
+        data.users[userId] = { partner: 0, collab: 0 };
       }
 
-      data[userId].partner += 1;
+      data.users[userId].partner += 1;
       save(data);
 
       const embed = new EmbedBuilder()
@@ -42,7 +43,7 @@ module.exports = {
         .setDescription(text)
         .addFields(
           { name: "👤 Utente", value: interaction.user.tag, inline: true },
-          { name: "📊 Partner totali", value: `${data[userId].partner}`, inline: true }
+          { name: "🤝 Partner totali (settimana)", value: `${data.users[userId].partner}`, inline: true }
         )
         .setColor(0x5865F2)
         .setTimestamp();
@@ -58,7 +59,7 @@ module.exports = {
 
       await channel.send({ embeds: [embed] });
 
-      await interaction.reply({
+      return interaction.reply({
         content: "📨 Partner inviato!",
         ephemeral: true
       });
@@ -67,7 +68,7 @@ module.exports = {
       console.error(err);
 
       if (!interaction.replied) {
-        await interaction.reply({
+        return interaction.reply({
           content: "❌ Errore partner",
           ephemeral: true
         });

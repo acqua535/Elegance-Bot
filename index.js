@@ -7,9 +7,9 @@ const {
     Client,
     Collection,
     GatewayIntentBits,
-    Events,
     REST,
-    Routes
+    Routes,
+    Events
 } = require("discord.js");
 
 
@@ -22,89 +22,66 @@ const client = new Client({
 
 client.commands = new Collection();
 
+
+// ======================
+// CARICAMENTO COMANDI
+// ======================
+
 const commands = [];
 
+const commandsFolder = path.join(__dirname, "commands");
 
-// ======================
-// LOAD COMMANDS
-// ======================
-
-const commandsPath = path.join(__dirname, "commands");
+const files = fs.readdirSync(commandsFolder)
+    .filter(file => file.endsWith(".js"));
 
 
-if (fs.existsSync(commandsPath)) {
+for (const file of files) {
 
-    const commandFiles = fs
-        .readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
-
-
-    for (const file of commandFiles) {
-
-        const command = require(
-            path.join(commandsPath, file)
-        );
+    const command = require(
+        path.join(commandsFolder, file)
+    );
 
 
-        if (command.data && command.execute) {
-
-            client.commands.set(
-                command.data.name,
-                command
-            );
+    if (!command.data || !command.execute)
+        continue;
 
 
-            commands.push(
-                command.data.toJSON()
-            );
+    client.commands.set(
+        command.data.name,
+        command
+    );
 
 
-            console.log(
-                `✅ Caricato: ${command.data.name}`
-            );
+    commands.push(
+        command.data.toJSON()
+    );
 
-        } else {
 
-            console.log(
-                `⚠️ Comando ignorato: ${file}`
-            );
-
-        }
-
-    }
+    console.log(
+        `✅ Caricato comando: ${command.data.name}`
+    );
 
 }
 
 
 // ======================
-// READY + AUTO DEPLOY
+// AVVIO BOT + DEPLOY
 // ======================
 
 client.once(Events.ClientReady, async () => {
 
     console.log(
-    `🤖 Online come ${client.user.tag} | COMANDI: ${commands.length}`
-);
+        `🤖 Online: ${client.user.tag}`
+    );
+
+
+    console.log(
+        "📋 Comandi:",
+        commands.map(c => c.name)
+    );
 
 
     try {
-
-        console.log(
-            "📋 Comandi trovati:",
-            commands.map(command => command.name)
-        );
-
-
-        if (!process.env.CLIENT_ID || !process.env.GUILD_ID) {
-
-            console.error(
-                "❌ CLIENT_ID o GUILD_ID mancanti nel .env"
-            );
-
-            return;
-
-        }
-
 
         const rest = new REST({
             version: "10"
@@ -112,11 +89,11 @@ client.once(Events.ClientReady, async () => {
 
 
         console.log(
-            "🚀 Deploy automatico comandi..."
+            "🚀 Invio comandi Discord..."
         );
 
 
-        const deployedCommands = await rest.put(
+        await rest.put(
 
             Routes.applicationGuildCommands(
                 process.env.CLIENT_ID,
@@ -131,14 +108,14 @@ client.once(Events.ClientReady, async () => {
 
 
         console.log(
-            `✅ Comandi deployati: ${deployedCommands.length}`
+            "✅ Deploy completato!"
         );
 
 
     } catch (error) {
 
         console.error(
-            "❌ Errore deploy:",
+            "❌ Deploy fallito:",
             error
         );
 
@@ -148,7 +125,7 @@ client.once(Events.ClientReady, async () => {
 
 
 // ======================
-// COMMAND HANDLER
+// INTERAZIONI
 // ======================
 
 client.on(
@@ -176,11 +153,10 @@ client.on(
 
             console.error(error);
 
-
             if (!interaction.replied) {
 
                 await interaction.reply({
-                    content: "❌ Errore comando.",
+                    content: "Errore durante il comando.",
                     ephemeral: true
                 });
 

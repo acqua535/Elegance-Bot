@@ -7,7 +7,9 @@ const {
     Client,
     Collection,
     GatewayIntentBits,
-    Events
+    Events,
+    REST,
+    Routes
 } = require("discord.js");
 
 
@@ -18,11 +20,9 @@ const client = new Client({
 });
 
 
-// ======================
-// COMMAND COLLECTION
-// ======================
-
 client.commands = new Collection();
+
+const commands = [];
 
 
 // ======================
@@ -53,32 +53,73 @@ if (fs.existsSync(commandsPath)) {
                 command
             );
 
+
+            commands.push(
+                command.data.toJSON()
+            );
+
+
             console.log(
-                `✅ Comando caricato: ${command.data.name}`
+                `✅ Caricato: ${command.data.name}`
             );
 
         }
 
     }
 
-} else {
-
-    console.log(
-        "⚠️ Cartella commands non trovata"
-    );
-
 }
 
 
 // ======================
-// READY
+// READY + AUTO DEPLOY
 // ======================
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
 
     console.log(
         `🤖 Online come ${client.user.tag}`
     );
+
+
+    try {
+
+        const rest = new REST({
+            version: "10"
+        }).setToken(process.env.TOKEN);
+
+
+        console.log(
+            "🚀 Deploy automatico comandi..."
+        );
+
+
+        await rest.put(
+
+            Routes.applicationGuildCommands(
+                process.env.CLIENT_ID,
+                process.env.GUILD_ID
+            ),
+
+            {
+                body: commands
+            }
+
+        );
+
+
+        console.log(
+            "✅ Comandi deployati!"
+        );
+
+
+    } catch (error) {
+
+        console.error(
+            "❌ Errore deploy:",
+            error
+        );
+
+    }
 
 });
 
@@ -107,7 +148,6 @@ client.on(
         try {
 
             await command.execute(interaction);
-
 
         } catch (error) {
 

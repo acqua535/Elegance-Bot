@@ -1,120 +1,99 @@
-  const fs = require("fs");
-const path = require("path");
 require("dotenv").config();
 
-const { Client, Collection, GatewayIntentBits } = require("discord.js");
+const fs = require("fs");
+const path = require("path");
+const {
+    Client,
+    Collection,
+    GatewayIntentBits,
+    Events
+} = require("discord.js");
 
-// ==========================
-// CLIENT
-// ==========================
 const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds
-  ]
+    intents: [
+        GatewayIntentBits.Guilds
+    ]
 });
 
 client.commands = new Collection();
 
-// ==========================
+// =========================
 // LOAD COMMANDS
-// ==========================
+// =========================
+
 const commandsPath = path.join(__dirname, "commands");
 
-if (fs.existsSync(commandsPath)) {
-  const commandFiles = fs.readdirSync(commandsPath).filter(f => f.endsWith(".js"));
+const commandFiles = fs
+    .readdirSync(commandsPath)
+    .filter(file => file.endsWith(".js"));
 
-  for (const file of commandFiles) {
+for (const file of commandFiles) {
+
     const filePath = path.join(commandsPath, file);
+    const command = require(filePath);
+
+    if ("data" in command && "execute" in command) {
+
+        client.commands.set(command.data.name, command);
+
+        console.log(`✅ Loaded: ${command.data.name}`);
+
+    } else {
+
+        console.log(`⚠ ${file} is missing data or execute.`);
+
+    }
+
+}
+
+// =========================
+// READY
+// =========================
+
+client.once(Events.ClientReady, readyClient => {
+
+    console.log(`🤖 Logged in as ${readyClient.user.tag}`);
+
+});
+
+// =========================
+// COMMAND HANDLER
+// =========================
+
+client.on(Events.InteractionCreate, async interaction => {
+
+    if (!interaction.isChatInputCommand()) return;
+
+    const command = client.commands.get(interaction.commandName);
+
+    if (!command) return;
 
     try {
-      const command = require(filePath);
 
-      if (command?.data?.name && command?.execute) {
-        client.commands.set(command.data.name, command);
-        console.log(`✅ Caricato: ${command.data.name}`);
-      } else {
-        console.log(`⚠️ Ignorato: ${file}`);
-      }
+        await command.execute(interaction);
 
-    } catch (err) {
-      console.error(`❌ Errore ${file}:`, err);
+    } catch (error) {
+
+        console.error(error);
+
+        if (interaction.replied || interaction.deferred) {
+
+            await interaction.followUp({
+                content: "❌ Errore durante il comando.",
+                ephemeral: true
+            });
+
+        } else {
+
+            await interaction.reply({
+                content: "❌ Errore durante il comando.",
+                ephemeral: true
+            });
+
+        }
+
     }
-  }
-} else {
-  console.warn("⚠️ Cartella commands non trovata");
-}
 
-// ==========================
-// READY EVENT
-// ==========================
-client.once("ready", () => {
-  console.log(`🤖 Online come ${client.user.tag}`);
 });
 
-// ==========================
-// INTERACTION HANDLER
-// ==========================
-client.on("interactionCreate", async (interaction) => {
-  if (!interaction.isChatInputCommand()) return;
-
-  const command = client.commands.get(interaction.commandName);
-
-  if (!command) {
-    return interaction.reply({
-      content: "❌ Comando non trovato.",
-      ephemeral: true
-    });
-  }
-
-  try {
-    await command.execute(interaction);
-  } catch (err) {
-    console.error(`❌ Errore ${interaction.commandName}:`, err);
-
-    if (!interaction.replied) {
-      await interaction.reply({
-        content: "❌ Errore durante il comando.",
-        ephemeral: true
-      });
-    }
-  }
-});
-
-// ==========================
-// RESET SYSTEM (7 GIORNI)
-// ==========================
-const FILE = "./utils/stats.json";
-
-function load() {
-  if (!fs.existsSync(FILE)) return {};
-  return JSON.parse(fs.readFileSync(FILE, "utf8"));
-}
-
-function save(data) {
-  fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
-}
-
-function resetWeekly() {
-  const data = load();
-
-  for (const id in data) {
-    data[id] = {
-      partner: 0,
-      collab: 0,
-      wins: 0,
-      games: 0
-    };
-  }
-
-  save(data);
-  console.log("🔄 RESET SETTIMANALE COMPLETATO");
-}
-
-// 7 giorni
-const WEEK = 7 * 24 * 60 * 60 * 1000;
-setInterval(resetWeekly, WEEK);
-
-// ==========================
-// LOGIN
-// ==========================
 client.login(process.env.TOKEN);

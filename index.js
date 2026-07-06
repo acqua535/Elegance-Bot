@@ -83,8 +83,8 @@ if (fs.existsSync(commandsPath)) {
 client.once(Events.ClientReady, async () => {
 
     console.log(
-        `🤖 Online come ${client.user.tag}`
-    );
+    `🤖 Online come ${client.user.tag} | COMANDI: ${commands.length}`
+);
 
 
     try {

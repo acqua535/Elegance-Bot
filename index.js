@@ -63,6 +63,12 @@ if (fs.existsSync(commandsPath)) {
                 `✅ Caricato: ${command.data.name}`
             );
 
+        } else {
+
+            console.log(
+                `⚠️ Comando ignorato: ${file}`
+            );
+
         }
 
     }
@@ -83,6 +89,23 @@ client.once(Events.ClientReady, async () => {
 
     try {
 
+        console.log(
+            "📋 Comandi trovati:",
+            commands.map(command => command.name)
+        );
+
+
+        if (!process.env.CLIENT_ID || !process.env.GUILD_ID) {
+
+            console.error(
+                "❌ CLIENT_ID o GUILD_ID mancanti nel .env"
+            );
+
+            return;
+
+        }
+
+
         const rest = new REST({
             version: "10"
         }).setToken(process.env.TOKEN);
@@ -93,7 +116,7 @@ client.once(Events.ClientReady, async () => {
         );
 
 
-        await rest.put(
+        const deployedCommands = await rest.put(
 
             Routes.applicationGuildCommands(
                 process.env.CLIENT_ID,
@@ -108,7 +131,7 @@ client.once(Events.ClientReady, async () => {
 
 
         console.log(
-            "✅ Comandi deployati!"
+            `✅ Comandi deployati: ${deployedCommands.length}`
         );
 
 

@@ -1,5 +1,26 @@
 require("dotenv").config();
 
-console.log("Bot avviato!");
+const {
+    Client,
+    GatewayIntentBits,
+    Events
+} = require("discord.js");
 
-setInterval(() => {}, 1000);
+
+const client = new Client({
+    intents: [
+        GatewayIntentBits.Guilds
+    ]
+});
+
+
+client.once(Events.ClientReady, () => {
+
+    console.log(
+        `✅ Online come ${client.user.tag}`
+    );
+
+});
+
+
+client.login(process.env.TOKEN);

@@ -1,78 +1,67 @@
-require("dotenv").config();
-
+const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
-const {
-    Client,
-    Collection,
-    GatewayIntentBits,
-    Events
-} = require("discord.js");
-
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds]
+  intents: [GatewayIntentBits.Guilds]
 });
 
 client.commands = new Collection();
 
+// ================= LOAD COMMANDS =================
 const commandsPath = path.join(__dirname, "commands");
 
-if (fs.existsSync(commandsPath)) {
+fs.readdirSync(commandsPath).forEach(file => {
+  if (!file.endsWith(".js")) return;
 
-    const commandFiles = fs
-        .readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
+  const command = require(`./commands/${file}`);
+  client.commands.set(command.data.name, command);
+});
 
-    for (const file of commandFiles) {
+console.log(`📌 Comandi caricati: ${client.commands.size}`);
 
-        const command = require(path.join(commandsPath, file));
-
-        if (command.data && command.execute) {
-
-            client.commands.set(command.data.name, command);
-
-            console.log(`✅ Caricato: ${command.data.name}`);
-
-        }
-
-    }
-
-}
-
+// ================= READY =================
 client.once(Events.ClientReady, () => {
-
-    console.log(`🤖 Online come ${client.user.tag}`);
-
+  console.log(`✅ Online come ${client.user.tag}`);
 });
 
+// ================= INTERACTIONS =================
 client.on(Events.InteractionCreate, async interaction => {
+  try {
 
-    if (!interaction.isChatInputCommand()) return;
+    // SLASH COMMANDS
+    if (interaction.isChatInputCommand()) {
+      const command = client.commands.get(interaction.commandName);
+      if (!command) return;
 
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) return;
-
-    try {
-
-        await command.execute(interaction);
-
-    } catch (error) {
-
-        console.error(error);
-
-        if (!interaction.replied) {
-
-            await interaction.reply({
-                content: "❌ Errore.",
-                ephemeral: true
-            });
-
-        }
-
+      return await command.execute(interaction);
     }
 
+    // BUTTONS
+    if (interaction.isButton()) {
+      const ticket = client.commands.get("ticket");
+      if (!ticket) return;
+
+      if (interaction.customId === "ticket_create") {
+        return await ticket.buttonHandler(interaction);
+      }
+
+      if (interaction.customId === "ticket_close") {
+        return await ticket.closeHandler(interaction);
+      }
+    }
+
+  } catch (err) {
+    console.error("❌ Error:", err);
+
+    if (!interaction.replied) {
+      await interaction.reply({
+        content: "❌ Errore interazione",
+        ephemeral: true
+      });
+    }
+  }
 });
 
+// ================= LOGIN =================
 client.login(process.env.TOKEN);

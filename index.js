@@ -1,67 +1,34 @@
-const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
 
 const client = new Client({
-  intents: [GatewayIntentBits.Guilds]
+    intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent
+    ]
 });
 
+// Raccolta comandi
 client.commands = new Collection();
 
-// ================= LOAD COMMANDS =================
-const commandsPath = path.join(__dirname, "commands");
-
-fs.readdirSync(commandsPath).forEach(file => {
-  if (!file.endsWith(".js")) return;
-
-  const command = require(`./commands/${file}`);
-  client.commands.set(command.data.name, command);
+// Gestione errori globale
+process.on("unhandledRejection", (error) => {
+    console.error("❌ Errore non gestito:", error);
 });
 
-console.log(`📌 Comandi caricati: ${client.commands.size}`);
-
-// ================= READY =================
-client.once(Events.ClientReady, () => {
-  console.log(`✅ Online come ${client.user.tag}`);
+process.on("uncaughtException", (error) => {
+    console.error("❌ Eccezione non gestita:", error);
 });
 
-// ================= INTERACTIONS =================
-client.on(Events.InteractionCreate, async interaction => {
-  try {
+// Quando il bot è online
+client.once("ready", () => {
+    console.log(`⚜️ Elegance-Bot online come ${client.user.tag}`);
 
-    // SLASH COMMANDS
-    if (interaction.isChatInputCommand()) {
-      const command = client.commands.get(interaction.commandName);
-      if (!command) return;
-
-      return await command.execute(interaction);
-    }
-
-    // BUTTONS
-    if (interaction.isButton()) {
-      const ticket = client.commands.get("ticket");
-      if (!ticket) return;
-
-      if (interaction.customId === "ticket_create") {
-        return await ticket.buttonHandler(interaction);
-      }
-
-      if (interaction.customId === "ticket_close") {
-        return await ticket.closeHandler(interaction);
-      }
-    }
-
-  } catch (err) {
-    console.error("❌ Error:", err);
-
-    if (!interaction.replied) {
-      await interaction.reply({
-        content: "❌ Errore interazione",
-        ephemeral: true
-      });
-    }
-  }
+    client.user.setActivity("Elegance Community", {
+        type: 3
+    });
 });
 
-// ================= LOGIN =================
-client.login(process.env.TOKEN);
+// Login
+client.login("TOKEN_BOT");

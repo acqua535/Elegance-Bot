@@ -31,4 +31,4 @@ client.once("ready", () => {
 });
 
 // Login
-client.login("TOKEN_BOT");
+client.login(process.env.TOKEN);

@@ -4,6 +4,9 @@ const {
 } = require("discord.js");
 
 
+const { addPoint } = require("../systems/leaderboardSystem");
+
+
 const LOG_CHANNEL_ID = "1505261606483923105";
 const SPONSOR_CHANNEL_ID = "1521856540016115803";
 
@@ -28,25 +31,18 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addRoleOption(option =>
-            option
-                .setName("ping")
-                .setDescription("Ruolo da pingare")
-                .setRequired(false)
-        )
-
         .addUserOption(option =>
             option
                 .setName("manager")
                 .setDescription("Manager sponsor")
-                .setRequired(false)
+                .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName("data")
-                .setDescription("Data opzionale")
-                .setRequired(false)
+                .setDescription("Data dello sponsor")
+                .setRequired(true)
         ),
 
 
@@ -61,11 +57,8 @@ module.exports = {
         if (!permission) {
 
             return interaction.reply({
-
                 content: "❌ Non puoi usare questo comando.",
-
                 ephemeral: true
-
             });
 
         }
@@ -80,11 +73,8 @@ module.exports = {
         if (!channel) {
 
             return interaction.reply({
-
                 content: "❌ Canale Sponsor non trovato.",
-
                 ephemeral: true
-
             });
 
         }
@@ -93,10 +83,6 @@ module.exports = {
 
         const descrizione =
             interaction.options.getString("descrizione");
-
-
-        const ping =
-            interaction.options.getRole("ping");
 
 
         const manager =
@@ -124,16 +110,20 @@ module.exports = {
 Autore:
 ${interaction.user}
 
-${manager ? `Manager:
+Manager:
 ${manager}
 
-` : ""}${ping ? `Ping:
-${ping}
-
-` : ""}${data ? `Data:
-${data}` : ""}`
+Data:
+${data}`
 
         });
+
+
+
+        addPoint(
+            "sponsor",
+            interaction.user.id
+        );
 
 
 
@@ -153,7 +143,11 @@ ${data}` : ""}`
                         .setTitle("⚜️ Sponsor creato")
 
                         .setDescription(
-`Autore: ${interaction.user}
+`Autore:
+${interaction.user}
+
+Manager:
+${manager}
 
 Canale:
 ${channel}`
@@ -176,6 +170,7 @@ ${channel}`
             ephemeral: true
 
         });
+
 
     }
 

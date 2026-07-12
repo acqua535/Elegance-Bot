@@ -1,4 +1,5 @@
-console.log("HANDLER NUOVO CARICATO");
+console.log("VERSIONE HANDLER ROOT SENZA CARTELLE");
+
 
 const fs = require("fs");
 const path = require("path");
@@ -26,26 +27,44 @@ module.exports = (client) => {
     for (const file of commandFiles) {
 
 
-        const command = require(
-            path.join(__dirname, file)
-        );
+        try {
 
 
-
-        if (command.data && command.execute) {
-
-
-            client.commands.set(
-
-                command.data.name,
-
-                command
-
+            const command = require(
+                path.join(__dirname, file)
             );
 
 
-            console.log(
-                `✅ Comando caricato: ${command.data.name}`
+
+            if (
+                command.data &&
+                command.execute
+            ) {
+
+
+                client.commands.set(
+
+                    command.data.name,
+
+                    command
+
+                );
+
+
+                console.log(
+                    `✅ Comando caricato: ${command.data.name}`
+                );
+
+
+            }
+
+
+        } catch(error) {
+
+
+            console.error(
+                `❌ Errore caricando ${file}:`,
+                error
             );
 
 

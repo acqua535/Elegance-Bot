@@ -1,3 +1,5 @@
+console.log("HANDLER NUOVO CARICATO");
+
 const fs = require("fs");
 
 module.exports = (client) => {

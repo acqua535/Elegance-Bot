@@ -35,7 +35,17 @@ client.once("ready", () => {
 // Sistema Ticket + Slash Commands
 const ticket = require("./ticket");
 
-client.on("interactionCreate", async (interaction) => {
+if (interaction.isChatInputCommand()) {
+    ...
+}
+
+if (interaction.isStringSelectMenu()) {
+    await ticket.categoryHandler(interaction);
+}
+
+if (interaction.isButton()) {
+    await ticket.buttonHandler(interaction);
+}
 
     try {
 

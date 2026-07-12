@@ -16,7 +16,7 @@ client.commands = new Collection();
 
 
 // Caricamento comandi
-require("./commandHandler")(client);
+require("./handlers/commandHandler")(client);
 
 
 // Deploy slash commands

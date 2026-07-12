@@ -3,10 +3,13 @@ const fs = require("fs");
 
 const commands = [];
 
-const commandsPath = __dirname;
-
-const commandFiles = fs.readdirSync(commandsPath)
-    .filter(file => file === "say.js");
+const commandFiles = fs.readdirSync(__dirname)
+    .filter(file =>
+        file.endsWith(".js") &&
+        file !== "index.js" &&
+        file !== "commandHandler.js" &&
+        file !== "deployCommands.js"
+    );
 
 for (const file of commandFiles) {
     const command = require(`./${file}`);

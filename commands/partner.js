@@ -3,7 +3,9 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const { addPoint } = require("../leaderboardSystem");
+const {
+    addPoint
+} = require("../leaderboards/leaderboardSystem");
 
 
 const LOG_CHANNEL_ID = "1505261606483923105";
@@ -21,6 +23,7 @@ module.exports = {
     data: new SlashCommandBuilder()
 
         .setName("partner")
+
         .setDescription("Invia una partnership")
 
         .addStringOption(option =>
@@ -45,12 +48,15 @@ module.exports = {
         ),
 
 
+
     async execute(interaction) {
 
 
-        const permission = interaction.member.roles.cache.some(
-            role => ALLOWED_ROLES.includes(role.id)
-        );
+        const permission =
+            interaction.member.roles.cache.some(
+                role => ALLOWED_ROLES.includes(role.id)
+            );
+
 
 
         if (!permission) {
@@ -66,8 +72,12 @@ module.exports = {
         }
 
 
+
         const channel =
-            interaction.guild.channels.cache.get(PARTNER_CHANNEL_ID);
+            interaction.guild.channels.cache.get(
+                PARTNER_CHANNEL_ID
+            );
+
 
 
         if (!channel) {
@@ -81,6 +91,7 @@ module.exports = {
             });
 
         }
+
 
 
         const descrizione =
@@ -99,14 +110,16 @@ module.exports = {
         await channel.send({
 
             content:
-`${descrizione}
+`🤝 **Nuova Partnership**
 
-————————🤝————————
+${descrizione}
 
-Manager:
+————————————
+
+👤 Manager:
 ${manager}
 
-Data:
+📅 Data:
 ${data}`
 
         });
@@ -121,7 +134,9 @@ ${data}`
 
 
         const logs =
-            interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+            interaction.guild.channels.cache.get(
+                LOG_CHANNEL_ID
+            );
 
 
 

@@ -97,7 +97,7 @@ module.exports = {
 
         const channel = await interaction.guild.channels.create({
 
-            name: `🎫・${names[type]}-${interaction.user.username}`,
+            name: `🎫・┆${names[type]}-${interaction.user.username}`,
 
             type: ChannelType.GuildText,
 

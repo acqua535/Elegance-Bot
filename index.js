@@ -15,6 +15,9 @@ client.commands = new Collection();
 // Caricamento comandi
 require("./handlers/commandHandler")(client);
 
+// Registrazione comandi Discord
+require("./handlers/deployCommands");
+
 // Gestione errori globale
 process.on("unhandledRejection", (error) => {
     console.error("❌ Errore non gestito:", error);

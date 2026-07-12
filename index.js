@@ -13,10 +13,10 @@ const client = new Client({
 client.commands = new Collection();
 
 // Caricamento comandi
-require("./handlers/commandHandler")(client);
+require("./commandHandler")(client);
 
 // Registrazione comandi Discord
-require("./handlers/deployCommands");
+require("./deployCommands");
 
 // Gestione errori globale
 process.on("unhandledRejection", (error) => {

@@ -3,7 +3,9 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const { addPoint } = require("../leaderboardSystem");
+const {
+    addPoint
+} = require("../leaderboards/leaderboardSystem");
 
 
 const LOG_CHANNEL_ID = "1505261606483923105";
@@ -21,6 +23,7 @@ module.exports = {
     data: new SlashCommandBuilder()
 
         .setName("collab")
+
         .setDescription("Invia una collaborazione")
 
         .addStringOption(option =>
@@ -45,35 +48,50 @@ module.exports = {
         ),
 
 
+
     async execute(interaction) {
 
-        const permission = interaction.member.roles.cache.some(
-            role => ALLOWED_ROLES.includes(role.id)
-        );
+
+        const permission =
+            interaction.member.roles.cache.some(
+                role => ALLOWED_ROLES.includes(role.id)
+            );
+
 
 
         if (!permission) {
 
             return interaction.reply({
+
                 content: "❌ Non puoi usare questo comando.",
+
                 ephemeral: true
+
             });
 
         }
 
 
+
         const channel =
-            interaction.guild.channels.cache.get(COLLAB_CHANNEL_ID);
+            interaction.guild.channels.cache.get(
+                COLLAB_CHANNEL_ID
+            );
+
 
 
         if (!channel) {
 
             return interaction.reply({
+
                 content: "❌ Canale Collab non trovato.",
+
                 ephemeral: true
+
             });
 
         }
+
 
 
         const descrizione =
@@ -88,20 +106,24 @@ module.exports = {
             interaction.options.getString("data");
 
 
+
         await channel.send({
 
             content:
-`${descrizione}
+`🤝 **Nuova Collaborazione**
 
-————————🤝————————
+${descrizione}
 
-Manager:
+————————————
+
+👤 Manager:
 ${manager}
 
-Data:
+📅 Data:
 ${data}`
 
         });
+
 
 
         addPoint(
@@ -110,8 +132,12 @@ ${data}`
         );
 
 
+
         const logs =
-            interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+            interaction.guild.channels.cache.get(
+                LOG_CHANNEL_ID
+            );
+
 
 
         if (logs) {
@@ -138,6 +164,7 @@ ${channel}`
             });
 
         }
+
 
 
         await interaction.reply({

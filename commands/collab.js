@@ -3,10 +3,11 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
+
 const { addPoint } = require("../systems/leaderboardSystem");
 
 
-const LOG_CHANNEL_ID = "1522610038831845518";
+const LOG_CHANNEL_ID = "1505261606483923105";
 const COLLAB_CHANNEL_ID = "1522610038831845518";
 
 
@@ -45,6 +46,7 @@ module.exports = {
         ),
 
 
+
     async execute(interaction) {
 
 
@@ -56,25 +58,34 @@ module.exports = {
         if (!permission) {
 
             return interaction.reply({
+
                 content: "❌ Non puoi usare questo comando.",
+
                 ephemeral: true
+
             });
 
         }
+
 
 
         const channel =
             interaction.guild.channels.cache.get(COLLAB_CHANNEL_ID);
 
 
+
         if (!channel) {
 
             return interaction.reply({
+
                 content: "❌ Canale Collab non trovato.",
+
                 ephemeral: true
+
             });
 
         }
+
 
 
         const descrizione =
@@ -139,7 +150,8 @@ ${data}`
                         .setTitle("🤝 Collab creata")
 
                         .setDescription(
-`Autore: ${interaction.user}
+`Autore:
+${interaction.user}
 
 Manager:
 ${manager}
@@ -165,6 +177,7 @@ ${channel}`
             ephemeral: true
 
         });
+
 
     }
 

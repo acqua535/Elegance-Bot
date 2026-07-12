@@ -3,6 +3,8 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
+const { addPoint } = require("../systems/leaderboardSystem");
+
 
 const LOG_CHANNEL_ID = "1522610038831845518";
 const COLLAB_CHANNEL_ID = "1522610038831845518";
@@ -28,25 +30,18 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addRoleOption(option =>
-            option
-                .setName("ping")
-                .setDescription("Ruolo da pingare")
-                .setRequired(false)
-        )
-
         .addUserOption(option =>
             option
                 .setName("manager")
                 .setDescription("Manager collaborazione")
-                .setRequired(false)
+                .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName("data")
-                .setDescription("Data opzionale")
-                .setRequired(false)
+                .setDescription("Data della collaborazione")
+                .setRequired(true)
         ),
 
 
@@ -86,10 +81,6 @@ module.exports = {
             interaction.options.getString("descrizione");
 
 
-        const ping =
-            interaction.options.getRole("ping");
-
-
         const manager =
             interaction.options.getUser("manager");
 
@@ -115,16 +106,20 @@ module.exports = {
 Autore:
 ${interaction.user}
 
-${manager ? `Manager:
+Manager:
 ${manager}
 
-` : ""}${ping ? `Ping:
-${ping}
-
-` : ""}${data ? `Data:
-${data}` : ""}`
+Data:
+${data}`
 
         });
+
+
+
+        addPoint(
+            "collab",
+            interaction.user.id
+        );
 
 
 
@@ -145,6 +140,9 @@ ${data}` : ""}`
 
                         .setDescription(
 `Autore: ${interaction.user}
+
+Manager:
+${manager}
 
 Canale:
 ${channel}`

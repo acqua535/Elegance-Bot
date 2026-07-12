@@ -9,59 +9,69 @@ const client = new Client({
     ]
 });
 
+
 client.commands = new Collection();
 
+
+// Caricamento comandi
 require("./commandHandler")(client);
+
+
+// Registrazione comandi Discord
 require("./deployCommands");
 
+
+// Sistema ticket
+const ticket = require("./ticket");
+
+
+// Gestione errori
 process.on("unhandledRejection", (error) => {
     console.error("❌ Errore non gestito:", error);
 });
+
 
 process.on("uncaughtException", (error) => {
     console.error("❌ Eccezione non gestita:", error);
 });
 
 
+// Bot online
 client.once("ready", () => {
+
     console.log(`⚜️ Elegance-Bot online come ${client.user.tag}`);
 
     client.user.setActivity("Elegance Community", {
         type: 3
     });
+
 });
 
 
-// Sistema Ticket + Slash Commands
-const ticket = require("./ticket");
-
-if (interaction.isChatInputCommand()) {
-    ...
-}
-
-if (interaction.isStringSelectMenu()) {
-    await ticket.categoryHandler(interaction);
-}
-
-if (interaction.isButton()) {
-    await ticket.buttonHandler(interaction);
-}
+// Gestione interazioni
+client.on("interactionCreate", async (interaction) => {
 
     try {
 
-        // Comandi Slash (/say, /embed, /ticket)
+
+        // Slash Commands
         if (interaction.isChatInputCommand()) {
 
-            const command = client.commands.get(interaction.commandName);
+            const command = client.commands.get(
+                interaction.commandName
+            );
+
 
             if (!command) return;
+
 
             await command.execute(interaction);
 
         }
 
 
-        // Menu Ticket
+
+        // Menu selezione ticket
         if (interaction.isStringSelectMenu()) {
 
             await ticket.categoryHandler(interaction);
@@ -69,14 +79,25 @@ if (interaction.isButton()) {
         }
 
 
+
+        // Bottoni ticket
+        if (interaction.isButton()) {
+
+            await ticket.buttonHandler(interaction);
+
+        }
+
+
+
     } catch (error) {
 
         console.error("❌ Errore interaction:", error);
 
+
         if (!interaction.replied && !interaction.deferred) {
 
             await interaction.reply({
-                content: "❌ Errore durante l'esecuzione.",
+                content: "❌ Si è verificato un errore.",
                 ephemeral: true
             });
 
@@ -87,6 +108,11 @@ if (interaction.isButton()) {
 });
 
 
-console.log("TOKEN PRESENTE:", process.env.TOKEN ? "SI" : "NO");
+// Token
+console.log(
+    "TOKEN PRESENTE:",
+    process.env.TOKEN ? "SI" : "NO"
+);
+
 
 client.login(process.env.TOKEN);

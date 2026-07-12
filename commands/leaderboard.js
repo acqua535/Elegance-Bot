@@ -6,7 +6,7 @@ const {
 
 const {
     getLeaderboard
-} = require("./leaderboardSystem");
+} = require("../leaderboardSystem");
 
 
 module.exports = {

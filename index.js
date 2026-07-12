@@ -31,4 +31,6 @@ client.once("ready", () => {
 });
 
 // Login
+console.log("TOKEN PRESENTE:", process.env.TOKEN ? "SI" : "NO");
+
 client.login(process.env.TOKEN);

@@ -1,7 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-const filePath = path.join(__dirname, "data", "leaderboard.json");
+const filePath = path.join(__dirname, "leaderboard.json");
+
 
 function loadData() {
 
@@ -21,6 +22,7 @@ function loadData() {
 
 }
 
+
 function saveData(data) {
 
     fs.writeFileSync(
@@ -29,6 +31,7 @@ function saveData(data) {
     );
 
 }
+
 
 function addPoint(type, userId) {
 
@@ -40,11 +43,13 @@ function addPoint(type, userId) {
 
     }
 
+
     if (!data[type][userId]) {
 
         data[type][userId] = 0;
 
     }
+
 
     data[type][userId]++;
 
@@ -52,9 +57,11 @@ function addPoint(type, userId) {
 
 }
 
+
 function getLeaderboard(type) {
 
     const data = loadData();
+
 
     if (!data[type]) {
 
@@ -62,11 +69,13 @@ function getLeaderboard(type) {
 
     }
 
+
     return Object.entries(data[type])
         .sort((a, b) => b[1] - a[1])
         .slice(0, 10);
 
 }
+
 
 module.exports = {
     addPoint,

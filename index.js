@@ -14,11 +14,11 @@ client.commands = new Collection();
 
 
 // Caricamento comandi
-require("./commandHandler")(client);
+require("./gestori/commandHandler")(client);
 
 
 // Registrazione comandi Discord
-require("./deployCommands");
+require("./gestori/deployCommands");
 
 
 // Sistema ticket
@@ -53,7 +53,6 @@ client.on("interactionCreate", async (interaction) => {
 
     try {
 
-
         // Slash Commands
         if (interaction.isChatInputCommand()) {
 
@@ -70,7 +69,6 @@ client.on("interactionCreate", async (interaction) => {
         }
 
 
-
         // Menu selezione ticket
         if (interaction.isStringSelectMenu()) {
 
@@ -79,14 +77,12 @@ client.on("interactionCreate", async (interaction) => {
         }
 
 
-
         // Bottoni ticket
         if (interaction.isButton()) {
 
             await ticket.buttonHandler(interaction);
 
         }
-
 
 
     } catch (error) {

@@ -9,16 +9,11 @@ const client = new Client({
     ]
 });
 
-// Raccolta comandi
 client.commands = new Collection();
 
-// Caricamento comandi
 require("./commandHandler")(client);
-
-// Registrazione comandi Discord
 require("./deployCommands");
 
-// Gestione errori globale
 process.on("unhandledRejection", (error) => {
     console.error("❌ Errore non gestito:", error);
 });
@@ -27,7 +22,7 @@ process.on("uncaughtException", (error) => {
     console.error("❌ Eccezione non gestita:", error);
 });
 
-// Quando il bot è online
+
 client.once("ready", () => {
     console.log(`⚜️ Elegance-Bot online come ${client.user.tag}`);
 
@@ -49,7 +44,6 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 
-// Login
 console.log("TOKEN PRESENTE:", process.env.TOKEN ? "SI" : "NO");
 
 client.login(process.env.TOKEN);

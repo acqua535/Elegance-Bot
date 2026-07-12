@@ -4,7 +4,7 @@ const {
 } = require("discord.js");
 
 
-const LOG_CHANNEL_ID = "1505261606483923105";
+const LOG_CHANNEL_ID = "1522610038831845518";
 const COLLAB_CHANNEL_ID = "1508774443286003815";
 
 

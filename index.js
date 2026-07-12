@@ -1,12 +1,14 @@
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
 
 const client = new Client({
+
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
     ]
+
 });
 
 
@@ -17,7 +19,7 @@ client.commands = new Collection();
 require("./commandHandler")(client);
 
 
-// Registrazione comandi Discord
+// Deploy slash commands
 require("./deployCommands");
 
 
@@ -25,84 +27,138 @@ require("./deployCommands");
 const ticket = require("./ticket");
 
 
-// Gestione errori
+
+// Errori
 process.on("unhandledRejection", (error) => {
-    console.error("❌ Errore non gestito:", error);
+
+    console.error(
+        "❌ Errore non gestito:",
+        error
+    );
+
 });
 
 
 process.on("uncaughtException", (error) => {
-    console.error("❌ Eccezione non gestita:", error);
+
+    console.error(
+        "❌ Eccezione non gestita:",
+        error
+    );
+
 });
+
 
 
 // Bot online
 client.once("ready", () => {
 
-    console.log(`⚜️ Elegance-Bot online come ${client.user.tag}`);
+    console.log(
+        `⚜️ Elegance-Bot online come ${client.user.tag}`
+    );
 
-    client.user.setActivity("Elegance Community", {
-        type: 3
-    });
+
+    client.user.setActivity(
+        "Elegance Community",
+        {
+            type: 3
+        }
+    );
 
 });
 
 
-// Gestione interazioni
-client.on("interactionCreate", async (interaction) => {
 
-    try {
+// Interazioni
+client.on(
+    "interactionCreate",
+    async (interaction) => {
 
 
-        if (interaction.isChatInputCommand()) {
+        try {
 
-            const command = client.commands.get(
-                interaction.commandName
+
+            // Slash Commands
+            if (interaction.isChatInputCommand()) {
+
+
+                const command =
+                    client.commands.get(
+                        interaction.commandName
+                    );
+
+
+                if (!command) return;
+
+
+                await command.execute(
+                    interaction
+                );
+
+
+            }
+
+
+
+            // Menu ticket
+            if (interaction.isStringSelectMenu()) {
+
+
+                await ticket.categoryHandler(
+                    interaction
+                );
+
+
+            }
+
+
+
+            // Bottoni ticket
+            if (interaction.isButton()) {
+
+
+                await ticket.buttonHandler(
+                    interaction
+                );
+
+
+            }
+
+
+
+        } catch (error) {
+
+
+            console.error(
+                "❌ Errore interaction:",
+                error
             );
 
 
-            if (!command) return;
+            if (
+                !interaction.replied &&
+                !interaction.deferred
+            ) {
 
 
-            await command.execute(interaction);
+                await interaction.reply({
 
-        }
+                    content:
+                    "❌ Si è verificato un errore.",
 
+                    ephemeral: true
 
-
-        if (interaction.isStringSelectMenu()) {
-
-            await ticket.categoryHandler(interaction);
-
-        }
+                });
 
 
-
-        if (interaction.isButton()) {
-
-            await ticket.buttonHandler(interaction);
+            }
 
         }
 
-
-
-    } catch (error) {
-
-        console.error("❌ Errore interaction:", error);
-
-
-        if (!interaction.replied && !interaction.deferred) {
-
-            await interaction.reply({
-                content: "❌ Si è verificato un errore.",
-                ephemeral: true
-            });
-
-        }
 
     }
+);
 
-});
 
 
 // Token
@@ -112,4 +168,7 @@ console.log(
 );
 
 
-client.login(process.env.TOKEN);
+
+client.login(
+    process.env.TOKEN
+);

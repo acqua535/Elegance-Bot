@@ -1,26 +1,40 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { 
+    Client, 
+    GatewayIntentBits, 
+    Collection 
+} = require("discord.js");
+
 
 const client = new Client({
 
     intents: [
+
         GatewayIntentBits.Guilds,
+
         GatewayIntentBits.GuildMembers,
+
         GatewayIntentBits.GuildMessages,
+
         GatewayIntentBits.MessageContent
+
     ]
 
 });
 
 
+
 client.commands = new Collection();
 
 
+
 // Caricamento comandi
-require("./handlers/commandHandler")(client);
+require("./commandHandler")(client);
 
 
-// Deploy slash commands
+
+// Registrazione slash commands
 require("./deployCommands");
+
 
 
 // Sistema ticket
@@ -28,48 +42,63 @@ const ticket = require("./ticket");
 
 
 
-// Errori
-process.on("unhandledRejection", (error) => {
+// Gestione errori
 
-    console.error(
-        "❌ Errore non gestito:",
-        error
-    );
+process.on(
+    "unhandledRejection",
+    (error) => {
 
-});
+        console.error(
+            "❌ Errore non gestito:",
+            error
+        );
+
+    }
+);
 
 
-process.on("uncaughtException", (error) => {
 
-    console.error(
-        "❌ Eccezione non gestita:",
-        error
-    );
+process.on(
+    "uncaughtException",
+    (error) => {
 
-});
+        console.error(
+            "❌ Eccezione non gestita:",
+            error
+        );
+
+    }
+);
 
 
 
 // Bot online
-client.once("ready", () => {
 
-    console.log(
-        `⚜️ Elegance-Bot online come ${client.user.tag}`
-    );
+client.once(
+    "ready",
+    () => {
 
 
-    client.user.setActivity(
-        "Elegance Community",
-        {
-            type: 3
-        }
-    );
+        console.log(
+            `⚜️ Elegance-Bot online come ${client.user.tag}`
+        );
 
-});
+
+        client.user.setActivity(
+            "Elegance Community",
+            {
+                type: 3
+            }
+        );
+
+
+    }
+);
 
 
 
 // Interazioni
+
 client.on(
     "interactionCreate",
     async (interaction) => {
@@ -78,7 +107,7 @@ client.on(
         try {
 
 
-            // Slash Commands
+
             if (interaction.isChatInputCommand()) {
 
 
@@ -88,19 +117,19 @@ client.on(
                     );
 
 
-                if (!command) return;
+                if (!command)
+                    return;
+
 
 
                 await command.execute(
                     interaction
                 );
 
-
             }
 
 
 
-            // Menu ticket
             if (interaction.isStringSelectMenu()) {
 
 
@@ -113,7 +142,6 @@ client.on(
 
 
 
-            // Bottoni ticket
             if (interaction.isButton()) {
 
 
@@ -126,13 +154,14 @@ client.on(
 
 
 
-        } catch (error) {
+        } catch(error) {
 
 
             console.error(
                 "❌ Errore interaction:",
                 error
             );
+
 
 
             if (
@@ -144,14 +173,15 @@ client.on(
                 await interaction.reply({
 
                     content:
-                    "❌ Si è verificato un errore.",
+                    "❌ Errore durante l'esecuzione.",
 
-                    ephemeral: true
+                    ephemeral:true
 
                 });
 
 
             }
+
 
         }
 
@@ -162,6 +192,7 @@ client.on(
 
 
 // Token
+
 console.log(
     "TOKEN PRESENTE:",
     process.env.TOKEN ? "SI" : "NO"

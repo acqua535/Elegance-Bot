@@ -28,11 +28,8 @@ async function sendPartnership(
     if (!hasPermission) {
 
         return interaction.reply({
-
             content: "❌ Non hai il permesso di usare questo comando.",
-
             ephemeral: true
-
         });
 
     }
@@ -64,11 +61,8 @@ async function sendPartnership(
     if (!channel) {
 
         return interaction.reply({
-
-            content: "❌ Canale destinazione non trovato.",
-
+            content: "❌ Canale non trovato.",
             ephemeral: true
-
         });
 
     }
@@ -121,30 +115,15 @@ ${data}
 
 
 
-    await interaction.reply({
-
-        content: "✅ Messaggio pubblicato.",
-
-        ephemeral: true
-
-    });
-
-
-
     await channel.send({
-
         content: descrizione
-
     });
 
 
 
     await channel.send({
-
         content: info
-
     });
-
 
 
 
@@ -156,24 +135,16 @@ ${data}
     if (logs) {
 
 
-        const logEmbed = new EmbedBuilder()
+        const embed = new EmbedBuilder()
 
             .setTitle(`${emoji} ${title} Creato`)
 
             .setDescription(
+`${interaction.user}
 
-`👤 **Autore**
-${interaction.user}
-
-${manager ? `👔 **Manager**
-${manager}
-
-` : ""}${ping ? `🔔 **Ping**
-${ping}
-
-` : ""}${data ? `📅 **Data**
-${data}` : ""}`
-
+${manager ? `👔 Manager:\n${manager}\n\n` : ""}
+${ping ? `🔔 Ping:\n${ping}\n\n` : ""}
+${data ? `📅 Data:\n${data}` : ""}`
             )
 
             .setColor(color)
@@ -182,14 +153,22 @@ ${data}` : ""}`
 
 
 
-        logs.send({
-
-            embeds: [logEmbed]
-
+        await logs.send({
+            embeds: [embed]
         });
 
 
     }
+
+
+
+    await interaction.reply({
+
+        content: "✅ Pubblicato correttamente.",
+
+        ephemeral: true
+
+    });
 
 
 }

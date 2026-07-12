@@ -41,7 +41,7 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName("data")
-                .setDescription("Data della partnership")
+                .setDescription("Data partnership")
                 .setRequired(true)
         ),
 
@@ -49,9 +49,10 @@ module.exports = {
     async execute(interaction) {
 
 
-        const permission = interaction.member.roles.cache.some(
-            role => ALLOWED_ROLES.includes(role.id)
-        );
+        const permission =
+            interaction.member.roles.cache.some(
+                role => ALLOWED_ROLES.includes(role.id)
+            );
 
 
         if (!permission) {
@@ -64,10 +65,10 @@ module.exports = {
         }
 
 
-
         const channel =
-            interaction.guild.channels.cache.get(PARTNER_CHANNEL_ID);
-
+            interaction.guild.channels.cache.get(
+                PARTNER_CHANNEL_ID
+            );
 
 
         if (!channel) {
@@ -78,7 +79,6 @@ module.exports = {
             });
 
         }
-
 
 
         const descrizione =
@@ -128,8 +128,9 @@ ${data}`
 
 
         const logs =
-            interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-
+            interaction.guild.channels.cache.get(
+                LOG_CHANNEL_ID
+            );
 
 
         if (logs) {
@@ -170,7 +171,6 @@ ${channel}`
             ephemeral: true
 
         });
-
 
     }
 

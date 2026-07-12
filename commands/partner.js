@@ -3,7 +3,6 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-
 const { addPoint } = require("../leaderboardSystem");
 
 
@@ -49,33 +48,36 @@ module.exports = {
     async execute(interaction) {
 
 
-        const permission =
-            interaction.member.roles.cache.some(
-                role => ALLOWED_ROLES.includes(role.id)
-            );
+        const permission = interaction.member.roles.cache.some(
+            role => ALLOWED_ROLES.includes(role.id)
+        );
 
 
         if (!permission) {
 
             return interaction.reply({
+
                 content: "❌ Non puoi usare questo comando.",
+
                 ephemeral: true
+
             });
 
         }
 
 
         const channel =
-            interaction.guild.channels.cache.get(
-                PARTNER_CHANNEL_ID
-            );
+            interaction.guild.channels.cache.get(PARTNER_CHANNEL_ID);
 
 
         if (!channel) {
 
             return interaction.reply({
+
                 content: "❌ Canale Partner non trovato.",
+
                 ephemeral: true
+
             });
 
         }
@@ -96,19 +98,10 @@ module.exports = {
 
         await channel.send({
 
-            content: descrizione
-
-        });
-
-
-
-        await channel.send({
-
             content:
-`————————🤝————————
+`${descrizione}
 
-Autore:
-${interaction.user}
+————————🤝————————
 
 Manager:
 ${manager}
@@ -128,9 +121,8 @@ ${data}`
 
 
         const logs =
-            interaction.guild.channels.cache.get(
-                LOG_CHANNEL_ID
-            );
+            interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+
 
 
         if (logs) {
@@ -144,11 +136,7 @@ ${data}`
                         .setTitle("🤝 Partner creato")
 
                         .setDescription(
-`Autore:
-${interaction.user}
-
-Manager:
-${manager}
+`Autore: ${interaction.user}
 
 Canale:
 ${channel}`

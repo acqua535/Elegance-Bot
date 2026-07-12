@@ -9,7 +9,6 @@ const {
 } = require("../systems/leaderboardSystem");
 
 
-
 module.exports = {
 
 
@@ -33,13 +32,13 @@ module.exports = {
                     },
 
                     {
-                        name: "⚜️ Sponsor",
-                        value: "sponsor"
+                        name: "🌐 Collab",
+                        value: "collab"
                     },
 
                     {
-                        name: "🌐 Collab",
-                        value: "collab"
+                        name: "⚜️ Sponsor",
+                        value: "sponsor"
                     }
 
                 )
@@ -64,9 +63,9 @@ module.exports = {
 
             partner: "🤝 Partner",
 
-            sponsor: "⚜️ Sponsor",
+            collab: "🌐 Collab",
 
-            collab: "🌐 Collab"
+            sponsor: "⚜️ Sponsor"
 
         };
 
@@ -78,15 +77,32 @@ module.exports = {
 
         if (leaderboard.length === 0) {
 
-            text = "Nessun dato disponibile.";
+            text = "📭 Nessun dato disponibile.";
 
         } else {
 
 
-            leaderboard.forEach((user, index) => {
+            leaderboard.forEach((entry, index) => {
+
+
+                const userId = entry[0];
+
+                const points = entry[1];
+
+
+                let medal = "🏅";
+
+
+                if (index === 0) medal = "🥇";
+
+                if (index === 1) medal = "🥈";
+
+                if (index === 2) medal = "🥉";
+
 
                 text +=
-`**${index + 1}.** <@${user[0]}> — ${user[1]} punti\n`;
+`${medal} **${index + 1}.** <@${userId}> — **${points} punti**
+`;
 
             });
 

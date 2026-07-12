@@ -2,20 +2,22 @@ const {
     SlashCommandBuilder,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    ButtonBuilder,
-    ButtonStyle,
     ChannelType,
     EmbedBuilder,
     PermissionFlagsBits
 } = require("discord.js");
 
+
 const LOG_CHANNEL_ID = "1505261606483923105";
 const TICKET_CATEGORY_ID = "1525919850764177408";
 
+
 module.exports = {
+
     data: new SlashCommandBuilder()
         .setName("ticket")
         .setDescription("Apri un ticket di supporto"),
+
 
     async execute(interaction) {
 
@@ -31,7 +33,7 @@ module.exports = {
                 },
                 {
                     label: "Bando Staff",
-                    description: "Candidature per entrare nello staff",
+                    description: "Candidature staff",
                     value: "staff",
                     emoji: "🛡️"
                 },
@@ -49,113 +51,111 @@ module.exports = {
                 }
             ]);
 
+
         const row = new ActionRowBuilder()
             .addComponents(menu);
+
 
         const embed = new EmbedBuilder()
             .setTitle("🎫 Elegance Support")
             .setDescription(
-                "Seleziona dal menu la categoria del tuo ticket.\n\n" +
-                "Lo Staff risponderà il prima possibile."
+                "Seleziona la categoria del tuo ticket dal menu."
             )
             .setTimestamp();
+
 
         await interaction.reply({
             embeds: [embed],
             components: [row]
         });
+
+    },
+
+
+    async categoryHandler(interaction) {
+
+        await interaction.deferReply({
+            ephemeral: true
+        });
+
+
+        const type = interaction.values[0];
+
+
+        const names = {
+            partner: "supporto-partner",
+            staff: "bando-staff",
+            bug: "segnalazione-bug",
+            idea: "idee-suggerimenti"
+        };
+
+
+        const channel = await interaction.guild.channels.create({
+
+            name: `🎫・${names[type]}-${interaction.user.username}`,
+
+            type: ChannelType.GuildText,
+
+            parent: TICKET_CATEGORY_ID,
+
+
+            permissionOverwrites: [
+
+                {
+                    id: interaction.guild.id,
+
+                    deny: [
+                        PermissionFlagsBits.ViewChannel
+                    ]
+                },
+
+                {
+                    id: interaction.user.id,
+
+                    allow: [
+                        PermissionFlagsBits.ViewChannel,
+                        PermissionFlagsBits.SendMessages,
+                        PermissionFlagsBits.ReadMessageHistory
+                    ]
+                }
+
+            ]
+
+        });
+
+
+        await channel.send({
+
+            content: `<@${interaction.user.id}>`,
+
+            embeds: [
+                new EmbedBuilder()
+                    .setTitle("🎫 Ticket Aperto")
+                    .setDescription(
+                        "Lo Staff risponderà appena possibile."
+                    )
+                    .setTimestamp()
+            ]
+
+        });
+
+
+        const logs = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+
+
+        if (logs) {
+
+            logs.send(
+                `🎫 **Ticket Creato**\n👤 Utente: ${interaction.user}\n📌 Canale: ${channel}`
+            );
+
+        }
+
+
+        await interaction.editReply({
+            content: `✅ Ticket creato: ${channel}`
+        });
+
     }
-};
 
-
-// Gestione creazione ticket
-module.exports.categoryHandler = async (interaction) => {
-
-    if (!interaction.isStringSelectMenu()) return;
-    if (interaction.customId !== "ticket_category") return;
-
-    const type = interaction.values[0];
-
-    const categories = {
-        partner: "🤝・supporto-partner",
-        staff: "🛡️・bando-staff",
-        bug: "🐞・segnalazioni-bug",
-        idea: "💡・idee-suggerimenti"
-    };
-
-
-    const ticketChannel = await interaction.guild.channels.create({
-        name: `${categories[type]}-${interaction.user.username}`,
-        type: ChannelType.GuildText,
-        parent: TICKET_CATEGORY_ID,
-
-        permissionOverwrites: [
-            {
-                id: interaction.guild.id,
-                deny: [
-                    PermissionFlagsBits.ViewChannel
-                ]
-            },
-            {
-                id: interaction.user.id,
-                allow: [
-                    PermissionFlagsBits.ViewChannel,
-                    PermissionFlagsBits.SendMessages,
-                    PermissionFlagsBits.ReadMessageHistory
-                ]
-            }
-        ]
-    });
-
-
-    const buttons = new ActionRowBuilder()
-        .addComponents(
-
-            new ButtonBuilder()
-                .setCustomId("ticket_claim")
-                .setLabel("🙋 Reclama")
-                .setStyle(ButtonStyle.Primary),
-
-            new ButtonBuilder()
-                .setCustomId("ticket_close")
-                .setLabel("🔒 Chiudi")
-                .setStyle(ButtonStyle.Danger)
-
-        );
-
-
-    await ticketChannel.send({
-
-        content: `<@${interaction.user.id}>`,
-
-        embeds: [
-            new EmbedBuilder()
-                .setTitle("🎫 Ticket Aperto")
-                .setDescription(
-                    `Categoria: **${categories[type]}**\n\n` +
-                    "Attendi una risposta dallo Staff."
-                )
-                .setTimestamp()
-        ],
-
-        components: [buttons]
-    });
-
-
-    const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-
-    if (logChannel) {
-        logChannel.send(
-            `🎫 **Ticket Creato**\n` +
-            `👤 Utente: ${interaction.user}\n` +
-            `📁 Categoria: ${categories[type]}\n` +
-            `📌 Canale: ${ticketChannel}`
-        );
-    }
-
-
-    await interaction.reply({
-        content: `✅ Ticket creato: ${ticketChannel}`,
-        ephemeral: true
-    });
 };

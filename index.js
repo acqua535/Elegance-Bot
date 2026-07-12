@@ -12,6 +12,9 @@ const client = new Client({
 // Raccolta comandi
 client.commands = new Collection();
 
+// Caricamento comandi
+require("./handlers/commandHandler")(client);
+
 // Gestione errori globale
 process.on("unhandledRejection", (error) => {
     console.error("❌ Errore non gestito:", error);

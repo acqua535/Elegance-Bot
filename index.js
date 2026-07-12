@@ -32,13 +32,46 @@ client.once("ready", () => {
 });
 
 
-// Sistema Ticket
+// Sistema Ticket + Slash Commands
 const ticket = require("./ticket");
 
 client.on("interactionCreate", async (interaction) => {
 
-    if (interaction.isStringSelectMenu()) {
-        await ticket.categoryHandler(interaction);
+    try {
+
+        // Comandi Slash (/say, /embed, /ticket)
+        if (interaction.isChatInputCommand()) {
+
+            const command = client.commands.get(interaction.commandName);
+
+            if (!command) return;
+
+            await command.execute(interaction);
+
+        }
+
+
+        // Menu Ticket
+        if (interaction.isStringSelectMenu()) {
+
+            await ticket.categoryHandler(interaction);
+
+        }
+
+
+    } catch (error) {
+
+        console.error("❌ Errore interaction:", error);
+
+        if (!interaction.replied && !interaction.deferred) {
+
+            await interaction.reply({
+                content: "❌ Errore durante l'esecuzione.",
+                ephemeral: true
+            });
+
+        }
+
     }
 
 });

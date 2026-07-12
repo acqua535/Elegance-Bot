@@ -4,7 +4,7 @@ const {
 } = require("discord.js");
 
 
-const { addPoint } = require("./systems/leaderboardSystem");
+const { addPoint } = require("./leaderboardSystem");
 
 
 const LOG_CHANNEL_ID = "1505261606483923105";

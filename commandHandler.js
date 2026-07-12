@@ -3,26 +3,44 @@ console.log("HANDLER NUOVO CARICATO");
 const fs = require("fs");
 const path = require("path");
 
+
 module.exports = (client) => {
 
-    const commandsPath = path.join(__dirname, "../commands");
 
-    const commandFiles = fs.readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
+    const commandFiles = fs.readdirSync(__dirname)
+
+        .filter(file =>
+
+            file.endsWith(".js") &&
+
+            file !== "index.js" &&
+
+            file !== "commandHandler.js" &&
+
+            file !== "deployCommands.js"
+
+        );
+
 
 
     for (const file of commandFiles) {
 
+
         const command = require(
-            path.join(commandsPath, file)
+            path.join(__dirname, file)
         );
+
 
 
         if (command.data && command.execute) {
 
+
             client.commands.set(
+
                 command.data.name,
+
                 command
+
             );
 
 
@@ -30,8 +48,11 @@ module.exports = (client) => {
                 `✅ Comando caricato: ${command.data.name}`
             );
 
+
         }
 
+
     }
+
 
 };

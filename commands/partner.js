@@ -4,6 +4,9 @@ const {
 } = require("discord.js");
 
 
+const { addPoint } = require("../systems/leaderboardSystem");
+
+
 const LOG_CHANNEL_ID = "1505261606483923105";
 const PARTNER_CHANNEL_ID = "1508774443286003815";
 
@@ -28,25 +31,18 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addRoleOption(option =>
-            option
-                .setName("ping")
-                .setDescription("Ruolo da pingare")
-                .setRequired(false)
-        )
-
         .addUserOption(option =>
             option
                 .setName("manager")
                 .setDescription("Manager partnership")
-                .setRequired(false)
+                .setRequired(true)
         )
 
         .addStringOption(option =>
             option
                 .setName("data")
-                .setDescription("Data opzionale")
-                .setRequired(false)
+                .setDescription("Data della partnership")
+                .setRequired(true)
         ),
 
 
@@ -68,8 +64,10 @@ module.exports = {
         }
 
 
+
         const channel =
             interaction.guild.channels.cache.get(PARTNER_CHANNEL_ID);
+
 
 
         if (!channel) {
@@ -82,12 +80,9 @@ module.exports = {
         }
 
 
+
         const descrizione =
             interaction.options.getString("descrizione");
-
-
-        const ping =
-            interaction.options.getRole("ping");
 
 
         const manager =
@@ -100,7 +95,9 @@ module.exports = {
 
 
         await channel.send({
+
             content: descrizione
+
         });
 
 
@@ -113,16 +110,20 @@ module.exports = {
 Autore:
 ${interaction.user}
 
-${manager ? `Manager:
+Manager:
 ${manager}
 
-` : ""}${ping ? `Ping:
-${ping}
-
-` : ""}${data ? `Data:
-${data}` : ""}`
+Data:
+${data}`
 
         });
+
+
+
+        addPoint(
+            "partner",
+            interaction.user.id
+        );
 
 
 
@@ -142,7 +143,11 @@ ${data}` : ""}`
                         .setTitle("🤝 Partner creato")
 
                         .setDescription(
-`Autore: ${interaction.user}
+`Autore:
+${interaction.user}
+
+Manager:
+${manager}
 
 Canale:
 ${channel}`
@@ -165,6 +170,7 @@ ${channel}`
             ephemeral: true
 
         });
+
 
     }
 

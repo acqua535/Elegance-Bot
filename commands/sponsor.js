@@ -3,18 +3,14 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const {
-    addPoint
-} = require("../leaderboards/leaderboardSystem");
 
-
-const LOG_CHANNEL_ID = "1505261606483923105";
 const SPONSOR_CHANNEL_ID = "1521856540016115803";
+const LOG_CHANNEL_ID = "1505261606483923105";
 
 
-const ALLOWED_ROLES = [
-    "1505192718068879430",
-    "1505192964769714287"
+const STAFF_ROLES = [
+    "1505192964769714287",
+    "1505192718068879430"
 ];
 
 
@@ -24,7 +20,7 @@ module.exports = {
 
         .setName("sponsor")
 
-        .setDescription("Invia uno sponsor")
+        .setDescription("Crea uno sponsor")
 
         .addStringOption(option =>
             option
@@ -33,17 +29,10 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addUserOption(option =>
-            option
-                .setName("manager")
-                .setDescription("Manager sponsor")
-                .setRequired(true)
-        )
-
         .addStringOption(option =>
             option
-                .setName("data")
-                .setDescription("Data sponsor")
+                .setName("link")
+                .setDescription("Link sponsor")
                 .setRequired(true)
         ),
 
@@ -52,18 +41,18 @@ module.exports = {
     async execute(interaction) {
 
 
-        const permission =
+        const hasPermission =
             interaction.member.roles.cache.some(
-                role => ALLOWED_ROLES.includes(role.id)
+                role => STAFF_ROLES.includes(role.id)
             );
 
 
-
-        if (!permission) {
+        if (!hasPermission) {
 
             return interaction.reply({
 
-                content: "❌ Non puoi usare questo comando.",
+                content:
+                "❌ Non hai il permesso di usare questo comando.",
 
                 ephemeral: true
 
@@ -79,12 +68,12 @@ module.exports = {
             );
 
 
-
         if (!channel) {
 
             return interaction.reply({
 
-                content: "❌ Canale Sponsor non trovato.",
+                content:
+                "❌ Canale sponsor non trovato.",
 
                 ephemeral: true
 
@@ -98,38 +87,36 @@ module.exports = {
             interaction.options.getString("descrizione");
 
 
-        const manager =
-            interaction.options.getUser("manager");
+        const link =
+            interaction.options.getString("link");
 
 
-        const data =
-            interaction.options.getString("data");
+
+        const embed = new EmbedBuilder()
+
+            .setTitle("⚜️ Nuovo Sponsor")
+
+            .setDescription(
+`
+${descrizione}
+
+🔗 Link:
+${link}
+
+👤 Creato da:
+${interaction.user}
+`
+            )
+
+            .setTimestamp();
 
 
 
         await channel.send({
 
-            content:
-`⚜️ **Nuovo Sponsor**
-
-${descrizione}
-
-————————————
-
-👤 Manager:
-${manager}
-
-📅 Data:
-${data}`
+            embeds: [embed]
 
         });
-
-
-
-        addPoint(
-            "sponsor",
-            interaction.user.id
-        );
 
 
 
@@ -139,27 +126,12 @@ ${data}`
             );
 
 
-
         if (logs) {
 
             await logs.send({
 
-                embeds: [
-
-                    new EmbedBuilder()
-
-                        .setTitle("⚜️ Sponsor creato")
-
-                        .setDescription(
-`Autore: ${interaction.user}
-
-Canale:
-${channel}`
-                        )
-
-                        .setTimestamp()
-
-                ]
+                content:
+                `⚜️ Sponsor creato da ${interaction.user}`
 
             });
 
@@ -169,11 +141,13 @@ ${channel}`
 
         await interaction.reply({
 
-            content: "✅ Sponsor inviato.",
+            content:
+            "✅ Sponsor pubblicato.",
 
             ephemeral: true
 
         });
+
 
     }
 

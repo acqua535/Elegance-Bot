@@ -1,16 +1,15 @@
 const { REST, Routes } = require("discord.js");
 const fs = require("fs");
-const path = require("path");
 
 const commands = [];
 
-const commandsPath = path.join(__dirname, "../commands");
+const commandsPath = __dirname;
 
 const commandFiles = fs.readdirSync(commandsPath)
-    .filter(file => file.endsWith(".js"));
+    .filter(file => file === "say.js");
 
 for (const file of commandFiles) {
-    const command = require(`${commandsPath}/${file}`);
+    const command = require(`./${file}`);
 
     if (command.data) {
         commands.push(command.data.toJSON());

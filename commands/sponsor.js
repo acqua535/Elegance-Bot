@@ -3,7 +3,6 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-
 const { addPoint } = require("../leaderboardSystem");
 
 
@@ -46,14 +45,12 @@ module.exports = {
         ),
 
 
-
     async execute(interaction) {
 
 
-        const permission =
-            interaction.member.roles.cache.some(
-                role => ALLOWED_ROLES.includes(role.id)
-            );
+        const permission = interaction.member.roles.cache.some(
+            role => ALLOWED_ROLES.includes(role.id)
+        );
 
 
         if (!permission) {
@@ -69,12 +66,8 @@ module.exports = {
         }
 
 
-
         const channel =
-            interaction.guild.channels.cache.get(
-                SPONSOR_CHANNEL_ID
-            );
-
+            interaction.guild.channels.cache.get(SPONSOR_CHANNEL_ID);
 
 
         if (!channel) {
@@ -88,7 +81,6 @@ module.exports = {
             });
 
         }
-
 
 
         const descrizione =
@@ -106,19 +98,10 @@ module.exports = {
 
         await channel.send({
 
-            content: descrizione
-
-        });
-
-
-
-        await channel.send({
-
             content:
-`————————⚜️————————
+`${descrizione}
 
-Autore:
-${interaction.user}
+————————⚜️————————
 
 Manager:
 ${manager}
@@ -138,9 +121,7 @@ ${data}`
 
 
         const logs =
-            interaction.guild.channels.cache.get(
-                LOG_CHANNEL_ID
-            );
+            interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
 
 
 
@@ -155,11 +136,7 @@ ${data}`
                         .setTitle("⚜️ Sponsor creato")
 
                         .setDescription(
-`Autore:
-${interaction.user}
-
-Manager:
-${manager}
+`Autore: ${interaction.user}
 
 Canale:
 ${channel}`
@@ -182,7 +159,6 @@ ${channel}`
             ephemeral: true
 
         });
-
 
     }
 

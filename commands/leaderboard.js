@@ -3,106 +3,58 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-
-const {
-    getLeaderboard
-} = require("../leaderboardSystem");
+const { getLeaderboard } = require("../leaderboardSystem");
 
 
 module.exports = {
-
 
     data: new SlashCommandBuilder()
 
         .setName("leaderboard")
 
-        .setDescription("Mostra le classifiche Elegance")
+        .setDescription("Mostra la classifica")
 
         .addStringOption(option =>
             option
                 .setName("tipo")
-                .setDescription("Tipo di classifica")
+                .setDescription("Tipo classifica")
                 .setRequired(true)
-
                 .addChoices(
-
                     {
-                        name: "🤝 Partner",
+                        name: "Partner",
                         value: "partner"
                     },
-
                     {
-                        name: "🌐 Collab",
-                        value: "collab"
-                    },
-
-                    {
-                        name: "⚜️ Sponsor",
+                        name: "Sponsor",
                         value: "sponsor"
+                    },
+                    {
+                        name: "Collab",
+                        value: "collab"
                     }
-
                 )
         ),
-
 
 
     async execute(interaction) {
 
 
-        const type =
+        const tipo =
             interaction.options.getString("tipo");
 
 
-
         const leaderboard =
-            getLeaderboard(type);
-
-
-
-        const names = {
-
-            partner: "🤝 Partner",
-
-            collab: "🌐 Collab",
-
-            sponsor: "⚜️ Sponsor"
-
-        };
-
-
-
-        let text = "";
+            getLeaderboard(tipo);
 
 
 
         if (leaderboard.length === 0) {
 
-            text = "📭 Nessun dato disponibile.";
+            return interaction.reply({
 
-        } else {
+                content: "📊 Nessun dato disponibile.",
 
-
-            leaderboard.forEach((entry, index) => {
-
-
-                const userId = entry[0];
-
-                const points = entry[1];
-
-
-                let medal = "🏅";
-
-
-                if (index === 0) medal = "🥇";
-
-                if (index === 1) medal = "🥈";
-
-                if (index === 2) medal = "🥉";
-
-
-                text +=
-`${medal} **${index + 1}.** <@${userId}> — **${points} punti**
-`;
+                ephemeral: true
 
             });
 
@@ -110,11 +62,26 @@ module.exports = {
 
 
 
+        let testo = "";
+
+
+
+        leaderboard.forEach(
+            ([userId, punti], index) => {
+
+                testo +=
+`${index + 1}. <@${userId}> — **${punti}** punti\n`;
+
+            }
+        );
+
+
+
         const embed = new EmbedBuilder()
 
-            .setTitle(`🏆 ${names[type]} Leaderboard`)
+            .setTitle(`🏆 Leaderboard ${tipo}`)
 
-            .setDescription(text)
+            .setDescription(testo)
 
             .setTimestamp();
 
@@ -125,7 +92,6 @@ module.exports = {
             embeds: [embed]
 
         });
-
 
     }
 

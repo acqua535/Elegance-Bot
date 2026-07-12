@@ -3,18 +3,14 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
-const {
-    addPoint
-} = require("../leaderboards/leaderboardSystem");
 
-
+const CHANNEL_ID = "1508774443286003815";
 const LOG_CHANNEL_ID = "1505261606483923105";
-const PARTNER_CHANNEL_ID = "1508774443286003815";
 
 
-const ALLOWED_ROLES = [
-    "1505192718068879430",
-    "1505192964769714287"
+const STAFF_ROLES = [
+    "1505192964769714287",
+    "1505192718068879430"
 ];
 
 
@@ -23,8 +19,7 @@ module.exports = {
     data: new SlashCommandBuilder()
 
         .setName("partner")
-
-        .setDescription("Invia una partnership")
+        .setDescription("Crea una partnership")
 
         .addStringOption(option =>
             option
@@ -33,17 +28,10 @@ module.exports = {
                 .setRequired(true)
         )
 
-        .addUserOption(option =>
-            option
-                .setName("manager")
-                .setDescription("Manager partnership")
-                .setRequired(true)
-        )
-
         .addStringOption(option =>
             option
-                .setName("data")
-                .setDescription("Data partnership")
+                .setName("link")
+                .setDescription("Link server/social")
                 .setRequired(true)
         ),
 
@@ -54,16 +42,15 @@ module.exports = {
 
         const permission =
             interaction.member.roles.cache.some(
-                role => ALLOWED_ROLES.includes(role.id)
+                role => STAFF_ROLES.includes(role.id)
             );
-
 
 
         if (!permission) {
 
             return interaction.reply({
 
-                content: "❌ Non puoi usare questo comando.",
+                content: "❌ Non hai il permesso.",
 
                 ephemeral: true
 
@@ -75,61 +62,42 @@ module.exports = {
 
         const channel =
             interaction.guild.channels.cache.get(
-                PARTNER_CHANNEL_ID
+                CHANNEL_ID
             );
-
-
-
-        if (!channel) {
-
-            return interaction.reply({
-
-                content: "❌ Canale Partner non trovato.",
-
-                ephemeral: true
-
-            });
-
-        }
-
 
 
         const descrizione =
             interaction.options.getString("descrizione");
 
 
-        const manager =
-            interaction.options.getUser("manager");
+        const link =
+            interaction.options.getString("link");
 
 
-        const data =
-            interaction.options.getString("data");
+
+        const embed = new EmbedBuilder()
+
+            .setTitle("🤝 Nuova Partnership")
+
+            .setDescription(
+`
+${descrizione}
+
+🔗 Link:
+${link}
+
+👤 Creato da:
+${interaction.user}
+`
+            )
+
+            .setTimestamp();
 
 
 
         await channel.send({
-
-            content:
-`🤝 **Nuova Partnership**
-
-${descrizione}
-
-————————————
-
-👤 Manager:
-${manager}
-
-📅 Data:
-${data}`
-
+            embeds: [embed]
         });
-
-
-
-        addPoint(
-            "partner",
-            interaction.user.id
-        );
 
 
 
@@ -139,29 +107,11 @@ ${data}`
             );
 
 
-
         if (logs) {
 
-            await logs.send({
-
-                embeds: [
-
-                    new EmbedBuilder()
-
-                        .setTitle("🤝 Partner creato")
-
-                        .setDescription(
-`Autore: ${interaction.user}
-
-Canale:
-${channel}`
-                        )
-
-                        .setTimestamp()
-
-                ]
-
-            });
+            await logs.send(
+                `🤝 Partnership creata da ${interaction.user}`
+            );
 
         }
 
@@ -169,11 +119,13 @@ ${channel}`
 
         await interaction.reply({
 
-            content: "✅ Partnership inviata.",
+            content:
+            "✅ Partnership pubblicata.",
 
             ephemeral: true
 
         });
+
 
     }
 

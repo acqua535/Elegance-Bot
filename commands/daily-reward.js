@@ -4,7 +4,7 @@ const {
 } = require("discord.js");
 
 
-const dailySystem = require("../dailySystem");
+const dailySystem = require("./dailySystem");
 
 
 

@@ -1,185 +1,276 @@
 const {
-SlashCommandBuilder,
-EmbedBuilder,
-PermissionFlagsBits
+    SlashCommandBuilder,
+    EmbedBuilder
 } = require("discord.js");
+
+
+const STAFF_ROLE_ID = "1505192718068879430";
 
 
 module.exports = {
 
 
-data:new SlashCommandBuilder()
+    data: new SlashCommandBuilder()
 
-.setName("modify-suggest")
+        .setName("modify-suggest")
 
-.setDescription("Modifica lo stato di un suggerimento")
+        .setDescription(
+            "Modifica lo stato di un suggerimento"
+        )
 
-.setDefaultMemberPermissions(
-PermissionFlagsBits.ManageMessages
-)
+        .addStringOption(option =>
 
+            option
 
-.addStringOption(option =>
+                .setName("link")
 
-option
+                .setDescription(
+                    "Inserisci il link del messaggio del suggerimento"
+                )
 
-.setName("link")
+                .setRequired(true)
 
-.setDescription(
-"Link del messaggio Discord"
-)
+        )
 
-.setRequired(true)
 
-)
+        .addStringOption(option =>
 
+            option
 
-.addStringOption(option =>
+                .setName("stato")
 
-option
+                .setDescription(
+                    "Imposta il nuovo stato del suggerimento"
+                )
 
-.setName("stato")
+                .setRequired(true)
 
-.setDescription(
-"Nuovo stato"
-)
+                .addChoices(
 
-.setRequired(true)
+                    {
+                        name: "🟡 In valutazione",
+                        value: "🟡 In valutazione"
+                    },
 
-.addChoices(
+                    {
+                        name: "🟢 Accettato",
+                        value: "🟢 Accettato"
+                    },
 
-{
-name:"🟡 In valutazione",
-value:"🟡 In valutazione"
-},
+                    {
+                        name: "🔴 Rifiutato",
+                        value: "🔴 Rifiutato"
+                    }
 
-{
-name:"🟢 Accettato",
-value:"🟢 Accettato"
-},
+                )
 
-{
-name:"🔴 Rifiutato",
-value:"🔴 Rifiutato"
-}
+        ),
 
-)
 
-),
 
+    async execute(interaction) {
 
 
-async execute(interaction){
 
+        // Controllo ruolo staff
 
-const link =
-interaction.options.getString("link");
+        if (
+            !interaction.member.roles.cache.has(
+                STAFF_ROLE_ID
+            )
+        ) {
 
 
-const stato =
-interaction.options.getString("stato");
+            return interaction.reply({
 
+                content:
+                "❌ Non hai il permesso di modificare i suggerimenti.",
 
+                ephemeral: true
 
-const ids =
-link.split("/");
+            });
 
 
+        }
 
-const channelId =
-ids[5];
 
 
-const messageId =
-ids[6];
+        const link =
+            interaction.options.getString("link");
 
 
+        const stato =
+            interaction.options.getString("stato");
 
-const channel =
-await interaction.guild.channels.fetch(
-channelId
-);
 
 
+        // Estrazione ID dal link Discord
 
-const message =
-await channel.messages.fetch(
-messageId
-);
+        const parts =
+            link.split("/");
 
 
+        const channelId =
+            parts[5];
 
-if(!message.embeds.length){
 
-return interaction.reply({
+        const messageId =
+            parts[6];
 
-content:
-"❌ Questo messaggio non contiene un suggerimento.",
 
-ephemeral:true
 
-});
+        if (!channelId || !messageId) {
 
-}
 
+            return interaction.reply({
 
+                content:
+                "❌ Link del messaggio non valido.",
 
-const embed =
-EmbedBuilder.from(
-message.embeds[0]
-);
+                ephemeral:true
 
+            });
 
 
-const fields =
-embed.data.fields || [];
+        }
 
 
 
-const newFields =
-fields.filter(
-field =>
-field.name !== "📊 Stato"
-);
+        try {
 
 
 
-newFields.push({
+            const channel =
+                await interaction.guild.channels.fetch(
+                    channelId
+                );
 
-name:"📊 Stato",
 
-value:stato,
 
-inline:true
+            const message =
+                await channel.messages.fetch(
+                    messageId
+                );
 
-});
 
 
+            if (!message.embeds.length) {
 
-embed.setFields(newFields);
 
+                return interaction.reply({
 
+                    content:
+                    "❌ Questo messaggio non contiene un embed di suggerimento.",
 
-await message.edit({
+                    ephemeral:true
 
-embeds:[
-embed
-]
+                });
 
-});
 
+            }
 
 
-await interaction.reply({
 
-content:
-"✅ Stato aggiornato!",
+            const embed =
+                EmbedBuilder.from(
+                    message.embeds[0]
+                );
 
-ephemeral:true
 
-});
 
+            const oldFields =
+                embed.data.fields || [];
 
-}
+
+
+            const newFields =
+                oldFields.filter(
+                    field =>
+                    field.name !== "📊 Stato"
+                );
+
+
+
+            newFields.push({
+
+                name:
+                "📊 Stato",
+
+                value:
+                stato,
+
+                inline:true
+
+            });
+
+
+
+            embed.setFields(
+                newFields
+            );
+
+
+
+            await message.edit({
+
+                embeds:[
+                    embed
+                ]
+
+            });
+
+
+
+            // Aggiorna anche il thread se esiste
+
+            if (message.hasThread) {
+
+
+                await message.thread.send({
+
+                    content:
+                    `⚜️ **Aggiornamento Staff**\n\nIl suggerimento è stato aggiornato a: **${stato}**`
+
+                });
+
+
+            }
+
+
+
+            await interaction.reply({
+
+                content:
+                "✅ Stato del suggerimento aggiornato.",
+
+                ephemeral:true
+
+            });
+
+
+
+        } catch(error) {
+
+
+            console.error(
+                error
+            );
+
+
+            await interaction.reply({
+
+                content:
+                "❌ Errore durante la modifica del suggerimento.",
+
+                ephemeral:true
+
+            });
+
+
+        }
+
+
+    }
+
 
 };

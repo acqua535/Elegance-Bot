@@ -6,7 +6,7 @@
   "type": "commonjs",
   "scripts": {
     "start": "node index.js",
-    "deploy": "node handlers/deployCommands.js"
+    "deploy": "node deployCommand.js"
   },
   "dependencies": {
     "discord.js": "^14.21.0",

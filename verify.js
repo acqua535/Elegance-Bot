@@ -88,7 +88,7 @@ Per completare la verifica, esegui la procedura richiesta dal nostro bot.
 
 In caso di assistenza tecnica, richieste o problemi, apri un ticket:
 
-🎫 <#1505186342496374795>`,
+<#1505186342496374795>`,
 
             components: [
                 button

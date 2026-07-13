@@ -15,47 +15,111 @@ path.join(
 
 
 
+function loadUsers(){
+
+    if(!fs.existsSync(FILE)){
+
+        fs.writeFileSync(
+            FILE,
+            "[]"
+        );
+
+    }
+
+
+    return JSON.parse(
+        fs.readFileSync(
+            FILE,
+            "utf8"
+        )
+    );
+
+}
+
+
+
+function saveUsers(users){
+
+    fs.writeFileSync(
+
+        FILE,
+
+        JSON.stringify(
+            users,
+            null,
+            2
+        )
+
+    );
+
+}
+
+
+
+
 module.exports = {
 
 
-data: new SlashCommandBuilder()
+data:
+
+new SlashCommandBuilder()
 
 .setName("birthday")
 
-.setDescription("Imposta il tuo compleanno")
-
-.addIntegerOption(option =>
-    option
-    .setName("giorno")
-    .setDescription("Giorno del compleanno")
-    .setRequired(true)
+.setDescription(
+"Imposta il tuo compleanno"
 )
 
 .addIntegerOption(option =>
-    option
-    .setName("mese")
-    .setDescription("Mese del compleanno")
-    .setRequired(true)
+
+option
+
+.setName("giorno")
+
+.setDescription(
+"Giorno del compleanno"
+)
+
+.setRequired(true)
+
+)
+
+
+.addIntegerOption(option =>
+
+option
+
+.setName("mese")
+
+.setDescription(
+"Mese del compleanno"
+)
+
+.setRequired(true)
+
 ),
+
+
 
 
 
 async execute(interaction){
 
 
-let users =
-JSON.parse(
-    fs.readFileSync(FILE, "utf8")
+
+const giorno =
+
+interaction.options.getInteger(
+"giorno"
 );
 
 
 
-const giorno =
-interaction.options.getInteger("giorno");
-
-
 const mese =
-interaction.options.getInteger("mese");
+
+interaction.options.getInteger(
+"mese"
+);
 
 
 
@@ -79,25 +143,38 @@ ephemeral:true
 
 
 
+const users =
+loadUsers();
+
+
+
 let user =
+
 users.find(
-    u => u.id === interaction.user.id
+
+u =>
+u.id === interaction.user.id
+
 );
 
 
 
 if(!user){
 
+
 user = {
 
-id: interaction.user.id,
+id:
+interaction.user.id,
 
-birthday: null
+birthday:
+null
 
 };
 
 
 users.push(user);
+
 
 }
 
@@ -108,31 +185,28 @@ user.birthday =
 
 
 
-fs.writeFileSync(
-
-FILE,
-
-JSON.stringify(
-users,
-null,
-2
-)
-
+saveUsers(
+users
 );
 
 
 
 const embed =
+
 new EmbedBuilder()
 
 .setTitle(
-"🎂 Compleanno salvato"
+"🎂 Compleanno impostato"
 )
 
 .setDescription(
 
-`Il tuo compleanno è stato impostato a **${giorno}/${mese}**.`
+`Il tuo compleanno è stato salvato: **${giorno}/${mese}**`
 
+)
+
+.setColor(
+0x5865F2
 )
 
 .setFooter({
@@ -149,7 +223,7 @@ text:
 await interaction.reply({
 
 embeds:[
-    embed
+embed
 ],
 
 ephemeral:true
@@ -157,6 +231,8 @@ ephemeral:true
 });
 
 
+
 }
+
 
 };

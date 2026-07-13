@@ -4,7 +4,7 @@ const {
 } = require("discord.js");
 
 
-const gameSystem = require("../gameSystem");
+const gameSystem = require("./gameSystem");
 
 
 

@@ -5,7 +5,6 @@ const {
 } = require("discord.js");
 
 
-
 const client = new Client({
 
     intents: [
@@ -36,17 +35,13 @@ client.commands = new Collection();
 require("./commandHandler")(client);
 
 
-// Birthday System
-require("./birthday-system")(client);
-
-
 // Anti Abuse
 require("./anti-abuse")(client);
 
 
-
-// Slash Deploy
+// Deploy Commands
 require("./deployCommands");
+
 
 
 
@@ -61,10 +56,6 @@ require("./ticket");
 
 const verify =
 require("./verify");
-
-
-const poll =
-require("./commands/poll");
 
 
 
@@ -119,228 +110,4 @@ client.once(
 
 
         client.user.setActivity(
-            "Elegance Community",
-            {
-                type: 3
-            }
-        );
-
-
-    }
-);
-
-
-
-
-// ======================
-// INTERACTIONS
-// ======================
-
-
-client.on(
-    "interactionCreate",
-    async (interaction)=>{
-
-
-        try{
-
-
-            // Slash Commands
-
-            if(
-                interaction.isChatInputCommand()
-            ){
-
-
-                const command =
-                client.commands.get(
-                    interaction.commandName
-                );
-
-
-                if(!command)
-                    return;
-
-
-
-                await command.execute(
-                    interaction
-                );
-
-
-                return;
-
-            }
-
-
-
-
-
-            // Ticket Select Menu
-
-            if(
-                interaction.isStringSelectMenu()
-            ){
-
-
-                await ticket.categoryHandler(
-                    interaction
-                );
-
-
-                return;
-
-            }
-
-
-
-
-
-            // Buttons
-
-            if(
-                interaction.isButton()
-            ){
-
-
-
-                // Verify Button
-
-                if(
-                    interaction.customId === "verify_button"
-                ){
-
-
-                    await verify.buttonHandler(
-                        interaction
-                    );
-
-
-                    return;
-
-                }
-
-
-
-
-                // Poll Buttons
-
-                if(
-                    interaction.customId.startsWith("poll_")
-                ){
-
-
-                    await poll.buttonHandler(
-                        interaction
-                    );
-
-
-                    return;
-
-                }
-
-
-
-
-                // Ticket Buttons
-
-                await ticket.buttonHandler(
-                    interaction
-                );
-
-
-                return;
-
-
-            }
-
-
-
-
-
-            // Verify Modal
-
-            if(
-                interaction.isModalSubmit()
-            ){
-
-
-                if(
-                    interaction.customId === "verify_modal"
-                ){
-
-
-                    await verify.modalHandler(
-                        interaction
-                    );
-
-
-                    return;
-
-                }
-
-
-            }
-
-
-
-        }
-        catch(error){
-
-
-
-            console.error(
-                "❌ Errore interaction:",
-                error
-            );
-
-
-
-            if(
-                !interaction.replied &&
-                !interaction.deferred
-            ){
-
-
-                await interaction.reply({
-
-                    content:
-                    "❌ Errore durante l'esecuzione.",
-
-                    ephemeral:true
-
-                });
-
-
-            }
-
-
-        }
-
-
-    }
-);
-
-
-
-
-
-// ======================
-// LOGIN
-// ======================
-
-
-console.log(
-    "TOKEN PRESENTE:",
-    process.env.TOKEN
-    ?
-    "SI"
-    :
-    "NO"
-);
-
-
-
-client.login(
-    process.env.TOKEN
-);
+            "

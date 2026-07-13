@@ -115,7 +115,6 @@ function addXP(userId, amount) {
         profile.level * 100;
 
 
-
     if (profile.xp >= needed) {
 
         profile.level++;
@@ -152,6 +151,113 @@ function addCoins(userId, amount) {
 
 
 
+
+// SISTEMA AUTOMATICO ACHIEVEMENT
+
+function checkAchievements(userId) {
+
+
+    const profile =
+        createProfile(userId);
+
+
+
+    const achievements = [
+
+        {
+            id:"first_game",
+            name:"🎮 Primo Passo",
+            condition:
+            profile.games >= 1,
+            reward:50
+        },
+
+
+        {
+            id:"games_10",
+            name:"🔥 Giocatore Attivo",
+            condition:
+            profile.games >= 10,
+            reward:100
+        },
+
+
+        {
+            id:"first_win",
+            name:"🏆 Prima Vittoria",
+            condition:
+            profile.wins >= 1,
+            reward:75
+        },
+
+
+        {
+            id:"rich",
+            name:"🪙 Ricco",
+            condition:
+            profile.coins >= 1000,
+            reward:200
+        }
+
+    ];
+
+
+
+    let unlocked = [];
+
+
+
+    for(
+        const achievement of achievements
+    ){
+
+
+        if(
+
+            achievement.condition &&
+
+            !profile.achievements.includes(
+                achievement.id
+            )
+
+        ){
+
+
+            profile.achievements.push(
+                achievement.id
+            );
+
+
+            profile.xp +=
+            achievement.reward;
+
+
+
+            unlocked.push(
+                achievement.name
+            );
+
+
+        }
+
+
+    }
+
+
+
+    updateProfile(
+        userId,
+        profile
+    );
+
+
+    return unlocked;
+
+}
+
+
+
+
 module.exports = {
 
     getProfile,
@@ -160,6 +266,8 @@ module.exports = {
 
     addXP,
 
-    addCoins
+    addCoins,
+
+    checkAchievements
 
 };

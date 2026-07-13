@@ -203,6 +203,26 @@ La scelta sta per essere svelata...
     }
 );
 
+        const unlocked =
+    gameSystem.checkAchievements(
+        interaction.user.id
+    );
+
+
+if (unlocked.length > 0) {
+
+    interaction.channel.send(
+`
+🏆 **Achievement sbloccato!**
+
+${unlocked.join("\n")}
+
+✨ Ricompensa XP ricevuta!
+`
+    );
+
+}
+
 
 
         try {

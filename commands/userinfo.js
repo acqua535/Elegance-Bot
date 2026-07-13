@@ -7,7 +7,6 @@ const fs = require("fs");
 const path = require("path");
 
 
-
 const FILE =
 path.join(
     __dirname,
@@ -16,41 +15,30 @@ path.join(
 
 
 
-
 function loadUsers(){
 
-
     if(!fs.existsSync(FILE)){
-
 
         fs.writeFileSync(
             FILE,
             "[]"
         );
 
-
     }
 
 
-
     return JSON.parse(
-
         fs.readFileSync(
             FILE,
             "utf8"
         )
-
     );
-
 
 }
 
 
 
-
-
 module.exports = {
-
 
 
 data:
@@ -63,7 +51,6 @@ new SlashCommandBuilder()
 "Mostra informazioni di un utente"
 )
 
-
 .addUserOption(option =>
 
 option
@@ -71,13 +58,12 @@ option
 .setName("utente")
 
 .setDescription(
-"Utente da controllare"
+"Utente da visualizzare"
 )
 
 .setRequired(false)
 
 ),
-
 
 
 
@@ -88,9 +74,7 @@ async execute(interaction){
 
 const user =
 
-interaction.options.getUser(
-"utente"
-)
+interaction.options.getUser("utente")
 ||
 interaction.user;
 
@@ -109,7 +93,6 @@ user.id
 
 if(!member){
 
-
 return interaction.reply({
 
 content:
@@ -119,9 +102,7 @@ ephemeral:true
 
 });
 
-
 }
-
 
 
 
@@ -143,15 +124,11 @@ u.id === user.id
 
 
 
-
 const birthday =
 
 userData?.birthday
 ||
 "Non impostato";
-
-
-
 
 
 
@@ -174,17 +151,14 @@ role.toString()
 
 )
 
-.join("\n")
+.join(" ")
 ||
 "Nessun ruolo";
 
 
 
 
-
-
-
-const created =
+const accountCreated =
 
 `<t:${Math.floor(
 user.createdTimestamp / 1000
@@ -192,9 +166,7 @@ user.createdTimestamp / 1000
 
 
 
-
-
-const joined =
+const joinedServer =
 
 member.joinedTimestamp
 
@@ -207,8 +179,6 @@ member.joinedTimestamp / 1000
 :
 
 "Non disponibile";
-
-
 
 
 
@@ -230,184 +200,125 @@ member.joinedTimestamp / 1000
 
 
 
-
-
-
 const embed =
-
 
 new EmbedBuilder()
 
-
-
 .setTitle(
-
 "⚜️ USER INFO"
-
 )
-
-
 
 .setThumbnail(
-
 user.displayAvatarURL({
-
 dynamic:true,
-
 size:1024
-
 })
-
 )
-
-
 
 .addFields(
 
-
 {
-
 name:
 "👤 Utente",
-
 value:
-`${user}`
-
+`${user}`,
+inline:true
 },
 
 
-
 {
-
 name:
 "🆔 ID",
-
 value:
-user.id
-
+user.id,
+inline:true
 },
 
 
-
 {
-
 name:
 "🤖 Tipo",
-
 value:
 user.bot
 ?
 "Bot"
 :
-"Utente"
-
+"Utente",
+inline:true
 },
 
 
-
 {
-
 name:
 "📅 Account creato",
-
 value:
-created
-
+accountCreated,
+inline:false
 },
 
 
-
 {
-
 name:
 "📥 Entrato nel server",
-
 value:
-joined
-
+joinedServer,
+inline:false
 },
 
 
-
 {
-
 name:
-"⏳ Nel server da",
-
+"⏳ Presente da",
 value:
-joinedRelative
-
+joinedRelative,
+inline:false
 },
 
 
-
 {
-
 name:
 "🎭 Ruoli",
-
 value:
-roles.substring(
-0,
-1024
-)
-
+roles.substring(0,1024),
+inline:false
 },
 
 
-
 {
-
 name:
 "🎂 Compleanno",
-
 value:
-birthday
-
+birthday,
+inline:false
 }
 
-
-
 )
-
-
 
 .setColor(
 0x5865F2
 )
 
-
-
 .setFooter({
 
 text:
-"⚜️ Elegance User System"
+"⚜️ Elegance Sponsoring"
 
 })
 
-
-
 .setTimestamp();
-
-
-
 
 
 
 await interaction.reply({
 
 embeds:[
-
 embed
-
 ]
 
 });
 
 
-
 }
-
 
 
 };

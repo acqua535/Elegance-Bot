@@ -64,7 +64,7 @@ ${profile.coins || 0}
 ━━━━━━━━━━━━━━━━
 
 🎮 **Minigame giocati**
-${profile.gamesPlayed || 0}
+${profile.games || 0}
 
 🏆 **Vittorie**
 ${profile.wins || 0}

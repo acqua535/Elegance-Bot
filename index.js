@@ -26,30 +26,42 @@ client.commands = new Collection();
 
 
 
-// Comandi
+// ======================
+// COMMAND HANDLER
+// ======================
+
 require("./commandHandler")(client);
 
 
-// Anti Abuse
-require("./anti-abuso")(client);
 
+// ======================
+// SLASH COMMAND DEPLOY
+// ======================
 
-// Deploy Slash Commands
 require("./deployCommand");
 
 
 
-// Sistemi
-const ticket = require("./ticket");
-const verify = require("./verify");
+// ======================
+// SYSTEM HANDLERS
+// ======================
+
+const ticket =
+require("./ticket");
+
+
+const verify =
+require("./verify");
 
 
 
-// Errori
+// ======================
+// ERROR HANDLING
+// ======================
 
 process.on(
     "unhandledRejection",
-    error => {
+    (error)=>{
 
         console.error(
             "❌ Errore non gestito:",
@@ -62,7 +74,7 @@ process.on(
 
 process.on(
     "uncaughtException",
-    error => {
+    (error)=>{
 
         console.error(
             "❌ Eccezione non gestita:",
@@ -74,11 +86,13 @@ process.on(
 
 
 
-// Online
+// ======================
+// BOT ONLINE
+// ======================
 
 client.once(
     "ready",
-    () => {
+    ()=>{
 
         console.log(
             `⚜️ Elegance-Bot online come ${client.user.tag}`
@@ -97,19 +111,24 @@ client.once(
 
 
 
-// Interazioni
+// ======================
+// INTERACTIONS
+// ======================
 
 client.on(
     "interactionCreate",
-    async interaction => {
+    async (interaction)=>{
 
 
-        try {
+        try{
 
+
+            // Slash Commands
 
             if(
                 interaction.isChatInputCommand()
             ){
+
 
                 const command =
                 client.commands.get(
@@ -125,20 +144,25 @@ client.on(
                     interaction
                 );
 
+
                 return;
 
             }
 
 
 
+
+            // Ticket Menu
 
             if(
                 interaction.isStringSelectMenu()
             ){
 
+
                 await ticket.categoryHandler(
                     interaction
                 );
+
 
                 return;
 
@@ -146,6 +170,9 @@ client.on(
 
 
 
+
+
+            // Buttons
 
             if(
                 interaction.isButton()
@@ -156,9 +183,11 @@ client.on(
                     interaction.customId === "verify_button"
                 ){
 
+
                     await verify.buttonHandler(
                         interaction
                     );
+
 
                     return;
 
@@ -170,6 +199,7 @@ client.on(
                     interaction
                 );
 
+
                 return;
 
             }
@@ -177,6 +207,8 @@ client.on(
 
 
 
+
+            // Modal Verify
 
             if(
                 interaction.isModalSubmit()
@@ -200,6 +232,7 @@ client.on(
             }
 
 
+
         }
         catch(error){
 
@@ -218,7 +251,9 @@ client.on(
 
 
 
-
+// ======================
+// LOGIN
+// ======================
 
 console.log(
     "TOKEN PRESENTE:",

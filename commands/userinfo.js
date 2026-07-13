@@ -1,6 +1,6 @@
 const {
-SlashCommandBuilder,
-EmbedBuilder
+    SlashCommandBuilder,
+    EmbedBuilder
 } = require("discord.js");
 
 const fs = require("fs");
@@ -9,8 +9,8 @@ const path = require("path");
 
 const FILE =
 path.join(
-__dirname,
-"../users.json"
+    __dirname,
+    "../utenti.json"
 );
 
 
@@ -25,27 +25,23 @@ new SlashCommandBuilder()
 .setName("userinfo")
 
 .setDescription(
-"Mostra informazioni complete di un utente"
+    "Mostra informazioni di un utente"
 )
 
 .addUserOption(option =>
 
-option
-
-.setName("utente")
-
-.setDescription(
-"Utente da controllare"
-)
-
-.setRequired(false)
+    option
+    .setName("utente")
+    .setDescription(
+        "Utente da controllare"
+    )
+    .setRequired(false)
 
 ),
 
 
 
 async execute(interaction){
-
 
 
 const user =
@@ -61,7 +57,7 @@ const member =
 await interaction.guild.members
 .fetch(user.id)
 .catch(
-()=>null
+    () => null
 );
 
 
@@ -71,7 +67,7 @@ if(!member){
 return interaction.reply({
 
 content:
-"❌ Utente non trovato.",
+"❌ Utente non trovato nel server.",
 
 ephemeral:true
 
@@ -88,6 +84,7 @@ let users = [];
 if(fs.existsSync(FILE)){
 
 users =
+
 JSON.parse(
 fs.readFileSync(
 FILE,
@@ -99,7 +96,7 @@ FILE,
 
 
 
-const data =
+const userData =
 
 users.find(
 u =>
@@ -110,41 +107,21 @@ u.id === user.id
 
 const birthday =
 
-data?.birthday
+userData?.birthday
 ||
 "Non impostato";
 
 
 
-const messages =
-
-data?.messages
-||
-0;
-
-
-
-const lastMessage =
-
-data?.lastMessage
-
-?
-
-`<t:${Math.floor(data.lastMessage / 1000)}:R>`
-
-:
-
-"Mai";
-
-
+// Ruoli
 
 const roles =
 
 member.roles.cache
 
 .filter(
-r =>
-r.id !== interaction.guild.id
+role =>
+role.id !== interaction.guild.id
 )
 
 .sort(
@@ -153,18 +130,23 @@ b.position - a.position
 )
 
 .map(
-r =>
-r.toString()
+role =>
+role.toString()
 )
 
 .join("\n")
 ||
-
 "Nessun ruolo";
 
 
 
-const topRole =
+const roleCount =
+
+member.roles.cache.size - 1;
+
+
+
+const highestRole =
 
 member.roles.highest.id !== interaction.guild.id
 
@@ -175,6 +157,14 @@ member.roles.highest.toString()
 :
 
 "Nessun ruolo";
+
+
+
+// Date
+
+const created =
+
+`<t:${Math.floor(user.createdTimestamp / 1000)}:D>`;
 
 
 
@@ -192,9 +182,19 @@ member.joinedTimestamp
 
 
 
-const created =
+const joinedRelative =
 
-`<t:${Math.floor(user.createdTimestamp / 1000)}:D>`;
+member.joinedTimestamp
+
+?
+
+`<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`
+
+:
+
+"Non disponibile";
+
+
 
 
 
@@ -209,7 +209,8 @@ new EmbedBuilder()
 
 .setThumbnail(
 user.displayAvatarURL({
-dynamic:true
+dynamic:true,
+size:1024
 })
 )
 
@@ -219,45 +220,50 @@ dynamic:true
 
 {
 name:"👤 Utente",
-value:`${user}`
+value:
+`${user}`
 },
 
 
 {
 name:"🆔 ID",
-value:user.id
+value:
+user.id
 },
 
 
 {
 name:"📅 Account creato",
-value:created
+value:
+created
 },
 
 
 {
 name:"📥 Entrato nel server",
-value:joined
+value:
+joined
 },
 
 
 {
-name:"⏳ Presente da",
+name:"⏳ Nel server da",
 value:
-member.joinedTimestamp
-?
-
-`<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`
-
-:
-
-"Non disponibile"
+joinedRelative
 },
 
 
 {
 name:"👑 Ruolo più alto",
-value:topRole
+value:
+highestRole
+},
+
+
+{
+name:"🎭 Numero ruoli",
+value:
+`${roleCount}`
 },
 
 
@@ -270,24 +276,15 @@ roles.substring(0,1024)
 
 {
 name:"🎂 Compleanno",
-value:birthday
-},
-
-
-{
-name:"💬 Messaggi",
 value:
-`${messages}`
-},
-
-
-{
-name:"🕒 Ultimo messaggio",
-value:
-lastMessage
+birthday
 }
 
+)
 
+
+.setColor(
+0x5865F2
 )
 
 

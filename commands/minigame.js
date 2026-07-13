@@ -195,6 +195,14 @@ La scelta sta per essere svelata...
 
         });
 
+        gameSystem.updateProfile(
+    interaction.user.id,
+    {
+        games:
+        gameSystem.getProfile(interaction.user.id).games + 1
+    }
+);
+
 
 
         try {

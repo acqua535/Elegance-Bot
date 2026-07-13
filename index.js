@@ -30,6 +30,9 @@ client.commands = new Collection();
 // Caricamento comandi
 require("./commandHandler")(client);
 
+// Auguri Di Compleanno System
+require("./birthday-system")(client);
+
 // Segnalazioni Anti Abuse
 require("./anti-abuse")(client);
 

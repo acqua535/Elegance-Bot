@@ -42,6 +42,11 @@ const ticket = require("./ticket");
 
 
 
+// Sistema verifica
+const verify = require("./verify");
+
+
+
 // Gestione errori
 
 process.on(
@@ -108,6 +113,8 @@ client.on(
 
 
 
+            // Slash Commands
+
             if (interaction.isChatInputCommand()) {
 
 
@@ -126,9 +133,13 @@ client.on(
                     interaction
                 );
 
+
             }
 
 
+
+
+            // Menu Ticket
 
             if (interaction.isStringSelectMenu()) {
 
@@ -142,12 +153,65 @@ client.on(
 
 
 
+
+
+            // Bottoni
+
             if (interaction.isButton()) {
 
+
+
+                // Bottone verifica
+
+                if (
+                    interaction.customId === "verify_button"
+                ) {
+
+
+                    await verify.buttonHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+                // Bottoni ticket
 
                 await ticket.buttonHandler(
                     interaction
                 );
+
+
+            }
+
+
+
+
+
+            // Modal CAPTCHA
+
+            if (interaction.isModalSubmit()) {
+
+
+
+                if (
+                    interaction.customId === "verify_modal"
+                ) {
+
+
+                    await verify.modalHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
 
 
             }

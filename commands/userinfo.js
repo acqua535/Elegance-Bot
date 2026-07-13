@@ -18,11 +18,15 @@ __dirname,
 module.exports = {
 
 
-data:new SlashCommandBuilder()
+data:
+
+new SlashCommandBuilder()
 
 .setName("userinfo")
 
-.setDescription("Mostra informazioni di un utente")
+.setDescription(
+"Mostra informazioni complete di un utente"
+)
 
 .addUserOption(option =>
 
@@ -30,7 +34,9 @@ option
 
 .setName("utente")
 
-.setDescription("Utente da vedere")
+.setDescription(
+"Utente da controllare"
+)
 
 .setRequired(false)
 
@@ -43,6 +49,7 @@ async execute(interaction){
 
 
 const user =
+
 interaction.options.getUser("utente")
 ||
 interaction.user;
@@ -50,100 +57,262 @@ interaction.user;
 
 
 const member =
-await interaction.guild.members.fetch(
-user.id
+
+await interaction.guild.members
+.fetch(user.id)
+.catch(
+()=>null
 );
 
 
 
-let users =
+if(!member){
+
+return interaction.reply({
+
+content:
+"❌ Utente non trovato.",
+
+ephemeral:true
+
+});
+
+}
+
+
+
+let users = [];
+
+
+
+if(fs.existsSync(FILE)){
+
+users =
 JSON.parse(
-fs.readFileSync(FILE,"utf8")
+fs.readFileSync(
+FILE,
+"utf8"
+)
 );
 
+}
 
 
-let data =
+
+const data =
+
 users.find(
-u=>u.id===user.id
+u =>
+u.id === user.id
 );
 
 
 
 const birthday =
+
 data?.birthday
 ||
 "Non impostato";
 
 
 
+const messages =
+
+data?.messages
+||
+0;
+
+
+
+const lastMessage =
+
+data?.lastMessage
+
+?
+
+`<t:${Math.floor(data.lastMessage / 1000)}:R>`
+
+:
+
+"Mai";
+
+
+
 const roles =
+
 member.roles.cache
 
-.filter(r=>r.id!==interaction.guild.id)
+.filter(
+r =>
+r.id !== interaction.guild.id
+)
 
-.map(r=>r.toString())
+.sort(
+(a,b)=>
+b.position - a.position
+)
 
-.join(" ")
+.map(
+r =>
+r.toString()
+)
+
+.join("\n")
 ||
+
 "Nessun ruolo";
 
 
 
+const topRole =
+
+member.roles.highest.id !== interaction.guild.id
+
+?
+
+member.roles.highest.toString()
+
+:
+
+"Nessun ruolo";
+
+
+
+const joined =
+
+member.joinedTimestamp
+
+?
+
+`<t:${Math.floor(member.joinedTimestamp / 1000)}:D>`
+
+:
+
+"Non disponibile";
+
+
+
+const created =
+
+`<t:${Math.floor(user.createdTimestamp / 1000)}:D>`;
+
+
+
 const embed =
+
+
 new EmbedBuilder()
 
-.setTitle("⚜️ USER INFO")
-
-.setThumbnail(
-user.displayAvatarURL()
+.setTitle(
+"⚜️ USER INFO"
 )
 
+.setThumbnail(
+user.displayAvatarURL({
+dynamic:true
+})
+)
+
+
 .addFields(
+
 
 {
 name:"👤 Utente",
 value:`${user}`
 },
 
+
 {
 name:"🆔 ID",
 value:user.id
 },
 
+
 {
 name:"📅 Account creato",
-value:`<t:${Math.floor(user.createdTimestamp/1000)}:D>`
+value:created
 },
+
 
 {
 name:"📥 Entrato nel server",
-value:`<t:${Math.floor(member.joinedTimestamp/1000)}:D>`
+value:joined
 },
+
+
+{
+name:"⏳ Presente da",
+value:
+member.joinedTimestamp
+?
+
+`<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`
+
+:
+
+"Non disponibile"
+},
+
+
+{
+name:"👑 Ruolo più alto",
+value:topRole
+},
+
+
+{
+name:"🎭 Ruoli",
+value:
+roles.substring(0,1024)
+},
+
 
 {
 name:"🎂 Compleanno",
 value:birthday
 },
 
+
 {
-name:"🎭 Ruoli",
-value:roles.substring(0,1024)
+name:"💬 Messaggi",
+value:
+`${messages}`
+},
+
+
+{
+name:"🕒 Ultimo messaggio",
+value:
+lastMessage
 }
 
+
 )
+
+
+.setFooter({
+
+text:
+"⚜️ Elegance User System"
+
+})
+
 
 .setTimestamp();
 
 
 
-interaction.reply({
+await interaction.reply({
 
-embeds:[embed]
+embeds:[
+embed
+]
 
 });
 
 
 }
+
 
 };

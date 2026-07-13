@@ -9,128 +9,130 @@ const SUGGEST_CHANNEL_ID = "1526006559736463420";
 
 module.exports = {
 
+data: new SlashCommandBuilder()
 
-    data: new SlashCommandBuilder()
+.setName("suggest")
 
-        .setName("suggest")
+.setDescription("Invia un suggerimento alla community")
 
-        .setDescription(
-            "Invia un suggerimento per Elegance Sponsoring"
-        )
-
-        .addStringOption(option =>
-
-            option
-
-                .setName("idea")
-
-                .setDescription(
-                    "Il tuo suggerimento"
-                )
-
-                .setRequired(true)
-
-        ),
+.addStringOption(option =>
+    option
+    .setName("idea")
+    .setDescription("Il tuo suggerimento")
+    .setRequired(true)
+),
 
 
-
-    async execute(interaction) {
-
-
-        const idea =
-            interaction.options.getString(
-                "idea"
-            );
+async execute(interaction) {
 
 
-        const channel =
-            interaction.guild.channels.cache.get(
-                SUGGEST_CHANNEL_ID
-            );
+const idea =
+interaction.options.getString("idea");
 
 
-
-        if (!channel) {
-
-
-            return interaction.reply({
-
-                content:
-                    "❌ Canale suggerimenti non trovato.",
-
-                ephemeral: true
-
-            });
+const channel =
+interaction.guild.channels.cache.get(
+SUGGEST_CHANNEL_ID
+);
 
 
-        }
+if (!channel) {
+
+return interaction.reply({
+
+content:"❌ Canale suggerimenti non trovato.",
+
+ephemeral:true
+
+});
+
+}
 
 
 
-        const embed =
-            new EmbedBuilder()
+const embed =
+new EmbedBuilder()
 
-                .setTitle(
-                    "💡 Nuovo Suggerimento"
-                )
+.setTitle("💡 Nuovo Suggerimento")
 
-                .setDescription(
-                    idea
-                )
+.setDescription(
+`**Idea:**\n${idea}`
+)
 
-                .addFields(
+.addFields(
 
-                    {
-                        name: "👤 Autore",
-                        value:
-                            `${interaction.user}`
-                    },
+{
+name:"👤 Autore",
+value:`${interaction.user}`,
+inline:true
+},
 
-                    {
-                        name: "📅 Data",
-                        value:
-                            `<t:${Math.floor(Date.now()/1000)}:F>`
-                    }
+{
+name:"📊 Stato",
+value:"🟡 In valutazione",
+inline:true
+}
 
-                )
+)
 
-                .setFooter({
+.setFooter({
 
-                    text:
-                    "Elegance Sponsoring"
+text:
+"⚜️ Elegance Sponsoring • Suggerimenti"
 
-                });
+})
 
-
-
-        const message =
-            await channel.send({
-
-                embeds: [
-                    embed
-                ]
-
-            });
+.setTimestamp();
 
 
 
-        await message.react("👍");
+const message =
+await channel.send({
 
-        await message.react("👎");
+embeds:[
+embed
+]
 
-
-
-        await interaction.reply({
-
-            content:
-                "✅ Suggerimento inviato correttamente!",
-
-            ephemeral: true
-
-        });
+});
 
 
-    }
 
+await message.react("👍");
+await message.react("👎");
+
+
+
+const thread =
+await message.startThread({
+
+name:
+`💡 Discussione suggerimento`,
+
+autoArchiveDuration:1440
+
+});
+
+
+
+await thread.send({
+
+content:
+"⚜️ Discussione aperta.\nPotete parlare qui della proposta."
+
+});
+
+
+
+await interaction.reply({
+
+content:
+"✅ Suggerimento inviato!",
+
+ephemeral:true
+
+});
+
+
+}
 
 };

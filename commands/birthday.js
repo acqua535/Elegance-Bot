@@ -7,13 +7,16 @@ const fs = require("fs");
 const path = require("path");
 
 
-const FILE = path.join(
+const FILE =
+path.join(
     __dirname,
     "../users.json"
 );
 
 
+
 module.exports = {
+
 
 data: new SlashCommandBuilder()
 
@@ -36,21 +39,22 @@ data: new SlashCommandBuilder()
 ),
 
 
+
 async execute(interaction){
 
 
 let users =
 JSON.parse(
-    fs.readFileSync(FILE,"utf8")
+    fs.readFileSync(FILE, "utf8")
 );
 
 
 
-let giorno =
+const giorno =
 interaction.options.getInteger("giorno");
 
 
-let mese =
+const mese =
 interaction.options.getInteger("mese");
 
 
@@ -77,7 +81,7 @@ ephemeral:true
 
 let user =
 users.find(
-u => u.id === interaction.user.id
+    u => u.id === interaction.user.id
 );
 
 
@@ -87,9 +91,11 @@ if(!user){
 user = {
 
 id: interaction.user.id,
+
 birthday: null
 
 };
+
 
 users.push(user);
 
@@ -119,21 +125,32 @@ null,
 const embed =
 new EmbedBuilder()
 
-.setTitle("🎂 Compleanno salvato")
+.setTitle(
+"🎂 Compleanno salvato"
+)
 
 .setDescription(
 
-`Il tuo compleanno è stato impostato a **${giorno}/${mese}**`
+`Il tuo compleanno è stato impostato a **${giorno}/${mese}**.`
 
 )
+
+.setFooter({
+
+text:
+"⚜️ Elegance Sponsoring"
+
+})
 
 .setTimestamp();
 
 
 
-interaction.reply({
+await interaction.reply({
 
-embeds:[embed],
+embeds:[
+    embed
+],
 
 ephemeral:true
 

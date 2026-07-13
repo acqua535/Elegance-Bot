@@ -30,6 +30,9 @@ client.commands = new Collection();
 // Caricamento comandi
 require("./commandHandler")(client);
 
+// Segnalazioni Anti Abuse
+require("./anti-abuse")(client);
+
 
 
 // Registrazione slash commands

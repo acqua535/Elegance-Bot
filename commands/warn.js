@@ -4,7 +4,7 @@ const {
     PermissionFlagsBits
 } = require("discord.js");
 
-const moderation = require("../moderationSystem");
+const moderation = require("./moderationSystem");
 
 
 module.exports = {

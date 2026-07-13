@@ -36,6 +36,8 @@ require("./birthday-system")(client);
 // Segnalazioni Anti Abuse
 require("./anti-abuse")(client);
 
+//  Conteggio Messaggi
+require("./message-counter")(client);
 
 
 // Registrazione slash commands

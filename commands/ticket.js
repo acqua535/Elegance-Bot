@@ -14,7 +14,7 @@ const {
 const fs = require("fs");
 
 
-const ticketsSystem = require("../ticketsSystem");
+const ticketsSystem = require("./ticketsSystem");
 
 
 

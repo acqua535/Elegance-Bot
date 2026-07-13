@@ -1,8 +1,9 @@
-const { 
-    Client, 
-    GatewayIntentBits, 
-    Collection 
+const {
+    Client,
+    GatewayIntentBits,
+    Collection
 } = require("discord.js");
+
 
 
 const client = new Client({
@@ -27,36 +28,55 @@ client.commands = new Collection();
 
 
 
-// Caricamento comandi
+// ======================
+// SYSTEMS
+// ======================
+
+
 require("./commandHandler")(client);
 
-// Auguri Di Compleanno System
+
+// Birthday System
 require("./birthday-system")(client);
 
-// Segnalazioni Anti Abuse
+
+// Anti Abuse
 require("./anti-abuse")(client);
 
 
-// Registrazione slash commands
+
+// Slash Deploy
 require("./deployCommands");
 
 
 
-// Sistema ticket
-const ticket = require("./ticket");
+// ======================
+// HANDLERS
+// ======================
+
+
+const ticket =
+require("./ticket");
+
+
+const verify =
+require("./verify");
+
+
+const poll =
+require("./commands/poll");
 
 
 
-// Sistema verifica
-const verify = require("./verify");
 
+// ======================
+// ERROR HANDLING
+// ======================
 
-
-// Gestione errori
 
 process.on(
     "unhandledRejection",
-    (error) => {
+    (error)=>{
 
         console.error(
             "❌ Errore non gestito:",
@@ -70,7 +90,7 @@ process.on(
 
 process.on(
     "uncaughtException",
-    (error) => {
+    (error)=>{
 
         console.error(
             "❌ Eccezione non gestita:",
@@ -82,11 +102,15 @@ process.on(
 
 
 
-// Bot online
+
+// ======================
+// READY
+// ======================
+
 
 client.once(
     "ready",
-    () => {
+    ()=>{
 
 
         console.log(
@@ -107,29 +131,34 @@ client.once(
 
 
 
-// Interazioni
+
+// ======================
+// INTERACTIONS
+// ======================
+
 
 client.on(
     "interactionCreate",
-    async (interaction) => {
+    async (interaction)=>{
 
 
-        try {
-
+        try{
 
 
             // Slash Commands
 
-            if (interaction.isChatInputCommand()) {
+            if(
+                interaction.isChatInputCommand()
+            ){
 
 
                 const command =
-                    client.commands.get(
-                        interaction.commandName
-                    );
+                client.commands.get(
+                    interaction.commandName
+                );
 
 
-                if (!command)
+                if(!command)
                     return;
 
 
@@ -139,14 +168,19 @@ client.on(
                 );
 
 
+                return;
+
             }
 
 
 
 
-            // Menu Ticket
 
-            if (interaction.isStringSelectMenu()) {
+            // Ticket Select Menu
+
+            if(
+                interaction.isStringSelectMenu()
+            ){
 
 
                 await ticket.categoryHandler(
@@ -154,23 +188,27 @@ client.on(
                 );
 
 
+                return;
+
             }
 
 
 
 
 
-            // Bottoni
+            // Buttons
 
-            if (interaction.isButton()) {
+            if(
+                interaction.isButton()
+            ){
 
 
 
-                // Bottone verifica
+                // Verify Button
 
-                if (
+                if(
                     interaction.customId === "verify_button"
-                ) {
+                ){
 
 
                     await verify.buttonHandler(
@@ -185,11 +223,33 @@ client.on(
 
 
 
-                // Bottoni ticket
+                // Poll Buttons
+
+                if(
+                    interaction.customId.startsWith("poll_")
+                ){
+
+
+                    await poll.buttonHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+                // Ticket Buttons
 
                 await ticket.buttonHandler(
                     interaction
                 );
+
+
+                return;
 
 
             }
@@ -198,15 +258,16 @@ client.on(
 
 
 
-            // Modal CAPTCHA
+            // Verify Modal
 
-            if (interaction.isModalSubmit()) {
+            if(
+                interaction.isModalSubmit()
+            ){
 
 
-
-                if (
+                if(
                     interaction.customId === "verify_modal"
-                ) {
+                ){
 
 
                     await verify.modalHandler(
@@ -223,7 +284,9 @@ client.on(
 
 
 
-        } catch(error) {
+        }
+        catch(error){
+
 
 
             console.error(
@@ -233,10 +296,10 @@ client.on(
 
 
 
-            if (
+            if(
                 !interaction.replied &&
                 !interaction.deferred
-            ) {
+            ){
 
 
                 await interaction.reply({
@@ -260,11 +323,20 @@ client.on(
 
 
 
-// Token
+
+
+// ======================
+// LOGIN
+// ======================
+
 
 console.log(
     "TOKEN PRESENTE:",
-    process.env.TOKEN ? "SI" : "NO"
+    process.env.TOKEN
+    ?
+    "SI"
+    :
+    "NO"
 );
 
 

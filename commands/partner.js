@@ -1,155 +1,159 @@
 const {
-    SlashCommandBuilder,
-    EmbedBuilder
+    SlashCommandBuilder
 } = require("discord.js");
 
 
-const PARTNER_CHANNEL = "1508774443286003815";
+const CHANNEL_ID = "1508774443286003815";
+const LOG_ID = "1505261606483923105";
 
 
 module.exports = {
 
-    data: new SlashCommandBuilder()
+data: new SlashCommandBuilder()
 
-        .setName("partner")
+.setName("partner")
 
-        .setDescription("Crea una richiesta partnership")
+.setDescription("Crea una richiesta partnership")
 
-        .addStringOption(option =>
-            option
-                .setName("link")
-                .setDescription("Link invito del server partner")
-                .setRequired(true)
-        )
+.addUserOption(option =>
+option
+.setName("richiesta_da")
+.setDescription("Utente che richiede la partnership")
+.setRequired(true)
+)
 
-        .addStringOption(option =>
-            option
-                .setName("category")
-                .setDescription("Categoria del server partner")
-                .setRequired(true)
+.addStringOption(option =>
+option
+.setName("categoria")
+.setDescription("Categoria")
+.setRequired(true)
+.addChoices(
+{
+name:"🌐 Community",
+value:"🌐 Community"
+},
+{
+name:"🎮 Gaming",
+value:"🎮 Gaming"
+},
+{
+name:"🎭 Roleplay",
+value:"🎭 Roleplay"
+},
+{
+name:"🚗 FiveM",
+value:"🚗 FiveM"
+}
+)
+)
 
-                .addChoices(
-                    {
-                        name: "🌐 Community",
-                        value: "🌐 Community"
-                    },
-                    {
-                        name: "🎮 Gaming",
-                        value: "🎮 Gaming"
-                    },
-                    {
-                        name: "🎭 Roleplay",
-                        value: "🎭 Roleplay"
-                    },
-                    {
-                        name: "🚗 FiveM",
-                        value: "🚗 FiveM"
-                    }
-                )
-        ),
-
-
-    async execute(interaction) {
-
-
-        const link =
-            interaction.options.getString("link");
-
-
-        const category =
-            interaction.options.getString("category");
-
-
-        let invite;
-
-
-        try {
-
-            invite =
-                await interaction.client.fetchInvite(link);
-
-        } catch {
-
-            return interaction.reply({
-                content:"❌ Link Discord non valido.",
-                ephemeral:true
-            });
-
-        }
+.addStringOption(option =>
+option
+.setName("descrizione")
+.setDescription("Descrizione richiesta")
+.setRequired(true)
+),
 
 
 
-        const guildName =
-            invite.guild?.name || "Sconosciuto";
+async execute(interaction){
 
 
-        const description =
-            invite.guild?.description || 
-            "Nessuna descrizione disponibile.";
+const richiesta =
+interaction.options.getUser("richiesta_da");
+
+
+const categoria =
+interaction.options.getString("categoria");
+
+
+const descrizione =
+interaction.options.getString("descrizione");
 
 
 
-        const embed =
-        new EmbedBuilder()
+const testo =
 
-        .setTitle("🤝 NUOVA PARTNERSHIP")
+`━━━━━━━⚜️━━━━━━━
 
-        .setDescription(
-`
-━━━━━━━⚜️━━━━━━━
+🤝 **NUOVA PARTNERSHIP**
 
 👤 **Autore**
 ${interaction.user}
 
 📌 **Richiesta da**
-${interaction.user}
+${richiesta}
 
 🏷️ **Categoria**
-${category}
-
-🏛️ **Server**
-${guildName}
+${categoria}
 
 📝 **Descrizione**
+${descrizione}
 
-${description}
-
-━━━━━━━⚜️━━━━━━━
-`
-        )
-
-        .setColor("Gold")
-
-        .setTimestamp();
+━━━━━━━⚜️━━━━━━━`;
 
 
 
-        const channel =
-            interaction.guild.channels.cache.get(
-                PARTNER_CHANNEL
-            );
-
-
-        if(channel){
-
-            await channel.send({
-                embeds:[embed]
-            });
-
-        }
+const channel =
+interaction.guild.channels.cache.get(CHANNEL_ID);
 
 
 
-        await interaction.reply({
+if(!channel){
 
-            content:
-            "✅ Richiesta partnership inviata correttamente.",
+return interaction.reply({
+content:"❌ Canale non trovato.",
+ephemeral:true
+});
 
-            ephemeral:true
-
-        });
+}
 
 
-    }
+
+await channel.send(testo);
+
+
+
+const log =
+interaction.guild.channels.cache.get(LOG_ID);
+
+
+
+if(log){
+
+log.send(
+
+`📋 **LOG PARTNERSHIP**
+
+👤 Autore:
+${interaction.user}
+
+📌 Richiesta da:
+${richiesta}
+
+🏷️ Categoria:
+${categoria}
+
+📝 Descrizione:
+${descrizione}
+
+⏰ <t:${Math.floor(Date.now()/1000)}:F>`
+
+);
+
+}
+
+
+
+interaction.reply({
+
+content:"✅ Partnership inviata.",
+
+ephemeral:true
+
+});
+
+
+}
 
 };

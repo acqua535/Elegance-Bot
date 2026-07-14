@@ -16,8 +16,8 @@ const client = new Client({
 client.commands = new Collection();
 
 
-// Command Handler
-require("./commandHandler")(client);
+// Deploy Command
+require("./deployCommand")
 
 
 // Sistemi

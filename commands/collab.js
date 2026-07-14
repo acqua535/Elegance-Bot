@@ -1,191 +1,174 @@
 const {
-    SlashCommandBuilder,
-    EmbedBuilder
+    SlashCommandBuilder
 } = require("discord.js");
 
 
-const COLLAB_CHANNEL = "1522610038831845518";
+const CHANNEL_ID = "1522610038831845518";
+const LOG_ID = "1505261606483923105";
 
 
 module.exports = {
 
+    data: new SlashCommandBuilder()
 
-data:new SlashCommandBuilder()
+        .setName("collab")
 
-.setName("collab")
+        .setDescription("Crea una richiesta collaborazione")
 
-.setDescription("Crea una richiesta collaborazione")
+        .addUserOption(option =>
+            option
+                .setName("richiesta_da")
+                .setDescription("Utente che richiede la collaborazione")
+                .setRequired(true)
+        )
 
-.addStringOption(option =>
-option
+        .addStringOption(option =>
+            option
+                .setName("categoria")
+                .setDescription("Categoria del server")
+                .setRequired(true)
 
-.setName("link")
+                .addChoices(
 
-.setDescription(
-"Link invito del server collaboratore"
-)
+                    {
+                        name:"🌐 Community",
+                        value:"🌐 Community"
+                    },
 
-.setRequired(true)
+                    {
+                        name:"🎮 Gaming",
+                        value:"🎮 Gaming"
+                    },
 
-)
+                    {
+                        name:"🎭 Roleplay",
+                        value:"🎭 Roleplay"
+                    },
 
+                    {
+                        name:"🚗 FiveM",
+                        value:"🚗 FiveM"
+                    }
 
-.addStringOption(option =>
-option
+                )
+        )
 
-.setName("category")
-
-.setDescription(
-"Categoria del server"
-)
-
-.setRequired(true)
-
-.addChoices(
-
-{
-name:"🌐 Community",
-value:"🌐 Community"
-},
-
-{
-name:"🎮 Gaming",
-value:"🎮 Gaming"
-},
-
-{
-name:"🎭 Roleplay",
-value:"🎭 Roleplay"
-},
-
-{
-name:"🚗 FiveM",
-value:"🚗 FiveM"
-}
-
-)
-
-),
+        .addStringOption(option =>
+            option
+                .setName("descrizione")
+                .setDescription("Descrizione della collaborazione")
+                .setRequired(true)
+        ),
 
 
 
-async execute(interaction){
+    async execute(interaction){
 
 
-const link =
-interaction.options.getString("link");
+        const richiesta =
+            interaction.options.getUser("richiesta_da");
 
 
-const category =
-interaction.options.getString("category");
+        const categoria =
+            interaction.options.getString("categoria");
 
 
-
-let invite;
-
-
-try {
-
-
-invite =
-await interaction.client.fetchInvite(link);
-
-
-}catch{
-
-
-return interaction.reply({
-
-content:
-"❌ Link Discord non valido.",
-
-ephemeral:true
-
-});
-
-
-}
+        const descrizione =
+            interaction.options.getString("descrizione");
 
 
 
-const guildName =
-invite.guild?.name ||
-"Sconosciuto";
+        const messaggio =
 
+`━━━━━━━⚜️━━━━━━━
 
-const description =
-invite.guild?.description ||
-"Nessuna descrizione disponibile.";
-
-
-
-const embed =
-new EmbedBuilder()
-
-.setTitle("🌐 NUOVA COLLABORAZIONE")
-
-.setDescription(
-
-`
-━━━━━━━⚜️━━━━━━━
+🌐 **NUOVA COLLABORAZIONE**
 
 👤 **Autore**
 ${interaction.user}
 
 📌 **Richiesta da**
-${interaction.user}
+${richiesta}
 
 🏷️ **Categoria**
-${category}
-
-🏛️ **Server**
-${guildName}
+${categoria}
 
 📝 **Descrizione**
+${descrizione}
 
-${description}
-
-━━━━━━━⚜️━━━━━━━
-`
-
-)
-
-.setColor("Blue")
-
-.setTimestamp();
+━━━━━━━⚜️━━━━━━━`;
 
 
 
-const channel =
-interaction.guild.channels.cache.get(
-COLLAB_CHANNEL
-);
+        const channel =
+            interaction.guild.channels.cache.get(
+                CHANNEL_ID
+            );
+
+
+        if(!channel){
+
+            return interaction.reply({
+
+                content:
+                "❌ Canale collaborazione non trovato.",
+
+                ephemeral:true
+
+            });
+
+        }
 
 
 
-if(channel){
-
-await channel.send({
-
-embeds:[embed]
-
-});
-
-}
+        await channel.send(
+            messaggio
+        );
 
 
 
-await interaction.reply({
-
-content:
-"✅ Richiesta collaborazione inviata.",
-
-ephemeral:true
-
-});
+        const log =
+            interaction.guild.channels.cache.get(
+                LOG_ID
+            );
 
 
-}
+        if(log){
 
+            await log.send(
+
+`📋 **LOG COLLABORAZIONE**
+
+👤 Autore:
+${interaction.user}
+
+📌 Richiesta da:
+${richiesta}
+
+🏷️ Categoria:
+${categoria}
+
+📝 Descrizione:
+${descrizione}
+
+⏰ <t:${Math.floor(Date.now()/1000)}:F>`
+
+            );
+
+        }
+
+
+
+        await interaction.reply({
+
+            content:
+            "✅ Collaborazione inviata correttamente.",
+
+            ephemeral:true
+
+        });
+
+
+    }
 
 };

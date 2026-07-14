@@ -5,55 +5,64 @@ module.exports = function loadCommands(client) {
 
     client.commands = new Map();
 
-    const commandsPath = path.join(__dirname, "commands");
-
-    if (!fs.existsSync(commandsPath)) {
-        console.log("❌ Cartella commands non trovata");
-        return;
-    }
+    const locations = [
+        path.join(__dirname, "commands"),
+        __dirname
+    ];
 
 
-    const commandFiles = fs.readdirSync(commandsPath)
-        .filter(file => file.endsWith(".js"));
+    for (const location of locations) {
+
+        if (!fs.existsSync(location)) {
+            continue;
+        }
 
 
-    for (const file of commandFiles) {
-
-        try {
-
-            const command = require(
-                path.join(commandsPath, file)
-            );
+        const files = fs.readdirSync(location)
+            .filter(file => file.endsWith(".js"))
+            .filter(file => file !== "commandHandler.js")
+            .filter(file => file !== "deployCommand.js");
 
 
-            if (!command.data || !command.execute) {
+        for (const file of files) {
 
-                console.log(
-                    `⚠️ Comando non valido: ${file}`
+            try {
+
+                const command = require(
+                    path.join(location, file)
                 );
 
-                continue;
+
+                if (!command.data || !command.execute) {
+                    continue;
+                }
+
+
+                // evita duplicati
+                if (client.commands.has(command.data.name)) {
+                    continue;
+                }
+
+
+                client.commands.set(
+                    command.data.name,
+                    command
+                );
+
+
+                console.log(
+                    `✅ Comando caricato: ${command.data.name}`
+                );
+
+
+            } catch(error) {
+
+                console.error(
+                    `❌ Errore caricando ${file}:`,
+                    error
+                );
 
             }
-
-
-            client.commands.set(
-                command.data.name,
-                command
-            );
-
-
-            console.log(
-                `✅ Comando caricato: ${command.data.name}`
-            );
-
-
-        } catch(error) {
-
-            console.error(
-                `❌ Errore caricando ${file}:`,
-                error
-            );
 
         }
 

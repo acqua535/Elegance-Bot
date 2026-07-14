@@ -1,77 +1,49 @@
-console.log("VERSIONE HANDLER ROOT SENZA CARTELLE");
-
-
 const fs = require("fs");
 const path = require("path");
 
+module.exports = function loadCommands(client) {
 
-module.exports = (client) => {
+    const commandsPath = path.join(__dirname, "comandi");
+
+    if (!fs.existsSync(commandsPath)) {
+        console.log("❌ Cartella comandi non trovata");
+        return;
+    }
 
 
-    const commandFiles = fs.readdirSync(__dirname)
-
-        .filter(file =>
-
-            file.endsWith(".js") &&
-
-            file !== "index.js" &&
-
-            file !== "commandHandler.js" &&
-
-            file !== "deployCommands.js"
-
-        );
-
+    const commandFiles = fs
+        .readdirSync(commandsPath)
+        .filter(file => file.endsWith(".js"));
 
 
     for (const file of commandFiles) {
 
+        const command = require(
+            path.join(commandsPath, file)
+        );
 
-        try {
 
+        if (!command.data || !command.execute) {
 
-            const command = require(
-                path.join(__dirname, file)
+            console.log(
+                `⚠️ Comando ignorato: ${file}`
             );
 
-
-
-            if (
-                command.data &&
-                command.execute
-            ) {
-
-
-                client.commands.set(
-
-                    command.data.name,
-
-                    command
-
-                );
-
-
-                console.log(
-                    `✅ Comando caricato: ${command.data.name}`
-                );
-
-
-            }
-
-
-        } catch(error) {
-
-
-            console.error(
-                `❌ Errore caricando ${file}:`,
-                error
-            );
-
+            continue;
 
         }
 
 
-    }
+        client.commands.set(
+            command.data.name,
+            command
+        );
 
+
+        console.log(
+            `✅ Comando caricato: ${command.data.name}`
+        );
+
+    }
 
 };

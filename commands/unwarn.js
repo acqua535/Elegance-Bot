@@ -6,6 +6,7 @@ const {
 
 const moderation = require("./moderationSystem");
 
+
 module.exports = {
 
     data: new SlashCommandBuilder()
@@ -32,12 +33,20 @@ module.exports = {
                 .setRequired(true)
         ),
 
+
+
     async execute(interaction) {
 
+
         const user = interaction.options.getUser("utente");
+
         const number = interaction.options.getInteger("numero");
 
+
+
         const warnings = moderation.getWarnings(user.id);
+
+
 
         if (warnings.length === 0) {
 
@@ -51,6 +60,8 @@ module.exports = {
 
         }
 
+
+
         if (number < 1 || number > warnings.length) {
 
             return interaction.reply({
@@ -63,9 +74,21 @@ module.exports = {
 
         }
 
-        const removed = warnings.splice(number - 1, 1);
 
-        moderation.updateWarnings(user.id, warnings);
+
+        const removed = warnings.splice(
+            number - 1,
+            1
+        );
+
+
+
+        moderation.updateWarnings(
+            user.id,
+            warnings
+        );
+
+
 
         const embed = new EmbedBuilder()
 
@@ -91,11 +114,14 @@ ${warnings.length}`
 
             .setTimestamp();
 
+
+
         await interaction.reply({
 
             embeds: [embed]
 
         });
+
 
     }
 

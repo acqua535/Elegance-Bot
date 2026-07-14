@@ -1,3 +1,13 @@
+// PARTE 1/2 - MINIGAME.JS
+// Base system:
+// - Minigame Hub
+// - Anti raid
+// - Quiz avanzato
+// - XP system hook
+// - Achievement hook
+// - ButtonHandler globale compatibile
+
+
 const {
     SlashCommandBuilder,
     EmbedBuilder,
@@ -10,32 +20,30 @@ const {
 const gameSystem = require("./gameSystem");
 
 
-// ===============================
-// GAME STATUS
-// ===============================
+
+// ============================
+// ACTIVE GAMES
+// ============================
 
 const activeGames = new Set();
 
 
-// ===============================
-// ANTI RIPETIZIONE
-// ===============================
+
+// ============================
+// RECENT GAMES
+// ============================
 
 const recentGames = {
 
-    quiz: [],
-    memory: [],
-    word: [],
-    reaction: [],
-    hangman: []
+    quiz: []
 
 };
 
 
 
-// ===============================
+// ============================
 // QUIZ DATABASE
-// ===============================
+// ============================
 
 const quizzes = [
 
@@ -47,7 +55,7 @@ answer:"giove"
 
 {
 id:2,
-question:"Qual è la capitale dell'Italia?",
+question:"Qual è la capitale d'Italia?",
 answer:"roma"
 },
 
@@ -65,49 +73,171 @@ answer:"dante"
 
 {
 id:5,
+question:"Quanti continenti ci sono?",
+answer:"7"
+},
+
+{
+id:6,
+question:"Qual è il mammifero più grande del mondo?",
+answer:"balena azzurra"
+},
+
+{
+id:7,
 question:"Qual è il satellite naturale della Terra?",
 answer:"luna"
 },
 
 {
-id:6,
-question:"Qual è l'animale più grande del mondo?",
-answer:"balenottera azzurra"
-},
-
-{
-id:7,
-question:"Quanti giorni ha una settimana?",
-answer:"7"
-},
-
-{
 id:8,
+question:"Qual è la stella più vicina alla Terra?",
+answer:"sole"
+},
+
+{
+id:9,
+question:"In che anno è iniziata la Seconda Guerra Mondiale?",
+answer:"1939"
+},
+
+{
+id:10,
+question:"Qual è la lingua più parlata al mondo?",
+answer:"cinese"
+},
+
+{
+id:11,
+question:"Qual è il simbolo chimico dell'acqua?",
+answer:"h2o"
+},
+
+{
+id:12,
+question:"Quanti lati ha un esagono?",
+answer:"6"
+},
+
+{
+id:13,
+question:"Qual è il pianeta rosso?",
+answer:"marte"
+},
+
+{
+id:14,
+question:"Chi ha inventato la lampadina?",
+answer:"edison"
+},
+
+{
+id:15,
+question:"Qual è l'animale terrestre più veloce?",
+answer:"ghepardo"
+},
+
+{
+id:16,
+question:"Qual è il continente più grande?",
+answer:"asia"
+},
+
+{
+id:17,
+question:"Quanto fa 9 x 9?",
+answer:"81"
+},
+
+{
+id:18,
 question:"Qual è la capitale della Francia?",
 answer:"parigi"
 },
 
 {
-id:9,
-question:"Quale linguaggio viene usato principalmente per creare pagine web?",
-answer:"html"
+id:19,
+question:"Qual è il colore del cielo in una giornata serena?",
+answer:"blu"
 },
 
 {
-id:10,
-question:"Quanto fa 10 x 10?",
-answer:"100"
+id:20,
+question:"Quale gas respiriamo principalmente?",
+answer:"ossigeno"
+},
+
+{
+id:21,
+question:"Qual è il pianeta più vicino al Sole?",
+answer:"mercurio"
+},
+
+{
+id:22,
+question:"Quanti giorni ha un anno normale?",
+answer:"365"
+},
+
+{
+id:23,
+question:"Qual è il nome del nostro pianeta?",
+answer:"terra"
+},
+
+{
+id:24,
+question:"Quale animale viene chiamato re della savana?",
+answer:"leone"
+},
+
+{
+id:25,
+question:"Qual è la capitale della Spagna?",
+answer:"madrid"
+},
+
+{
+id:26,
+question:"Quante ore ci sono in un giorno?",
+answer:"24"
+},
+
+{
+id:27,
+question:"Qual è il più grande oceano della Terra?",
+answer:"pacifico"
+},
+
+{
+id:28,
+question:"Quale strumento misura la temperatura?",
+answer:"termometro"
+},
+
+{
+id:29,
+question:"Qual è il pianeta con gli anelli più famosi?",
+answer:"saturno"
+},
+
+{
+id:30,
+question:"Quanti colori ha l'arcobaleno?",
+answer:"7"
 }
 
 ];
 
 
 
-// ===============================
-// RANDOM QUIZ
-// ===============================
+// ============================
+// RANDOM QUIZ SYSTEM
+// ============================
+
 
 function getRandomQuiz(){
+
 
     let available =
     quizzes.filter(
@@ -125,35 +255,76 @@ function getRandomQuiz(){
     }
 
 
-    const quiz =
+    const selected =
     available[
         Math.floor(
-            Math.random()*available.length
+            Math.random() *
+            available.length
         )
     ];
 
 
     recentGames.quiz.push(
-        quiz.id
+        selected.id
     );
 
 
-    if(recentGames.quiz.length > 5){
+    if(recentGames.quiz.length > 10){
 
         recentGames.quiz.shift();
 
     }
 
 
-    return quiz;
+    return selected;
 
 }
 
 
 
-// ===============================
+
+
+// ============================
+// XP SYSTEM
+// ============================
+
+
+function win(userId, xp){
+
+
+    gameSystem.addXP(
+        userId,
+        xp
+    );
+
+
+    return gameSystem.checkAchievements(
+        userId
+    );
+
+
+}
+
+
+
+function lose(userId){
+
+
+    gameSystem.addXP(
+        userId,
+        5
+    );
+
+
+}
+
+
+
+
+
+// ============================
 // COMMAND
-// ===============================
+// ============================
 
 
 module.exports = {
@@ -171,21 +342,38 @@ new SlashCommandBuilder()
 
 
 
-
 async execute(interaction){
 
 
+    if(
+        activeGames.has(
+            interaction.channel.id
+        )
+    ){
 
-const embed = new EmbedBuilder()
+        return interaction.reply({
 
-.setTitle(
-"🎮 Minigame Hub"
-)
+            content:
+            "⚠️ Un minigame è già attivo in questo canale!",
 
-.setDescription(
+            ephemeral:true
+
+        });
+
+    }
+
+
+
+    const embed = new EmbedBuilder()
+
+    .setTitle(
+        "🎮 Minigame Hub"
+    )
+
+    .setDescription(
 
 `
-Scegli il minigame.
+Scegli un minigame.
 
 ━━━━━━━━━━━━━━
 
@@ -203,125 +391,124 @@ Scegli il minigame.
 
 ━━━━━━━━━━━━━━
 
-Ogni gioco assegna:
-
 ⭐ XP
-
 🏆 Achievement
-
 🪙 Ricompense
 
+Buona fortuna!
 `
 
-)
+    )
 
-.setColor("Gold");
-
-
+    .setColor("Gold");
 
 
 
-const row = new ActionRowBuilder()
-
-.addComponents(
 
 
-new ButtonBuilder()
+    const row =
+    new ActionRowBuilder()
 
-.setCustomId(
-"game_number"
-)
-
-.setLabel(
-"🎯 Numero"
-)
-
-.setStyle(
-ButtonStyle.Primary
-),
+    .addComponents(
 
 
+        new ButtonBuilder()
 
-new ButtonBuilder()
+        .setCustomId(
+            "game_quiz"
+        )
 
-.setCustomId(
-"game_quiz"
-)
+        .setLabel(
+            "🧠 Quiz"
+        )
 
-.setLabel(
-"🧠 Quiz"
-)
-
-.setStyle(
-ButtonStyle.Success
-),
+        .setStyle(
+            ButtonStyle.Success
+        ),
 
 
 
-new ButtonBuilder()
+        new ButtonBuilder()
 
-.setCustomId(
-"game_memory"
-)
+        .setCustomId(
+            "game_memory"
+        )
 
-.setLabel(
-"🧩 Memory"
-)
+        .setLabel(
+            "🧩 Memory"
+        )
 
-.setStyle(
-ButtonStyle.Secondary
-),
-
-
-
-new ButtonBuilder()
-
-.setCustomId(
-"game_word"
-)
-
-.setLabel(
-"🔤 Parola"
-)
-
-.setStyle(
-ButtonStyle.Primary
-),
+        .setStyle(
+            ButtonStyle.Secondary
+        ),
 
 
 
-new ButtonBuilder()
+        new ButtonBuilder()
 
-.setCustomId(
-"game_hangman"
-)
+        .setCustomId(
+            "game_word"
+        )
 
-.setLabel(
-"🪢 Impiccato"
-)
+        .setLabel(
+            "🔤 Parola"
+        )
 
-.setStyle(
-ButtonStyle.Danger
-)
-
-);
+        .setStyle(
+            ButtonStyle.Primary
+        ),
 
 
 
-await interaction.reply({
+        new ButtonBuilder()
 
-embeds:[
-embed
-],
+        .setCustomId(
+            "game_reaction"
+        )
 
-components:[
-row
-]
+        .setLabel(
+            "⚡ Reaction"
+        )
 
-});
+        .setStyle(
+            ButtonStyle.Primary
+        ),
+
+
+
+        new ButtonBuilder()
+
+        .setCustomId(
+            "game_hangman"
+        )
+
+        .setLabel(
+            "🪢 Impiccato"
+        )
+
+        .setStyle(
+            ButtonStyle.Danger
+        )
+
+    );
+
+
+
+    await interaction.reply({
+
+        embeds:[
+            embed
+        ],
+
+        components:[
+            row
+        ]
+
+    });
 
 
 }
+
 
 
 };
@@ -329,216 +516,10 @@ row
 
 
 
-// ===============================
-// XP SYSTEM
-// ===============================
 
-
-function win(userId,xp){
-
-
-gameSystem.addXP(
-userId,
-xp
-);
-
-
-return gameSystem.checkAchievements(
-userId
-);
-
-
-}
-
-
-
-function lose(userId){
-
-
-gameSystem.addXP(
-userId,
-5
-);
-
-
-}
-
-
-
-
-
-// ===============================
-// UTILITY
-// ===============================
-
-
-function wait(ms){
-
-return new Promise(
-
-resolve =>
-
-setTimeout(
-resolve,
-ms
-)
-
-);
-
-}
-
-
-
-
-
-function collectMessage(interaction,time){
-
-
-return interaction.channel.awaitMessages({
-
-filter:
-
-m =>
-!m.author.bot,
-
-
-max:1,
-
-
-time:
-time*1000
-
-
-})
-
-
-.then(c=>c.first())
-
-
-.catch(()=>null);
-
-
-}
-
-
-
-
-// ===============================
-// NUMBER GAME
-// ===============================
-
-
-async function numberGame(interaction){
-
-
-const number =
-
-Math.floor(
-Math.random()*10
-)+1;
-
-
-
-await interaction.channel.send(
-
-`
-🎯 **Indovina il numero**
-
-Sto pensando ad un numero da 1 a 10.
-
-Hai 20 secondi.
-`
-
-);
-
-
-
-const msg =
-
-await collectMessage(
-interaction,
-20
-);
-
-
-
-if(!msg){
-
-return interaction.channel.send(
-"⏰ Tempo scaduto!"
-);
-
-}
-
-
-
-if(
-msg.content === String(number)
-){
-
-
-const achievements =
-
-win(
-msg.author.id,
-25
-);
-
-
-
-return interaction.channel.send(
-
-`
-🏆 Hai vinto!
-
-Numero:
-
-**${number}**
-
-⭐ +25 XP
-
-${achievements.join("\n")}
-`
-
-);
-
-
-
-}
-
-
-
-lose(
-msg.author.id
-);
-
-
-
-interaction.channel.send(
-
-`
-❌ Hai perso!
-
-Il numero era:
-
-**${number}**
-
-⭐ +5 XP
-
-`
-
-);
-
-
-
-}
-
-
-
-
-// ===============================
+// ============================
 // QUIZ GAME
-// ===============================
+// ============================
 
 
 async function quizGame(interaction){
@@ -546,7 +527,6 @@ async function quizGame(interaction){
 
 const quiz =
 getRandomQuiz();
-
 
 
 
@@ -565,9 +545,9 @@ new EmbedBuilder()
 `
 ${quiz.question}
 
-Hai 20 secondi.
+Hai **20 secondi**.
 
-Scrivi la risposta in chat.
+Scrivi la risposta.
 `
 
 )
@@ -580,10 +560,7 @@ Scrivi la risposta in chat.
 
 
 
-
-
 const msg =
-
 await collectMessage(
 interaction,
 20
@@ -601,23 +578,16 @@ return interaction.channel.send(
 
 
 
-
 if(
-
 msg.content
 .toLowerCase()
 .trim()
-
 ===
-
 quiz.answer
-
 ){
 
 
-
 const achievements =
-
 win(
 msg.author.id,
 25
@@ -631,6 +601,7 @@ return interaction.channel.send(
 🏆 Risposta corretta!
 
 ⭐ +25 XP
+🪙 +50 monete
 
 ${achievements.join("\n")}
 `
@@ -664,189 +635,255 @@ Era:
 );
 
 
+}
+
+
+
+
+module.exports.quizGame =
+quizGame;
+
+
+
+
+function collectMessage(interaction,time){
+
+
+return interaction.channel.awaitMessages({
+
+filter:
+
+m =>
+!m.author.bot,
+
+
+max:1,
+
+
+time:
+time * 1000
+
+
+})
+
+.then(c => c.first())
+
+.catch(() => null);
+
 
 }
 
-// ===============================
+// PARTE 2/2 - MINIGAME.JS
+// Memory
+// Parola Misteriosa
+// Reaction
+// Impiccato
+// Button handlers export
+
+
+// ============================
 // MEMORY GAME
-// ===============================
+// ============================
 
 
-const colors = [
-
-"🔴",
-"🔵",
-"🟢",
-"🟡",
-"🟣",
-"🟠"
-
+const memoryColors = [
+    "🔴",
+    "🔵",
+    "🟢",
+    "🟡",
+    "🟣",
+    "🟠"
 ];
+
+
+
+function randomColors(){
+
+
+    const amount =
+    Math.floor(Math.random() * 3) + 4;
+
+
+    let result = [];
+
+
+    for(let i = 0; i < amount; i++){
+
+        result.push(
+            memoryColors[
+                Math.floor(
+                    Math.random() *
+                    memoryColors.length
+                )
+            ]
+        );
+
+    }
+
+
+    return result;
+
+}
+
 
 
 
 async function memoryGame(interaction){
 
 
-const length =
-
-Math.floor(
-Math.random()*3
-)+3;
+    const sequence =
+    randomColors();
 
 
 
-let sequence = [];
-
-
-
-for(let i = 0; i < length; i++){
-
-sequence.push(
-
-colors[
-
-Math.floor(
-Math.random()*colors.length
-)
-
-]
-
-);
-
-}
-
-
-
-
-await interaction.channel.send(
+    const msg =
+    await interaction.channel.send(
 
 `
 🧩 **MEMORY**
 
-Memorizza questa combinazione:
+Memorizza questa sequenza:
 
 ${sequence.join(" ")}
 
-Hai pochi secondi...
+Hai **3 secondi**.
 `
 
-);
+    );
 
 
 
-await wait(5000);
+    await wait(3000);
 
 
 
-for(let i = 5; i > 0; i--){
+    await msg.edit(
 
-await interaction.channel.send(
+`
+🧩 **MEMORY**
 
-`⏳ Distrazione: ${i}`
+❌ Sequenza nascosta.
 
-);
+Preparati...
 
-await wait(1000);
+Distrazione:
+`
 
-}
-
-
-
-
-const msg =
-
-await collectMessage(
-interaction,
-20
-);
+    );
 
 
 
-if(!msg){
+    for(
+        let i = 5;
+        i > 0;
+        i--
+    ){
 
-return interaction.channel.send(
-"⏰ Tempo scaduto!"
-);
+        await msg.edit(
 
-}
+`
+🧩 Distrazione...
 
+⏳ ${i}
+`
 
+        );
 
+        await wait(1000);
 
-const answer =
-
-msg.content
-.trim()
-.split(" ");
-
-
-
-if(
-
-JSON.stringify(answer)
-
-===
-
-JSON.stringify(sequence)
-
-){
+    }
 
 
 
-const achievements =
+    await msg.edit(
 
-win(
-msg.author.id,
-40
-);
+`
+🧩 **MEMORY**
+
+Scrivi la sequenza corretta.
+
+Esempio:
+
+🔴 🔵 🟢
+`
+
+    );
 
 
 
-return interaction.channel.send(
+    const answer =
+    await collectMessage(
+        interaction,
+       20
+    );
+
+
+
+    if(!answer)
+    return;
+
+
+
+    const user =
+    answer.content
+    .trim();
+
+
+
+    const correct =
+    sequence.join("");
+
+
+
+    if(
+        user.replaceAll(" ","")
+        ===
+        correct
+    ){
+
+
+        const achievements =
+        win(
+            answer.author.id,
+            50
+        );
+
+
+        return interaction.channel.send(
 
 `
 🏆 Memory completato!
 
-Combinazione corretta:
-
-${sequence.join(" ")}
-
-⭐ +40 XP
+⭐ +50 XP
 
 ${achievements.join("\n")}
 `
 
-);
+        );
+
+
+    }
 
 
 
-}
+    lose(
+        answer.author.id
+    );
 
 
-
-lose(
-msg.author.id
-);
-
-
-
-interaction.channel.send(
+    interaction.channel.send(
 
 `
-❌ Memory fallito!
+❌ Sequenza errata!
 
-La combinazione era:
+Era:
 
 ${sequence.join(" ")}
 
-Hai scritto:
-
-${answer.join(" ")}
+⭐ +5 XP
 `
 
-);
-
+    );
 
 
 }
@@ -855,39 +892,45 @@ ${answer.join(" ")}
 
 
 
-
-
-// ===============================
+// ============================
 // PAROLA MISTERIOSA
-// ===============================
+// ============================
 
 
+const mysteryWords = {
 
-const words = {
 
-easy:[
+facile:[
 
-"cane",
 "sole",
+"luna",
+"marte",
+"cane",
 "mare"
 
 ],
 
-medium:[
 
-"discord",
+medio:[
+
+"galassia",
 "computer",
-"galassia"
+"discord",
+"pianeta",
+"astronomia"
 
 ],
 
-hard:[
+
+difficile:[
 
 "javascript",
-"astronomia",
-"programmazione"
+"costellazione",
+"programmazione",
+"universo"
 
 ]
+
 
 };
 
@@ -898,43 +941,96 @@ hard:[
 async function wordGame(interaction){
 
 
+const row =
+new ActionRowBuilder()
 
-const difficulty =
+.addComponents(
 
-[
-"easy",
-"medium",
-"hard"
 
-][
+new ButtonBuilder()
 
-Math.floor(
-Math.random()*3
+.setCustomId(
+"word_easy"
 )
 
-];
+.setLabel(
+"🟢 Facile"
+)
+
+.setStyle(
+ButtonStyle.Success
+),
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"word_medium"
+)
+
+.setLabel(
+"🟡 Medio"
+)
+
+.setStyle(
+ButtonStyle.Primary
+),
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"word_hard"
+)
+
+.setLabel(
+"🔴 Difficile"
+)
+
+.setStyle(
+ButtonStyle.Danger
+)
+
+
+);
+
+
+
+await interaction.channel.send({
+
+content:
+
+"🔤 Scegli difficoltà:",
+
+components:[row]
+
+});
+
+
+
+}
+
+
+
+
+async function startWordGame(
+interaction,
+difficulty
+){
 
 
 
 const list =
-
-words[difficulty];
+mysteryWords[difficulty];
 
 
 
 const word =
-
 list[
-
 Math.floor(
 Math.random()*list.length
 )
-
 ];
-
-
-
-let attempts = 5;
 
 
 
@@ -943,17 +1039,20 @@ await interaction.channel.send(
 `
 🔤 **PAROLA MISTERIOSA**
 
-Difficoltà:
+Categoria:
+🌎 Generale
 
-**${difficulty}**
+Lettere:
 
-Indovina la parola.
+${word.length}
 
-Tentativi:
+Parola:
 
-${attempts}
+${"_ ".repeat(word.length)}
 
 Hai 30 secondi.
+
+Scrivi la parola.
 `
 
 );
@@ -961,7 +1060,6 @@ Hai 30 secondi.
 
 
 const msg =
-
 await collectMessage(
 interaction,
 30
@@ -969,43 +1067,35 @@ interaction,
 
 
 
-if(!msg){
-
-return interaction.channel.send(
-"⏰ Tempo scaduto!"
-);
-
-}
+if(!msg)
+return;
 
 
 
 if(
-
 msg.content
 .toLowerCase()
 .trim()
-
 ===
-
 word
-
 ){
 
 
-let xp = 20;
 
-
-if(difficulty==="medium")
-xp = 40;
-
-
-if(difficulty==="hard")
-xp = 70;
+const xp =
+difficulty==="facile"
+?
+20
+:
+difficulty==="medio"
+?
+40
+:
+70;
 
 
 
 const achievements =
-
 win(
 msg.author.id,
 xp
@@ -1013,14 +1103,10 @@ xp
 
 
 
-return interaction.channel.send(
+interaction.channel.send(
 
 `
 🏆 Parola trovata!
-
-La parola era:
-
-**${word}**
 
 ⭐ +${xp} XP
 
@@ -1031,8 +1117,7 @@ ${achievements.join("\n")}
 
 
 
-}
-
+}else{
 
 
 lose(
@@ -1040,11 +1125,10 @@ msg.author.id
 );
 
 
-
 interaction.channel.send(
 
 `
-❌ Hai perso!
+❌ Risposta errata!
 
 La parola era:
 
@@ -1054,6 +1138,8 @@ La parola era:
 );
 
 
+}
+
 
 }
 
@@ -1061,12 +1147,9 @@ La parola era:
 
 
 
-
-
-// ===============================
+// ============================
 // REACTION GAME
-// ===============================
-
+// ============================
 
 
 async function reactionGame(interaction){
@@ -1079,30 +1162,31 @@ const messages = [
 
 "Concentrati",
 
-"Sta arrivando"
+"Attendi"
 
 ];
 
 
 
-for(const text of messages){
+for(
+const m of messages
+){
 
-
+const x =
 await interaction.channel.send(
-
-`⚡ ${text}`
-
+`⚡ ${m}`
 );
 
-
 await wait(2000);
+
+await x.delete()
+.catch(()=>{});
 
 }
 
 
 
-
-const positions = [
+const places = [
 
 "titolo",
 "testo",
@@ -1113,19 +1197,15 @@ const positions = [
 
 
 const position =
-
-positions[
-
+places[
 Math.floor(
-Math.random()*positions.length
+Math.random()*places.length
 )
-
 ];
 
 
 
 let embed =
-
 new EmbedBuilder()
 
 .setTitle(
@@ -1133,35 +1213,22 @@ new EmbedBuilder()
 )
 
 .setDescription(
-"Trova il simbolo verde 🟢"
+"Trova 🟢"
 )
 
 .setColor("Green");
 
 
 
-
-if(position==="titolo"){
+if(position==="titolo")
 
 embed.setTitle(
 "🟢 Reaction"
 );
 
-}
 
 
-
-if(position==="testo"){
-
-embed.setDescription(
-"Trova questo: 🟢"
-);
-
-}
-
-
-
-if(position==="footer"){
+if(position==="footer")
 
 embed.setFooter({
 
@@ -1170,12 +1237,9 @@ text:
 
 });
 
-}
 
 
-
-const message =
-
+const msg =
 await interaction.channel.send({
 
 embeds:[
@@ -1192,20 +1256,16 @@ Date.now();
 
 
 const answer =
-
-await message.channel.awaitMessages({
+await msg.channel.awaitMessages({
 
 filter:
 
 m =>
-
 !m.author.bot &&
-
 m.content.includes("🟢"),
 
 
 max:1,
-
 
 time:10000
 
@@ -1215,33 +1275,25 @@ time:10000
 
 
 
-if(!answer){
-
-return interaction.channel.send(
-"❌ Troppo lento!"
-);
-
-}
+if(!answer)
+return;
 
 
 
-const time =
-
+const ms =
 Date.now()-start;
 
 
 
 const xp =
-
 Math.max(
 10,
-60-Math.floor(time/100)
+60 - Math.floor(ms/100)
 );
 
 
 
 const achievements =
-
 win(
 answer.first().author.id,
 xp
@@ -1255,8 +1307,7 @@ interaction.channel.send(
 ⚡ Reaction completata!
 
 Tempo:
-
-${time}ms
+${ms}ms
 
 ⭐ +${xp} XP
 
@@ -1273,11 +1324,9 @@ ${achievements.join("\n")}
 
 
 
-
-// ===============================
+// ============================
 // IMPICCATO
-// ===============================
-
+// ============================
 
 
 const hangmanWords = [
@@ -1292,15 +1341,15 @@ const hangmanWords = [
 
 
 
-const hangmanParts = [
+const hangman = [
 
 "",
-"O",
-"O\n|",
-"O\n/|",
-"O\n/|\\\\",
-"O\n/|\\\\\n/",
-"O\n/|\\\\\n/ \\"
+" O ",
+" O\n |",
+" O\n/|",
+" O\n/|\\",
+" O\n/|\\\n/",
+" O\n/|\\\n/ \\"
 
 ];
 
@@ -1313,13 +1362,10 @@ async function hangmanGame(interaction){
 
 
 const word =
-
-hangmanWords[
-
+hangman[
 Math.floor(
 Math.random()*hangmanWords.length
 )
-
 ];
 
 
@@ -1330,60 +1376,46 @@ let errors = 0;
 
 
 
-function display(){
+while(errors < 6){
 
 
-return word
 
+const display =
+word
 .split("")
-
 .map(
-
 x =>
-
 used.includes(x)
-
 ?
-
 x
-
 :
-
 "⬜"
-
 )
-
 .join(" ");
 
-}
 
 
-
-let msg =
-
+const msg =
 await interaction.channel.send(
 
 `
 🪢 **IMPICCATO**
 
-${hangmanParts[errors]}
+${hangman[errors]}
 
-${display()}
+${display}
 
-Scrivi una lettera.
-Errori: ${errors}/6
+Errori:
+${errors}/6
+
+Lettera:
 `
 
 );
 
 
 
-while(errors < 6){
-
-
-
 const answer =
-
 await collectMessage(
 interaction,
 60
@@ -1392,29 +1424,28 @@ interaction,
 
 
 if(!answer)
-break;
+return;
 
 
 
 const letter =
-
 answer.content
 .toLowerCase()
 .trim();
 
 
 
-
-if(letter.length !== 1)
+if(
+letter.length!==1
+)
 continue;
 
 
 
-if(used.includes(letter)){
-
+if(
+used.includes(letter)
+)
 continue;
-
-}
 
 
 
@@ -1422,30 +1453,24 @@ used.push(letter);
 
 
 
-if(!word.includes(letter)){
-
+if(
+!word.includes(letter)
+)
 errors++;
-
-}
 
 
 
 if(
-
-word.split("")
-
+word
+.split("")
 .every(
-
-x => used.includes(x)
-
+x =>
+used.includes(x)
 )
-
 ){
 
 
-
 const achievements =
-
 win(
 answer.author.id,
 60
@@ -1456,10 +1481,9 @@ answer.author.id,
 return interaction.channel.send(
 
 `
-🏆 Hai vinto l'Impiccato!
+🏆 Hai vinto l'impiccato!
 
 Parola:
-
 **${word}**
 
 ⭐ +60 XP
@@ -1470,31 +1494,7 @@ ${achievements.join("\n")}
 );
 
 
-
 }
-
-
-
-await msg.edit(
-
-`
-🪢 **IMPICCATO**
-
-${hangmanParts[errors]}
-
-${display()}
-
-Errori:
-
-${errors}/6
-
-Lettere:
-
-${used.join(", ")}
-`
-
-);
-
 
 
 }
@@ -1509,8 +1509,6 @@ interaction.channel.send(
 La parola era:
 
 **${word}**
-
-⭐ +5 XP
 `
 
 );
@@ -1522,14 +1520,47 @@ La parola era:
 
 
 
-// ===============================
-// EXPORT
-// ===============================
+// ============================
+// EXPORT BUTTON FUNCTIONS
+// ============================
 
 
-module.exports.quizGame = quizGame;
-module.exports.numberGame = numberGame;
-module.exports.memoryGame = memoryGame;
-module.exports.wordGame = wordGame;
-module.exports.reactionGame = reactionGame;
-module.exports.hangmanGame = hangmanGame;
+module.exports.memoryGame =
+memoryGame;
+
+
+module.exports.wordGame =
+wordGame;
+
+
+module.exports.startWordGame =
+startWordGame;
+
+
+module.exports.reactionGame =
+reactionGame;
+
+
+module.exports.hangmanGame =
+hangmanGame;
+
+
+
+
+
+// ============================
+// UTILS
+// ============================
+
+
+function wait(ms){
+
+return new Promise(
+resolve =>
+setTimeout(
+resolve,
+ms
+)
+);
+
+    }

@@ -1,164 +1,191 @@
 const {
-    SlashCommandBuilder
+    SlashCommandBuilder,
+    EmbedBuilder
 } = require("discord.js");
+
+
+const COLLAB_CHANNEL = "1522610038831845518";
 
 
 module.exports = {
 
-    data: new SlashCommandBuilder()
 
-        .setName("collab")
+data:new SlashCommandBuilder()
 
-        .setDescription(
-            "Crea una richiesta collaborazione"
-        )
+.setName("collab")
 
+.setDescription("Crea una richiesta collaborazione")
 
-        .addStringOption(option =>
-            option
+.addStringOption(option =>
+option
 
-                .setName("link")
+.setName("link")
 
-                .setDescription(
-                    "Link invito del server collaboratore"
-                )
+.setDescription(
+"Link invito del server collaboratore"
+)
 
-                .setRequired(true)
-        )
+.setRequired(true)
 
-
-        .addUserOption(option =>
-            option
-
-                .setName("manager")
-
-                .setDescription(
-                    "Referente del server collaboratore"
-                )
-
-                .setRequired(true)
-        )
+)
 
 
-        .addStringOption(option =>
-            option
+.addStringOption(option =>
+option
 
-                .setName("category")
+.setName("category")
 
-                .setDescription(
-                    "Categoria del server"
-                )
+.setDescription(
+"Categoria del server"
+)
 
-                .setRequired(true)
+.setRequired(true)
 
-                .addChoices(
+.addChoices(
 
-                    {
-                        name: "🌐 Community",
-                        value: "🌐 Community"
-                    },
+{
+name:"🌐 Community",
+value:"🌐 Community"
+},
 
-                    {
-                        name: "🎮 Gaming",
-                        value: "🎮 Gaming"
-                    },
+{
+name:"🎮 Gaming",
+value:"🎮 Gaming"
+},
 
-                    {
-                        name: "🎭 Roleplay",
-                        value: "🎭 Roleplay"
-                    },
+{
+name:"🎭 Roleplay",
+value:"🎭 Roleplay"
+},
 
-                    {
-                        name: "🚗 FiveM",
-                        value: "🚗 FiveM"
-                    }
+{
+name:"🚗 FiveM",
+value:"🚗 FiveM"
+}
 
-                )
-        ),
+)
+
+),
 
 
 
-    async execute(interaction) {
+async execute(interaction){
 
 
-        const link =
-            interaction.options.getString("link");
+const link =
+interaction.options.getString("link");
 
 
-        const manager =
-            interaction.options.getUser("manager");
-
-
-        const category =
-            interaction.options.getString("category");
+const category =
+interaction.options.getString("category");
 
 
 
-        let invite;
+let invite;
 
 
-        try {
-
-            invite =
-                await interaction.client.fetchInvite(link);
+try {
 
 
-        } catch (error) {
+invite =
+await interaction.client.fetchInvite(link);
 
 
-            return interaction.reply({
-
-                content:
-                    "❌ Link Discord non valido.",
-
-                ephemeral: true
-
-            });
-
-        }
+}catch{
 
 
+return interaction.reply({
 
-        const partnerServer =
-            invite.guild?.name || "Sconosciuto";
+content:
+"❌ Link Discord non valido.",
+
+ephemeral:true
+
+});
 
 
-        const members =
-            invite.approximateMemberCount || "N/D";
+}
 
 
 
-        await interaction.reply({
+const guildName =
+invite.guild?.name ||
+"Sconosciuto";
 
-            content:
 
-`━━━━━━━👑━━━━━━━
+const description =
+invite.guild?.description ||
+"Nessuna descrizione disponibile.";
 
-🌐 **NUOVA COLLABORAZIONE**
 
-**_AUTHOR_**
+
+const embed =
+new EmbedBuilder()
+
+.setTitle("🌐 NUOVA COLLABORAZIONE")
+
+.setDescription(
+
+`
+━━━━━━━⚜️━━━━━━━
+
+👤 **Autore**
 ${interaction.user}
 
-**_MANAGER_**
-${manager}
+📌 **Richiesta da**
+${interaction.user}
 
-**_CATEGORY_**
+🏷️ **Categoria**
 ${category}
 
-**_SERVER_**
-${interaction.guild.name}
+🏛️ **Server**
+${guildName}
 
-**_COLLAB SERVER_**
-${partnerServer}
+📝 **Descrizione**
 
-**_MEMBERS_**
-${members}
+${description}
 
-━━━━━━━👑━━━━━━━`
+━━━━━━━⚜️━━━━━━━
+`
 
-        });
+)
+
+.setColor("Blue")
+
+.setTimestamp();
 
 
-    }
+
+const channel =
+interaction.guild.channels.cache.get(
+COLLAB_CHANNEL
+);
+
+
+
+if(channel){
+
+await channel.send({
+
+embeds:[embed]
+
+});
+
+}
+
+
+
+await interaction.reply({
+
+content:
+"✅ Richiesta collaborazione inviata.",
+
+ephemeral:true
+
+});
+
+
+}
+
 
 };

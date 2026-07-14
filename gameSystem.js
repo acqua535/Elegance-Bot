@@ -9,7 +9,7 @@ const file = "./gameData.json";
 // =====================================
 
 
-function loadData() {
+function loadData(){
 
 
     if(!fs.existsSync(file)){
@@ -41,6 +41,7 @@ function loadData() {
 
 
 
+
 function saveData(data){
 
 
@@ -64,8 +65,9 @@ function saveData(data){
 
 
 
+
 // =====================================
-// CREAZIONE PROFILO
+// PROFILO
 // =====================================
 
 
@@ -83,9 +85,6 @@ function createProfile(userId){
 
         data[userId] = {
 
-
-            // statistiche base
-
             games:0,
 
             wins:0,
@@ -93,44 +92,27 @@ function createProfile(userId){
             losses:0,
 
 
-
-            // xp sistema
-
             xp:0,
 
             level:1,
 
 
-
-            // economia
-
             coins:0,
 
-
-
-            // streak
 
             streak:0,
 
             bestStreak:0,
 
 
-
-            // achievement
-
             achievements:[],
 
-
-
-            // inventario
 
             inventory:[],
 
 
 
-
             // statistiche minigame
-
 
             quizWins:0,
 
@@ -141,7 +123,6 @@ function createProfile(userId){
             reactionWins:0,
 
             hangmanWins:0
-
 
 
         };
@@ -163,77 +144,67 @@ function createProfile(userId){
 
 
 
-    // aggiornamento vecchi profili
+    const defaults = {
 
 
-    if(!profile.games)
-        profile.games = 0;
+        games:0,
+
+        wins:0,
+
+        losses:0,
 
 
-    if(!profile.wins)
-        profile.wins = 0;
+        xp:0,
+
+        level:1,
 
 
-    if(!profile.losses)
-        profile.losses = 0;
+        coins:0,
 
 
+        streak:0,
 
-    if(!profile.xp)
-        profile.xp = 0;
-
-
-
-    if(!profile.level)
-        profile.level = 1;
+        bestStreak:0,
 
 
-
-    if(!profile.coins)
-        profile.coins = 0;
+        achievements:[],
 
 
-
-    if(profile.streak === undefined)
-        profile.streak = 0;
+        inventory:[],
 
 
+        quizWins:0,
 
-    if(profile.bestStreak === undefined)
-        profile.bestStreak = 0;
+        memoryWins:0,
+
+        wordWins:0,
+
+        reactionWins:0,
+
+        hangmanWins:0
 
 
-
-    if(!profile.achievements)
-        profile.achievements = [];
-
-
-
-    if(!profile.inventory)
-        profile.inventory = [];
+    };
 
 
 
 
 
-    if(profile.quizWins === undefined)
-        profile.quizWins = 0;
+    for(const key in defaults){
 
 
-    if(profile.memoryWins === undefined)
-        profile.memoryWins = 0;
+        if(profile[key] === undefined){
 
 
-    if(profile.wordWins === undefined)
-        profile.wordWins = 0;
+            profile[key] =
+            defaults[key];
 
 
-    if(profile.reactionWins === undefined)
-        profile.reactionWins = 0;
+        }
 
 
-    if(profile.hangmanWins === undefined)
-        profile.hangmanWins = 0;
+    }
+
 
 
 
@@ -252,6 +223,8 @@ function createProfile(userId){
 
 
 
+
+
 function getProfile(userId){
 
 
@@ -259,6 +232,8 @@ function getProfile(userId){
 
 
 }
+
+
 
 
 
@@ -282,7 +257,6 @@ function updateProfile(userId, changes){
 
         ...data[userId],
 
-
         ...changes
 
 
@@ -301,8 +275,9 @@ function updateProfile(userId, changes){
 
 
 
+
 // =====================================
-// XP SYSTEM
+// XP
 // =====================================
 
 
@@ -319,28 +294,22 @@ function addXP(userId, amount){
 
 
 
-
-    const neededXP =
+    const needed =
     profile.level * 100;
 
 
 
 
+    while(profile.xp >= needed){
 
-    if(profile.xp >= neededXP){
 
+        profile.xp -= needed;
 
 
         profile.level++;
 
 
-
-        profile.xp = 0;
-
-
-
         profile.coins += 100;
-
 
 
     }
@@ -357,8 +326,9 @@ function addXP(userId, amount){
     );
 
 
-
 }
+
+
 
 
 
@@ -394,8 +364,9 @@ function addCoins(userId, amount){
 
 
 
+
 // =====================================
-// VITTORIA
+// VITTORIA BASE
 // =====================================
 
 
@@ -414,9 +385,7 @@ function gameWin(userId){
     profile.wins++;
 
 
-
     profile.streak++;
-
 
 
 
@@ -434,60 +403,7 @@ function gameWin(userId){
 
 
 
-    profile.xp += 25;
-
-
-
     profile.coins += 50;
-
-
-
-
-
-    if(profile.streak % 3 === 0){
-
-
-
-        profile.inventory.push(
-
-            "🎁 Reward Box"
-
-        );
-
-
-
-    }
-
-
-
-
-
-
-    if(profile.streak === 5){
-
-
-
-        if(
-            !profile.inventory.includes(
-                "🛡️ Streak Shield"
-            )
-        ){
-
-
-            profile.inventory.push(
-
-                "🛡️ Streak Shield"
-
-            );
-
-
-        }
-
-
-    }
-
-
-
 
 
 
@@ -500,7 +416,6 @@ function gameWin(userId){
     );
 
 
-
 }
 
 
@@ -509,8 +424,9 @@ function gameWin(userId){
 
 
 
+
 // =====================================
-// SCONFITTA
+// SCONFITTA BASE
 // =====================================
 
 
@@ -531,426 +447,7 @@ function gameLose(userId){
 
 
 
-
-    const extraLife =
-
-    profile.inventory.indexOf(
-
-        "❤️ Extra Life"
-
-    );
-
-
-
-    const shield =
-
-    profile.inventory.indexOf(
-
-        "🛡️ Streak Shield"
-
-    );
-
-
-
-
-
-
-    if(extraLife !== -1){
-
-
-
-        profile.inventory.splice(
-
-            extraLife,
-
-            1
-
-        );
-
-
-
-    }
-
-
-
-    else if(shield !== -1){
-
-
-
-        profile.inventory.splice(
-
-            shield,
-
-            1
-
-        );
-
-
-
-    }
-
-
-
-    else{
-
-
-        profile.streak = 0;
-
-
-    }
-
-
-
-
-
-    profile.xp += 5;
-
-
-
-    updateProfile(
-
-        userId,
-
-        profile
-
-    );
-
-
-            }
-
-// =====================================
-// ACHIEVEMENT SYSTEM
-// =====================================
-
-
-const achievementSystem =
-require("./achievement");
-
-
-
-
-
-function checkAchievements(userId){
-
-
-    const profile =
-    createProfile(userId);
-
-
-
-    const allAchievements =
-    achievementSystem.achievements;
-
-
-
-    let unlocked = [];
-
-
-
-
-
-    for(const id in allAchievements){
-
-
-
-        const achievement =
-        allAchievements[id];
-
-
-
-        let condition = false;
-
-
-
-
-
-        switch(id){
-
-
-
-            // =====================
-            // GENERALI
-            // =====================
-
-
-            case "first_game":
-
-                condition =
-                profile.games >= 1;
-
-            break;
-
-
-
-            case "games_10":
-
-                condition =
-                profile.games >= 10;
-
-            break;
-
-
-
-            case "games_50":
-
-                condition =
-                profile.games >= 50;
-
-            break;
-
-
-
-
-
-            // =====================
-            // QUIZ
-            // =====================
-
-
-            case "quiz_first":
-
-                condition =
-                profile.quizWins >= 1;
-
-            break;
-
-
-
-            case "quiz_10":
-
-                condition =
-                profile.quizWins >= 10;
-
-            break;
-
-
-
-            case "quiz_30":
-
-                condition =
-                profile.quizWins >= 30;
-
-            break;
-
-
-
-
-
-
-            // =====================
-            // MEMORY
-            // =====================
-
-
-            case "memory_first":
-
-                condition =
-                profile.memoryWins >= 1;
-
-            break;
-
-
-
-            case "memory_10":
-
-                condition =
-                profile.memoryWins >= 10;
-
-            break;
-
-
-
-
-
-
-            // =====================
-            // PAROLA
-            // =====================
-
-
-            case "word_first":
-
-                condition =
-                profile.wordWins >= 1;
-
-            break;
-
-
-
-            case "word_all":
-
-                condition =
-                profile.wordWins >= 10;
-
-            break;
-
-
-
-
-
-
-
-            // =====================
-            // REACTION
-            // =====================
-
-
-            case "reaction_first":
-
-                condition =
-                profile.reactionWins >= 1;
-
-            break;
-
-
-
-            case "reaction_fast":
-
-                condition =
-                profile.reactionWins >= 5;
-
-            break;
-
-
-
-
-
-
-
-            // =====================
-            // IMPICCATO
-            // =====================
-
-
-            case "hangman_first":
-
-                condition =
-                profile.hangmanWins >= 1;
-
-            break;
-
-
-
-            case "hangman_5":
-
-                condition =
-                profile.hangmanWins >= 5;
-
-            break;
-
-
-
-
-
-
-
-            // =====================
-            // FINALE
-            // =====================
-
-
-            case "ultimate_player":
-
-
-
-                condition =
-
-                Object.keys(allAchievements)
-
-                .filter(
-                    a =>
-                    a !== "ultimate_player"
-                )
-
-                .every(
-
-                    a =>
-
-                    profile.achievements
-                    .includes(a)
-
-                );
-
-
-            break;
-
-
-
-        }
-
-
-
-
-
-        if(
-
-            condition &&
-
-            !profile.achievements.includes(id)
-
-        ){
-
-
-
-            profile.achievements.push(id);
-
-
-
-            profile.xp +=
-            achievement.reward || 0;
-
-
-
-
-
-            unlocked.push(
-
-                achievement.name
-
-            );
-
-
-
-
-
-            // ricompense speciali
-
-
-            if(id === "ultimate_player"){
-
-
-                if(
-
-                    !profile.inventory.includes(
-
-                        "👑 Legendary Trophy"
-
-                    )
-
-                ){
-
-
-                    profile.inventory.push(
-
-                        "👑 Legendary Trophy"
-
-                    );
-
-
-                }
-
-
-            }
-
-
-
-        }
-
-
-
-    }
-
-
+    profile.streak = 0;
 
 
 
@@ -964,24 +461,12 @@ function checkAchievements(userId){
     );
 
 
+    }
 
-
-    return unlocked;
-
-
-}
-
-
-
-
-
-
-
-
+ 
 // =====================================
-// MINIGAME COUNTERS
+// MINIGAME STATISTICS
 // =====================================
-
 
 
 function addGameStat(userId, game){
@@ -1016,7 +501,6 @@ function addGameStat(userId, game){
         "hangmanWins"
 
 
-
     };
 
 
@@ -1044,9 +528,384 @@ function addGameStat(userId, game){
     );
 
 
-
 }
 
+
+
+
+
+
+
+// =====================================
+// ACHIEVEMENTS
+// =====================================
+
+
+
+const achievementSystem =
+require("./achievement");
+
+
+
+
+
+function checkAchievements(userId){
+
+
+    const profile =
+    createProfile(userId);
+
+
+
+    const achievements =
+    achievementSystem.achievements;
+
+
+
+    let unlocked = [];
+
+
+
+
+
+    for(const id in achievements){
+
+
+
+        const achievement =
+        achievements[id];
+
+
+
+        let completed = false;
+
+
+
+
+
+        switch(id){
+
+
+
+            // =====================
+            // GENERALI
+            // =====================
+
+
+            case "first_game":
+
+                completed =
+                profile.games >= 1;
+
+            break;
+
+
+
+            case "games_10":
+
+                completed =
+                profile.games >= 10;
+
+            break;
+
+
+
+            case "games_50":
+
+                completed =
+                profile.games >= 50;
+
+            break;
+
+
+
+
+
+            // =====================
+            // QUIZ
+            // =====================
+
+
+            case "quiz_first":
+
+                completed =
+                profile.quizWins >= 1;
+
+            break;
+
+
+
+            case "quiz_10":
+
+                completed =
+                profile.quizWins >= 10;
+
+            break;
+
+
+
+            case "quiz_30":
+
+                completed =
+                profile.quizWins >= 30;
+
+            break;
+
+
+
+
+
+            // =====================
+            // MEMORY
+            // =====================
+
+
+            case "memory_first":
+
+                completed =
+                profile.memoryWins >= 1;
+
+            break;
+
+
+
+            case "memory_10":
+
+                completed =
+                profile.memoryWins >= 10;
+
+            break;
+
+
+
+
+
+            // =====================
+            // PAROLA
+            // =====================
+
+
+            case "word_first":
+
+                completed =
+                profile.wordWins >= 1;
+
+            break;
+
+
+
+            case "word_10":
+
+                completed =
+                profile.wordWins >= 10;
+
+            break;
+
+
+
+
+
+            // =====================
+            // REACTION
+            // =====================
+
+
+            case "reaction_first":
+
+                completed =
+                profile.reactionWins >= 1;
+
+            break;
+
+
+
+            case "reaction_5":
+
+                completed =
+                profile.reactionWins >= 5;
+
+            break;
+
+
+
+
+
+            // =====================
+            // IMPICCATO
+            // =====================
+
+
+            case "hangman_first":
+
+                completed =
+                profile.hangmanWins >= 1;
+
+            break;
+
+
+
+            case "hangman_5":
+
+                completed =
+                profile.hangmanWins >= 5;
+
+            break;
+
+
+
+
+
+            // =====================
+            // COMPLETAMENTO
+            // =====================
+
+
+            case "ultimate_player":
+
+
+                const required = [
+
+                    "first_game",
+
+                    "games_10",
+
+                    "games_50",
+
+                    "quiz_first",
+
+                    "quiz_10",
+
+                    "quiz_30",
+
+                    "memory_first",
+
+                    "memory_10",
+
+                    "word_first",
+
+                    "word_10",
+
+                    "reaction_first",
+
+                    "reaction_5",
+
+                    "hangman_first",
+
+                    "hangman_5"
+
+                ];
+
+
+
+                completed =
+
+                required.every(
+
+                    a =>
+
+                    profile.achievements.includes(a)
+
+                );
+
+
+            break;
+
+
+        }
+
+
+
+
+
+
+        if(
+
+            completed &&
+
+            !profile.achievements.includes(id)
+
+        ){
+
+
+
+            profile.achievements.push(id);
+
+
+
+            profile.xp +=
+
+            achievement.reward || 0;
+
+
+
+            unlocked.push(
+
+                achievement.name
+
+            );
+
+
+
+
+
+
+            if(id === "ultimate_player"){
+
+
+
+                if(
+
+                    !profile.inventory.includes(
+                        "👑 Legendary Trophy"
+                    )
+
+                ){
+
+
+                    profile.inventory.push(
+
+                        "👑 Legendary Trophy"
+
+                    );
+
+
+                }
+
+
+            }
+
+
+
+
+
+        }
+
+
+
+
+
+    }
+
+
+
+
+
+    updateProfile(
+
+        userId,
+
+        profile
+
+    );
+
+
+
+
+
+    return unlocked;
+
+
+}
 
 
 
@@ -1065,23 +924,26 @@ module.exports = {
 
     getProfile,
 
+
     updateProfile,
 
 
     addXP,
+
 
     addCoins,
 
 
     gameWin,
 
+
     gameLose,
 
 
-    checkAchievements,
+    addGameStat,
 
 
-    addGameStat
+    checkAchievements
 
 
 };

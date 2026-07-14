@@ -8,38 +8,28 @@ const {
 
 const gameSystem = require("./gameSystem");
 
+
 let activeGame = false;
 
 
 const questions = [
+
     {
         question: "Qual è il pianeta più grande del Sistema Solare?",
         answer: "giove"
     },
+
     {
         question: "Quanto fa 5 + 7?",
         answer: "12"
     },
+
     {
         question: "Qual è la capitale d'Italia?",
         answer: "roma"
     }
+
 ];
-
-
-const games = {
-
-    number: "🎯 Indovina il Numero",
-
-    quiz: "🧠 Quiz",
-
-    coin: "🪙 Testa o Croce",
-
-    dice: "🎲 Dado",
-
-    rps: "✊ Sasso Carta Forbice"
-
-};
 
 
 
@@ -54,10 +44,11 @@ module.exports = {
 
 
 
-    async execute(interaction) {
+
+    async execute(interaction){
 
 
-        if(activeGame) {
+        if(activeGame){
 
             return interaction.reply({
 
@@ -69,6 +60,7 @@ module.exports = {
             });
 
         }
+
 
 
 
@@ -131,6 +123,7 @@ module.exports = {
 
 
 
+
         const embed = new EmbedBuilder()
 
         .setTitle("🎮 Minigame Hub")
@@ -176,8 +169,8 @@ Buona fortuna! 🍀
 
     }
 
-
 };
+
 
 
 
@@ -189,19 +182,8 @@ function gameWin(userId){
     gameSystem.gameWin(userId);
 
 
-    const unlocked =
-    gameSystem.checkAchievements(userId);
+    return gameSystem.checkAchievements(userId) || [];
 
-
-
-    if(unlocked.length > 0){
-
-        return unlocked;
-
-    }
-
-
-    return [];
 
 }
 
@@ -215,22 +197,11 @@ function gameLose(userId){
     gameSystem.gameLose(userId);
 
 
+    return gameSystem.checkAchievements(userId) || [];
 
-    const unlocked =
-    gameSystem.checkAchievements(userId);
-
-
-
-    if(unlocked.length > 0){
-
-        return unlocked;
-
-    }
-
-
-    return [];
 
 }
+
 
 
 
@@ -294,7 +265,6 @@ ${achievements.join("\n")}
 
         );
 
-
     }
 
 
@@ -318,14 +288,16 @@ Il numero era **${number}**
 
 }
 
+
+
+
+
 async function quizGame(interaction){
 
 
     const q =
     questions[
-        Math.floor(
-            Math.random()*questions.length
-        )
+        Math.floor(Math.random()*questions.length)
     ];
 
 
@@ -354,10 +326,7 @@ Hai 20 secondi!
 
 
 
-    if(
-        msg.content.toLowerCase()
-        === q.answer
-    ){
+    if(msg.content.toLowerCase() === q.answer){
 
 
         const achievements =
@@ -397,21 +366,18 @@ Era **${q.answer}**
 
         );
 
-
     }
-
 
 }
 
-
-
-
+// ===============================
+// COIN GAME
+// ===============================
 
 async function coinGame(interaction){
 
 
-    const row =
-    new ActionRowBuilder()
+    const row = new ActionRowBuilder()
 
     .addComponents(
 
@@ -437,7 +403,6 @@ async function coinGame(interaction){
 
 
 
-    const msg =
     await interaction.channel.send({
 
         content:
@@ -447,6 +412,20 @@ async function coinGame(interaction){
 
     });
 
+
+}
+
+
+
+
+
+let coinResults = {};
+
+
+
+
+
+async function handleCoin(interaction){
 
 
     const result =
@@ -458,43 +437,22 @@ async function coinGame(interaction){
 
 
 
-    const btn =
-    await msg.awaitMessageComponent({
-
-        time:20000
-
-    }).catch(()=>null);
-
-
-
-    if(!btn)
-
-        return msg.edit({
-
-            content:"⏰ Tempo scaduto!",
-
-            components:[]
-
-        });
-
-
-
-    if(btn.customId === result){
+    if(interaction.customId === result){
 
 
         const achievements =
-        gameWin(btn.user.id);
+        gameWin(interaction.user.id);
 
 
 
-        return btn.update({
+        await interaction.update({
 
             content:
 
 `
-🏆 Hai vinto!
+🏆 ${interaction.user} hai vinto!
 
-Era **${result}**
+È uscito **${result}**
 
 ⭐ +25 XP
 🪙 +50 monete
@@ -507,36 +465,40 @@ ${achievements.join("\n")}
         });
 
 
-    }
+    } else {
+
+
+        gameLose(interaction.user.id);
 
 
 
-    gameLose(btn.user.id);
+        await interaction.update({
 
-
-
-    btn.update({
-
-        content:
+            content:
 
 `
-❌ Hai perso!
+❌ ${interaction.user} hai perso!
 
-Era **${result}**
+È uscito **${result}**
 
 ⭐ +5 XP
 `,
 
-        components:[]
+            components:[]
 
-    });
+        });
 
+    }
 
 }
 
 
 
 
+
+// ===============================
+// DICE GAME
+// ===============================
 
 
 async function diceGame(interaction){
@@ -587,7 +549,7 @@ Hai 20 secondi!
 `
 🏆 ${msg.author} ha vinto!
 
-Il numero era **${roll}**
+Numero: **${roll}**
 
 ⭐ +25 XP
 🪙 +50 monete
@@ -610,16 +572,14 @@ ${achievements.join("\n")}
 `
 ❌ Hai perso!
 
-Il numero era **${roll}**
+Numero: **${roll}**
 
 ⭐ +5 XP
 `
 
         );
 
-
     }
-
 
 }
 
@@ -627,6 +587,9 @@ Il numero era **${roll}**
 
 
 
+// ===============================
+// SASSO CARTA FORBICE
+// ===============================
 
 
 async function rpsGame(interaction){
@@ -657,9 +620,7 @@ Hai 20 secondi!
 
     if(!msg)
 
-        return interaction.channel.send(
-            "⏰ Tempo scaduto!"
-        );
+        return;
 
 
 
@@ -669,9 +630,7 @@ Hai 20 secondi!
 
 
     if(
-        player !== "sasso" &&
-        player !== "carta" &&
-        player !== "forbice"
+        !["sasso","carta","forbice"].includes(player)
     ){
 
         return interaction.channel.send(
@@ -682,14 +641,20 @@ Hai 20 secondi!
 
 
 
+
     const bot =
+
     [
         "sasso",
         "carta",
         "forbice"
+
     ][
+
         Math.floor(Math.random()*3)
+
     ];
+
 
 
 
@@ -698,9 +663,11 @@ Hai 20 secondi!
 
 
     if(
+
         (player==="sasso" && bot==="forbice") ||
         (player==="carta" && bot==="sasso") ||
         (player==="forbice" && bot==="carta")
+
     ){
 
         result="win";
@@ -710,9 +677,11 @@ Hai 20 secondi!
 
 
     if(
+
         (bot==="sasso" && player==="forbice") ||
         (bot==="carta" && player==="sasso") ||
         (bot==="forbice" && player==="carta")
+
     ){
 
         result="lose";
@@ -749,6 +718,7 @@ ${achievements.join("\n")}
 
 
 
+
     if(result==="lose"){
 
 
@@ -770,6 +740,8 @@ Bot: **${bot}**
         );
 
     }
+
+
 
 
 
@@ -805,7 +777,7 @@ function collectMessage(interaction,time){
         max:1,
 
 
-        time:time*1000
+        time:time * 1000
 
 
     })
@@ -821,28 +793,34 @@ function collectMessage(interaction,time){
 
 
 
-// ================================
+
+// ===============================
 // BUTTON HANDLER GLOBALE
-// ================================
+// ===============================
 
 
 module.exports.buttonHandler = async function(interaction){
 
 
+
     switch(interaction.customId){
+
 
 
         case "game_number":
 
+
             await interaction.update({
 
-                content:"🎯 Indovina il Numero avviato!",
+                content:
+                "🎯 Avvio Indovina il Numero!",
 
                 embeds:[],
 
                 components:[]
 
             });
+
 
             activeGame = true;
 
@@ -850,21 +828,27 @@ module.exports.buttonHandler = async function(interaction){
 
             activeGame = false;
 
-            break;
+
+        break;
+
+
 
 
 
         case "game_quiz":
 
+
             await interaction.update({
 
-                content:"🧠 Quiz avviato!",
+                content:
+                "🧠 Avvio Quiz!",
 
                 embeds:[],
 
                 components:[]
 
             });
+
 
             activeGame = true;
 
@@ -872,21 +856,27 @@ module.exports.buttonHandler = async function(interaction){
 
             activeGame = false;
 
-            break;
+
+        break;
+
+
 
 
 
         case "game_coin":
 
+
             await interaction.update({
 
-                content:"🪙 Testa o Croce avviato!",
+                content:
+                "🪙 Avvio Testa o Croce!",
 
                 embeds:[],
 
                 components:[]
 
             });
+
 
             activeGame = true;
 
@@ -894,21 +884,27 @@ module.exports.buttonHandler = async function(interaction){
 
             activeGame = false;
 
-            break;
+
+        break;
+
+
 
 
 
         case "game_dice":
 
+
             await interaction.update({
 
-                content:"🎲 Dado avviato!",
+                content:
+                "🎲 Avvio Dado!",
 
                 embeds:[],
 
                 components:[]
 
             });
+
 
             activeGame = true;
 
@@ -916,15 +912,20 @@ module.exports.buttonHandler = async function(interaction){
 
             activeGame = false;
 
-            break;
+
+        break;
+
+
 
 
 
         case "game_rps":
 
+
             await interaction.update({
 
-                content:"✊ Sasso Carta Forbice avviato!",
+                content:
+                "✊ Avvio Sasso Carta Forbice!",
 
                 embeds:[],
 
@@ -932,13 +933,30 @@ module.exports.buttonHandler = async function(interaction){
 
             });
 
+
             activeGame = true;
 
             await rpsGame(interaction);
 
             activeGame = false;
 
-            break;
+
+        break;
+
+
+
+
+
+        case "testa":
+
+        case "croce":
+
+
+            await handleCoin(interaction);
+
+
+        break;
+
 
 
     }

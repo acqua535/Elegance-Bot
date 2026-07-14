@@ -1,44 +1,133 @@
-const commands = [];
+const fs = require("fs");
+const path = require("path");
 
-const locations = [
-    path.join(__dirname, "commands"),
-    __dirname
-];
+module.exports = function loadCommands(client) {
 
-const loaded = new Set();
 
-for (const location of locations) {
+    const locations = [
 
-    if (!fs.existsSync(location)) continue;
+        path.join(__dirname, "commands"),
 
-    const files = fs.readdirSync(location)
-        .filter(file => file.endsWith(".js"))
-        .filter(file => file !== "index.js")
-        .filter(file => file !== "deployCommand.js")
-        .filter(file => file !== "commandHandler.js");
+        __dirname
 
-    for (const file of files) {
+    ];
 
-        try {
 
-            const command = require(path.join(location, file));
 
-            if (!command.data) continue;
+    for (const location of locations) {
 
-            if (loaded.has(command.data.name)) continue;
 
-            loaded.add(command.data.name);
+        if (!fs.existsSync(location)) {
 
-            commands.push(command.data.toJSON());
+            console.log(
+                `⚠️ Percorso non trovato: ${location}`
+            );
 
-            console.log(`✅ Comando caricato: ${command.data.name}`);
-
-        } catch (err) {
-
-            console.error(`❌ Errore caricando ${file}:`, err);
+            continue;
 
         }
 
+
+
+        const files = fs.readdirSync(location)
+
+            .filter(file => file.endsWith(".js"))
+
+            .filter(file => file !== "commandHandler.js")
+
+            .filter(file => file !== "deployCommand.js")
+
+            .filter(file => file !== "index.js");
+
+
+
+
+
+        for (const file of files) {
+
+
+            try {
+
+
+                const command = require(
+                    path.join(location, file)
+                );
+
+
+
+                if (!command.data || !command.execute) {
+
+                    continue;
+
+                }
+
+
+
+
+
+                if (client.commands.has(command.data.name)) {
+
+
+                    console.log(
+                        `⚠️ Comando duplicato ignorato: ${command.data.name}`
+                    );
+
+
+                    continue;
+
+                }
+
+
+
+
+
+                client.commands.set(
+
+                    command.data.name,
+
+                    command
+
+                );
+
+
+
+
+
+                console.log(
+
+                    `✅ Comando caricato: ${command.data.name}`
+
+                );
+
+
+
+
+
+            } catch(error) {
+
+
+                console.error(
+
+                    `❌ Errore caricando ${file}:`,
+
+                    error
+
+                );
+
+
+            }
+
+
+        }
+
+
     }
 
-}
+
+
+    console.log(
+        `📦 Totale comandi caricati: ${client.commands.size}`
+    );
+
+
+};

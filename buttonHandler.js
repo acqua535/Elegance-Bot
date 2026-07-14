@@ -5,52 +5,55 @@ const verify = require("./verify");
 module.exports = async function buttonHandler(interaction) {
 
 
+    const id = interaction.customId;
+
+
+
     try {
 
 
-        const id = interaction.customId;
+        // VERIFY
 
+        if (id === "verify_button") {
 
-
-        console.log(
-            "🔘 Bottone premuto:",
-            id
-        );
-
-
-
-        /*
-        =====================
-        VERIFY SYSTEM
-        =====================
-        */
-
-
-        if(id === "verify_button") {
-
-            return await verify.buttonHandler(interaction);
+            return verify.buttonHandler(interaction);
 
         }
 
 
 
+        // TICKET
 
-        /*
-        =====================
-        TICKET SYSTEM
-        =====================
-        */
-
-
-        if(
+        if (
 
             id.startsWith("ticket_") ||
             id === "close_ticket" ||
             id === "claim_ticket"
 
-        ){
+        ) {
 
-            return await ticket.buttonHandler(interaction);
+            return ticket.buttonHandler(interaction);
+
+        }
+
+
+
+
+        // MINIGAME
+
+        if (
+
+            id === "game_number" ||
+            id === "game_quiz" ||
+            id === "game_coin" ||
+            id === "game_dice" ||
+            id === "game_rps"
+
+        ) {
+
+            const minigame = require("./minigame");
+
+            return minigame.buttonHandler(interaction);
 
         }
 
@@ -58,160 +61,71 @@ module.exports = async function buttonHandler(interaction) {
 
 
 
-        /*
-        =====================
-        REWARDS SYSTEM
-        =====================
-        */
+        // REWARDS
+
+        if (
+
+            id === "claim_daily" ||
+            id === "view_profile"
+
+        ) {
 
 
-        if(id === "claim_daily") {
+            const rewards = require("./rewards");
 
 
-            const dailySystem =
-            require("./dailySystem");
+            if(rewards.buttonHandler){
 
+                return rewards.buttonHandler(interaction);
 
-            const result =
-            dailySystem.claim(
-                interaction.user.id
-            );
-
-
-            return interaction.reply({
-
-                content: result.message,
-
-                ephemeral:true
-
-            });
-
+            }
 
         }
 
 
 
-
-
-        if(id === "view_profile") {
-
-
-            const gameSystem =
-            require("./gameSystem");
-
-
-            const profile =
-            gameSystem.getProfile(
-                interaction.user.id
-            );
-
-
-            return interaction.reply({
-
-                content:
-
-`
-👤 **Profilo**
-
-⭐ XP:
-${profile.xp || 0}
-
-🪙 Monete:
-${profile.coins || 0}
-
-🔥 Streak:
-${profile.streak || 0}
-`,
-
-                ephemeral:true
-
-            });
-
-
-        }
-
-
-
-
-
-        /*
-        =====================
-        MINIGAME HUB
-        =====================
-        */
-
-
-        if(
-            id.startsWith("game_")
-        ){
-
-            const minigame =
-            require("./commands/minigame");
-
-
-            return await minigame.buttonHandler(
-                interaction
-            );
-
-
-        }
-
-
-
-
-
-        /*
-        =====================
-        FUTURE BUTTONS
-        =====================
-        */
 
 
         console.log(
-            "⚠️ Bottone senza handler:",
+            "⚠️ Bottone non gestito:",
             id
         );
 
 
-
-        if(!interaction.replied) {
-
+        if(!interaction.replied){
 
             return interaction.reply({
 
                 content:
-                "❌ Questo pulsante non è ancora configurato.",
+                "⚠️ Bottone non riconosciuto.",
 
                 ephemeral:true
 
             });
 
-
         }
 
 
 
-    } catch(error) {
+    } catch(error){
 
 
         console.error(
-            "❌ Errore Button Handler:",
+            "❌ Button Handler:",
             error
         );
 
 
-        if(!interaction.replied) {
+        if(!interaction.replied){
 
-
-            await interaction.reply({
+            interaction.reply({
 
                 content:
-                "❌ Errore durante il pulsante.",
+                "❌ Errore bottone.",
 
                 ephemeral:true
 
             }).catch(()=>{});
-
 
         }
 

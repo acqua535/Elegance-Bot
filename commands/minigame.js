@@ -6,132 +6,168 @@ const {
     ButtonStyle
 } = require("discord.js");
 
+
 const gameSystem = require("./gameSystem");
 
 
-let activeGame = false;
+let activeGames = new Set();
 
 
-const questions = [
 
-    {
-        question: "Qual è il pianeta più grande del Sistema Solare?",
-        answer: "giove"
-    },
+const recentGames = {
 
-    {
-        question: "Quanto fa 5 + 7?",
-        answer: "12"
-    },
+    quiz: [],
 
-    {
-        question: "Qual è la capitale d'Italia?",
-        answer: "roma"
-    }
+    memory: [],
+
+    word: [],
+
+    reaction: [],
+
+    hangman: []
+
+};
+
+
+
+// =========================
+// QUIZ DATABASE
+// =========================
+
+
+const quizzes = [
+
+{
+id:1,
+question:"Qual è il pianeta più grande del Sistema Solare?",
+answer:"giove"
+},
+
+{
+id:2,
+question:"Qual è la capitale d'Italia?",
+answer:"roma"
+},
+
+{
+id:3,
+question:"Quanto fa 5+7?",
+answer:"12"
+},
+
+{
+id:4,
+question:"Chi ha scritto la Divina Commedia?",
+answer:"dante"
+},
+
+{
+id:5,
+question:"Quanti continenti esistono?",
+answer:"7"
+},
+
+{
+id:6,
+question:"Qual è il mammifero più grande del mondo?",
+answer:"balenottera azzurra"
+}
 
 ];
 
 
 
+
+
+function getRandomQuiz(){
+
+
+    let available =
+    quizzes.filter(
+        q =>
+        !recentGames.quiz.includes(q.id)
+    );
+
+
+
+    if(available.length===0){
+
+        recentGames.quiz=[];
+
+        available=quizzes;
+
+    }
+
+
+
+    const selected =
+    available[
+        Math.floor(
+            Math.random()*available.length
+        )
+    ];
+
+
+
+    recentGames.quiz.push(
+        selected.id
+    );
+
+
+
+    if(recentGames.quiz.length>10){
+
+        recentGames.quiz.shift();
+
+    }
+
+
+
+    return selected;
+
+}
+
+
+
+
+// =========================
+// COMMAND
+// =========================
+
+
 module.exports = {
 
 
-    data: new SlashCommandBuilder()
-
-        .setName("minigame")
-
-        .setDescription("Apri il Minigame Hub"),
+data:
 
 
+new SlashCommandBuilder()
 
+.setName("minigame")
 
-    async execute(interaction){
-
-
-        if(activeGame){
-
-            return interaction.reply({
-
-                content:
-                "⚠️ Un minigame è già in corso!",
-
-                ephemeral:true
-
-            });
-
-        }
+.setDescription(
+"Apri il Minigame Hub"
+),
 
 
 
 
-        const row = new ActionRowBuilder()
-
-        .addComponents(
-
-
-            new ButtonBuilder()
-
-            .setCustomId("game_number")
-
-            .setLabel("🎯 Numero")
-
-            .setStyle(ButtonStyle.Primary),
+async execute(interaction){
 
 
 
-            new ButtonBuilder()
-
-            .setCustomId("game_quiz")
-
-            .setLabel("🧠 Quiz")
-
-            .setStyle(ButtonStyle.Success),
+const embed = new EmbedBuilder()
 
 
-
-            new ButtonBuilder()
-
-            .setCustomId("game_coin")
-
-            .setLabel("🪙 Testa/Croce")
-
-            .setStyle(ButtonStyle.Secondary),
+.setTitle(
+"🎮 Minigame Hub"
+)
 
 
-
-            new ButtonBuilder()
-
-            .setCustomId("game_dice")
-
-            .setLabel("🎲 Dado")
-
-            .setStyle(ButtonStyle.Primary),
-
-
-
-            new ButtonBuilder()
-
-            .setCustomId("game_rps")
-
-            .setLabel("✊ Sasso")
-
-            .setStyle(ButtonStyle.Danger)
-
-        );
-
-
-
-
-
-
-        const embed = new EmbedBuilder()
-
-        .setTitle("🎮 Minigame Hub")
-
-        .setDescription(
+.setDescription(
 
 `
-Scegli quale minigame vuoi giocare.
+Scegli il gioco che vuoi provare.
 
 ━━━━━━━━━━━━━━
 
@@ -139,35 +175,136 @@ Scegli quale minigame vuoi giocare.
 
 🧠 Quiz
 
-🪙 Testa o Croce
+🧩 Memory
 
-🎲 Dado
+🔤 Parola Misteriosa
 
-✊ Sasso Carta Forbice
+⚡ Reaction
+
+🪢 Impiccato
 
 ━━━━━━━━━━━━━━
 
-Buona fortuna! 🍀
+Ogni gioco assegna:
+⭐ XP
+🏆 Achievement
+🪙 Ricompense
+
+Buona fortuna!
 `
 
-        )
-
-        .setColor("Gold");
+)
 
 
+.setColor("Gold");
 
 
 
-        await interaction.reply({
 
-            embeds:[embed],
+const row =
 
-            components:[row]
+new ActionRowBuilder()
 
-        });
+.addComponents(
 
 
-    }
+new ButtonBuilder()
+
+.setCustomId(
+"game_number"
+)
+
+.setLabel(
+"🎯 Numero"
+)
+
+.setStyle(
+ButtonStyle.Primary
+),
+
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"game_quiz"
+)
+
+.setLabel(
+"🧠 Quiz"
+)
+
+.setStyle(
+ButtonStyle.Success
+),
+
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"game_memory"
+)
+
+.setLabel(
+"🧩 Memory"
+)
+
+.setStyle(
+ButtonStyle.Secondary
+),
+
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"game_word"
+)
+
+.setLabel(
+"🔤 Parola"
+)
+
+.setStyle(
+ButtonStyle.Primary
+),
+
+
+
+new ButtonBuilder()
+
+.setCustomId(
+"game_hangman"
+)
+
+.setLabel(
+"🪢 Impiccato"
+)
+
+.setStyle(
+ButtonStyle.Danger
+)
+
+);
+
+
+
+await interaction.reply({
+
+embeds:[embed],
+
+components:[row],
+
+ephemeral:false
+
+});
+
+
+
+}
+
+
 
 };
 
@@ -175,14 +312,37 @@ Buona fortuna! 🍀
 
 
 
-
-function gameWin(userId){
-
-
-    gameSystem.gameWin(userId);
+// =========================
+// FUNZIONI XP
+// =========================
 
 
-    return gameSystem.checkAchievements(userId) || [];
+function win(userId, amount){
+
+
+gameSystem.addXP(
+userId,
+amount
+);
+
+
+
+return gameSystem.checkAchievements(
+userId
+);
+
+
+}
+
+
+
+function lose(userId){
+
+
+gameSystem.addXP(
+userId,
+5
+);
 
 
 }
@@ -190,151 +350,90 @@ function gameWin(userId){
 
 
 
-
-function gameLose(userId){
-
-
-    gameSystem.gameLose(userId);
-
-
-    return gameSystem.checkAchievements(userId) || [];
-
-
-}
-
-
-
-
-
-
-async function numberGame(interaction){
-
-
-    const number =
-    Math.floor(Math.random()*10)+1;
-
-
-
-    await interaction.channel.send(
-
-`
-🎯 **Indovina il numero**
-
-Sto pensando ad un numero da **1 a 10**.
-
-Hai 20 secondi!
-`
-
-    );
-
-
-
-    const msg =
-    await collectMessage(interaction,20);
-
-
-
-    if(!msg)
-
-        return interaction.channel.send(
-            "⏰ Tempo scaduto!"
-        );
-
-
-
-    if(msg.content === String(number)){
-
-
-        const achievements =
-        gameWin(msg.author.id);
-
-
-
-        return interaction.channel.send(
-
-`
-🏆 ${msg.author} ha vinto!
-
-Numero corretto: **${number}**
-
-⭐ +25 XP
-🪙 +50 monete
-
-${achievements.join("\n")}
-`
-
-        );
-
-    }
-
-
-
-    gameLose(msg.author.id);
-
-
-
-    interaction.channel.send(
-
-`
-❌ Hai perso!
-
-Il numero era **${number}**
-
-⭐ +5 XP
-`
-
-    );
-
-
-}
-
-
-
+// =========================
+// QUIZ GAME
+// =========================
 
 
 async function quizGame(interaction){
 
 
-    const q =
-    questions[
-        Math.floor(Math.random()*questions.length)
-    ];
+const quiz =
+getRandomQuiz();
 
 
 
-    await interaction.channel.send(
+await interaction.channel.send({
+
+embeds:[
+
+new EmbedBuilder()
+
+.setTitle(
+"🧠 Quiz"
+)
+
+.setDescription(
 
 `
-🧠 **QUIZ**
+${quiz.question}
 
-${q.question}
+Hai **20 secondi** per rispondere.
 
-Hai 20 secondi!
+Scrivi la risposta in chat.
 `
 
-    );
+)
+
+.setColor("Blue")
+
+]
+
+});
 
 
 
-    const msg =
-    await collectMessage(interaction,20);
+
+const msg = await collectMessage(
+interaction,
+20
+);
 
 
 
-    if(!msg)
-        return;
+if(!msg){
+
+return interaction.channel.send(
+"⏰ Tempo scaduto!"
+);
+
+}
 
 
 
-    if(msg.content.toLowerCase() === q.answer){
+if(
+
+msg.content
+.toLowerCase()
+.trim()
+
+===
+
+quiz.answer
+
+){
 
 
-        const achievements =
-        gameWin(msg.author.id);
+
+const achievements =
+win(
+msg.author.id,
+25
+);
 
 
 
-        interaction.channel.send(
+return interaction.channel.send(
 
 `
 🏆 Risposta corretta!
@@ -345,420 +444,37 @@ Hai 20 secondi!
 ${achievements.join("\n")}
 `
 
-        );
+);
 
 
-    } else {
+
+}
 
 
-        gameLose(msg.author.id);
+
+lose(
+msg.author.id
+);
 
 
-        interaction.channel.send(
+
+interaction.channel.send(
 
 `
 ❌ Risposta errata!
 
-Era **${q.answer}**
+La risposta era:
+
+**${quiz.answer}**
 
 ⭐ +5 XP
 `
 
-        );
+);
 
-    }
-
-}
-
-// ===============================
-// COIN GAME
-// ===============================
-
-async function coinGame(interaction){
-
-
-    const row = new ActionRowBuilder()
-
-    .addComponents(
-
-        new ButtonBuilder()
-
-        .setCustomId("testa")
-
-        .setLabel("Testa")
-
-        .setStyle(ButtonStyle.Primary),
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId("croce")
-
-        .setLabel("Croce")
-
-        .setStyle(ButtonStyle.Secondary)
-
-    );
-
-
-
-    await interaction.channel.send({
-
-        content:
-        "🪙 Scegli il risultato!",
-
-        components:[row]
-
-    });
 
 
 }
-
-
-
-
-
-let coinResults = {};
-
-
-
-
-
-async function handleCoin(interaction){
-
-
-    const result =
-    Math.random() > 0.5
-    ?
-    "testa"
-    :
-    "croce";
-
-
-
-    if(interaction.customId === result){
-
-
-        const achievements =
-        gameWin(interaction.user.id);
-
-
-
-        await interaction.update({
-
-            content:
-
-`
-🏆 ${interaction.user} hai vinto!
-
-È uscito **${result}**
-
-⭐ +25 XP
-🪙 +50 monete
-
-${achievements.join("\n")}
-`,
-
-            components:[]
-
-        });
-
-
-    } else {
-
-
-        gameLose(interaction.user.id);
-
-
-
-        await interaction.update({
-
-            content:
-
-`
-❌ ${interaction.user} hai perso!
-
-È uscito **${result}**
-
-⭐ +5 XP
-`,
-
-            components:[]
-
-        });
-
-    }
-
-}
-
-
-
-
-
-// ===============================
-// DICE GAME
-// ===============================
-
-
-async function diceGame(interaction){
-
-
-    const roll =
-    Math.floor(Math.random()*6)+1;
-
-
-
-    await interaction.channel.send(
-
-`
-🎲 **Dado**
-
-Indovina il numero da **1 a 6**.
-
-Hai 20 secondi!
-`
-
-    );
-
-
-
-    const msg =
-    await collectMessage(interaction,20);
-
-
-
-    if(!msg)
-
-        return interaction.channel.send(
-            "⏰ Tempo scaduto!"
-        );
-
-
-
-    if(msg.content === String(roll)){
-
-
-        const achievements =
-        gameWin(msg.author.id);
-
-
-
-        interaction.channel.send(
-
-`
-🏆 ${msg.author} ha vinto!
-
-Numero: **${roll}**
-
-⭐ +25 XP
-🪙 +50 monete
-
-${achievements.join("\n")}
-`
-
-        );
-
-
-    } else {
-
-
-        gameLose(msg.author.id);
-
-
-
-        interaction.channel.send(
-
-`
-❌ Hai perso!
-
-Numero: **${roll}**
-
-⭐ +5 XP
-`
-
-        );
-
-    }
-
-}
-
-
-
-
-
-// ===============================
-// SASSO CARTA FORBICE
-// ===============================
-
-
-async function rpsGame(interaction){
-
-
-    await interaction.channel.send(
-
-`
-✊ **Sasso Carta Forbice**
-
-Scrivi:
-
-sasso
-carta
-forbice
-
-Hai 20 secondi!
-`
-
-    );
-
-
-
-    const msg =
-    await collectMessage(interaction,20);
-
-
-
-    if(!msg)
-
-        return;
-
-
-
-    const player =
-    msg.content.toLowerCase();
-
-
-
-    if(
-        !["sasso","carta","forbice"].includes(player)
-    ){
-
-        return interaction.channel.send(
-            "❌ Scelta non valida!"
-        );
-
-    }
-
-
-
-
-    const bot =
-
-    [
-        "sasso",
-        "carta",
-        "forbice"
-
-    ][
-
-        Math.floor(Math.random()*3)
-
-    ];
-
-
-
-
-    let result = "pareggio";
-
-
-
-    if(
-
-        (player==="sasso" && bot==="forbice") ||
-        (player==="carta" && bot==="sasso") ||
-        (player==="forbice" && bot==="carta")
-
-    ){
-
-        result="win";
-
-    }
-
-
-
-    if(
-
-        (bot==="sasso" && player==="forbice") ||
-        (bot==="carta" && player==="sasso") ||
-        (bot==="forbice" && player==="carta")
-
-    ){
-
-        result="lose";
-
-    }
-
-
-
-    if(result==="win"){
-
-
-        const achievements =
-        gameWin(msg.author.id);
-
-
-
-        return interaction.channel.send(
-
-`
-🏆 Hai vinto!
-
-Tu: **${player}**
-Bot: **${bot}**
-
-⭐ +25 XP
-🪙 +50 monete
-
-${achievements.join("\n")}
-`
-
-        );
-
-    }
-
-
-
-
-    if(result==="lose"){
-
-
-        gameLose(msg.author.id);
-
-
-
-        return interaction.channel.send(
-
-`
-❌ Hai perso!
-
-Tu: **${player}**
-Bot: **${bot}**
-
-⭐ +5 XP
-`
-
-        );
-
-    }
-
-
-
-
-
-    interaction.channel.send(
-
-`
-🤝 Pareggio!
-
-Tu: **${player}**
-Bot: **${bot}**
-`
-
-    );
-
-
-}
-
 
 
 
@@ -767,24 +483,258 @@ Bot: **${bot}**
 function collectMessage(interaction,time){
 
 
-    return interaction.channel.awaitMessages({
+return interaction.channel.awaitMessages({
 
-        filter:
+filter:
 
-        m => !m.author.bot,
-
-
-        max:1,
+m =>
+!m.author.bot,
 
 
-        time:time * 1000
+max:1,
 
 
-    })
+time:
+time*1000
 
-    .then(c => c.first())
 
-    .catch(() => null);
+})
+
+
+.then(c=>c.first())
+
+
+.catch(()=>null);
+
+
+}
+
+
+
+
+module.exports.quizGame =
+quizGame;
+
+// ===============================
+// REACTION GAME
+// ===============================
+
+
+const reactionPositions = [
+
+"titolo",
+
+"testo",
+
+"footer"
+
+];
+
+
+
+
+async function reactionGame(interaction){
+
+
+
+const fakeMessages = [
+
+"Preparati...",
+
+"Concentrati...",
+
+"Quasi pronto..."
+
+];
+
+
+
+
+
+for(const text of fakeMessages){
+
+
+await interaction.channel.send({
+
+content:
+`⚡ ${text}`
+
+});
+
+
+await wait(2000);
+
+
+}
+
+
+
+
+const position =
+
+reactionPositions[
+
+Math.floor(
+Math.random()*reactionPositions.length
+)
+
+];
+
+
+
+
+
+let embed =
+
+new EmbedBuilder()
+
+.setTitle(
+"⚡ REACTION"
+)
+
+.setDescription(
+"Trova il cerchio verde!"
+)
+
+.setColor("Green");
+
+
+
+
+if(position==="titolo"){
+
+embed.setTitle(
+"🟢 REACTION"
+);
+
+}
+
+
+if(position==="testo"){
+
+embed.setDescription(
+"Trova il simbolo 🟢!"
+);
+
+}
+
+
+
+if(position==="footer"){
+
+embed.setFooter({
+
+text:
+"🟢"
+
+});
+
+}
+
+
+
+
+
+const msg =
+
+await interaction.channel.send({
+
+embeds:[embed]
+
+});
+
+
+
+
+
+const start =
+Date.now();
+
+
+
+
+
+const answer =
+
+await msg.channel.awaitMessages({
+
+filter:
+
+m=>
+!m.author.bot &&
+m.content.includes("🟢"),
+
+
+max:1,
+
+
+time:10000
+
+})
+
+
+.catch(()=>null);
+
+
+
+
+
+if(!answer){
+
+return interaction.channel.send(
+
+"❌ Troppo lento!"
+
+);
+
+}
+
+
+
+
+const time =
+
+Date.now()-start;
+
+
+
+const xp =
+
+Math.max(
+10,
+50 - Math.floor(time/100)
+);
+
+
+
+
+
+const achievements =
+win(
+answer.first().author.id,
+xp
+);
+
+
+
+
+
+interaction.channel.send(
+
+`
+⚡ Reazione completata!
+
+Tempo:
+
+${time}ms
+
+⭐ +${xp} XP
+
+${achievements.join("\n")}
+`
+
+);
+
 
 
 }
@@ -794,172 +744,973 @@ function collectMessage(interaction,time){
 
 
 
+
+
+
 // ===============================
-// BUTTON HANDLER GLOBALE
+// IMPICCATO
 // ===============================
 
 
-module.exports.buttonHandler = async function(interaction){
 
+const hangmanWords = [
 
+"javascript",
 
-    switch(interaction.customId){
+"discord",
 
+"astronomia",
 
+"galassia",
 
-        case "game_number":
+"computer"
 
+];
 
-            await interaction.update({
 
-                content:
-                "🎯 Avvio Indovina il Numero!",
 
-                embeds:[],
 
-                components:[]
 
-            });
+const hangmanParts = [
 
+`
+ 
+ 
 
-            activeGame = true;
 
-            await numberGame(interaction);
+`,
 
-            activeGame = false;
 
+`
+ O
 
-        break;
 
+`,
 
 
+`
+ O
+ |
+`,
 
 
-        case "game_quiz":
+`
+ O
+/|
+`,
 
 
-            await interaction.update({
+`
+ O
+/|\\
+`,
 
-                content:
-                "🧠 Avvio Quiz!",
 
-                embeds:[],
+`
+ O
+/|\\
+/ 
+`,
 
-                components:[]
 
-            });
+`
+ O
+/|\\
+/ \\
 
+`
 
-            activeGame = true;
+];
 
-            await quizGame(interaction);
 
-            activeGame = false;
 
 
-        break;
 
 
+function randomHangman(){
 
 
+return hangmanWords[
 
-        case "game_coin":
+Math.floor(
+Math.random()*hangmanWords.length
+)
 
+];
 
-            await interaction.update({
 
-                content:
-                "🪙 Avvio Testa o Croce!",
+}
 
-                embeds:[],
 
-                components:[]
 
-            });
 
 
-            activeGame = true;
 
-            await coinGame(interaction);
 
-            activeGame = false;
+async function hangmanGame(interaction){
 
 
-        break;
 
+const word =
+randomHangman();
 
 
 
 
-        case "game_dice":
+let guessed=[];
 
 
-            await interaction.update({
+let errors=0;
 
-                content:
-                "🎲 Avvio Dado!",
 
-                embeds:[],
+let finished=false;
 
-                components:[]
 
-            });
 
 
-            activeGame = true;
+function display(){
 
-            await diceGame(interaction);
 
-            activeGame = false;
+return word
 
+.split("")
 
-        break;
+.map(
 
+letter =>
 
+guessed.includes(letter)
 
+?
 
+letter
 
-        case "game_rps":
+:
 
+"⬜"
 
-            await interaction.update({
+)
 
-                content:
-                "✊ Avvio Sasso Carta Forbice!",
+.join(" ");
 
-                embeds:[],
+}
 
-                components:[]
 
-            });
 
 
-            activeGame = true;
+await interaction.channel.send(
 
-            await rpsGame(interaction);
+`
+🪢 **IMPICCATO**
 
-            activeGame = false;
+${hangmanParts[errors]}
 
+Parola:
 
-        break;
+${display()}
 
 
+Scrivi una lettera.
 
+Hai 6 errori disponibili.
+`
 
+);
 
-        case "testa":
 
-        case "croce":
 
 
-            await handleCoin(interaction);
 
+while(!finished){
 
-        break;
 
 
+const msg =
 
-    }
+await collectMessage(
+interaction,
+60
+);
 
 
-};
+
+
+
+if(!msg)
+break;
+
+
+
+
+
+const letter =
+
+msg.content
+
+.toLowerCase()
+
+.trim();
+
+
+
+
+
+if(letter.length!==1){
+
+continue;
+
+}
+
+
+
+
+
+if(
+guessed.includes(letter)
+){
+
+await msg.reply(
+"⚠️ Lettera già usata!"
+);
+
+continue;
+
+}
+
+
+
+
+guessed.push(letter);
+
+
+
+
+if(!word.includes(letter)){
+
+
+errors++;
+
+
+}
+
+
+
+
+
+
+if(
+
+errors>=6
+
+){
+
+
+return interaction.channel.send(
+
+`
+💀 Hai perso!
+
+${hangmanParts[errors]}
+
+La parola era:
+
+**${word}**
+
+⭐ +5 XP
+`
+
+);
+
+
+}
+
+
+
+
+
+
+if(
+
+word
+
+.split("")
+
+.every(
+
+l=>
+guessed.includes(l)
+
+)
+
+){
+
+
+const achievements =
+win(
+msg.author.id,
+60
+);
+
+
+
+return interaction.channel.send(
+
+`
+🏆 Hai vinto l'Impiccato!
+
+Parola:
+
+**${word}**
+
+⭐ +60 XP
+
+${achievements.join("\n")}
+`
+
+);
+
+
+}
+
+
+
+
+
+await interaction.channel.send(
+
+`
+🪢 Stato:
+
+${hangmanParts[errors]}
+
+${display()}
+
+❌ Errori:
+${errors}/6
+
+Lettere:
+
+${guessed.join(", ")}
+`
+
+);
+
+
+
+}
+
+
+
+}
+
+
+
+
+
+module.exports.reactionGame =
+reactionGame;
+
+
+
+module.exports.hangmanGame =
+hangmanGame;
+
+// ===============================
+// REACTION GAME
+// ===============================
+
+
+const reactionPositions = [
+
+"titolo",
+
+"testo",
+
+"footer"
+
+];
+
+
+
+
+async function reactionGame(interaction){
+
+
+
+const fakeMessages = [
+
+"Preparati...",
+
+"Concentrati...",
+
+"Quasi pronto..."
+
+];
+
+
+
+
+
+for(const text of fakeMessages){
+
+
+await interaction.channel.send({
+
+content:
+`⚡ ${text}`
+
+});
+
+
+await wait(2000);
+
+
+}
+
+
+
+
+const position =
+
+reactionPositions[
+
+Math.floor(
+Math.random()*reactionPositions.length
+)
+
+];
+
+
+
+
+
+let embed =
+
+new EmbedBuilder()
+
+.setTitle(
+"⚡ REACTION"
+)
+
+.setDescription(
+"Trova il cerchio verde!"
+)
+
+.setColor("Green");
+
+
+
+
+if(position==="titolo"){
+
+embed.setTitle(
+"🟢 REACTION"
+);
+
+}
+
+
+if(position==="testo"){
+
+embed.setDescription(
+"Trova il simbolo 🟢!"
+);
+
+}
+
+
+
+if(position==="footer"){
+
+embed.setFooter({
+
+text:
+"🟢"
+
+});
+
+}
+
+
+
+
+
+const msg =
+
+await interaction.channel.send({
+
+embeds:[embed]
+
+});
+
+
+
+
+
+const start =
+Date.now();
+
+
+
+
+
+const answer =
+
+await msg.channel.awaitMessages({
+
+filter:
+
+m=>
+!m.author.bot &&
+m.content.includes("🟢"),
+
+
+max:1,
+
+
+time:10000
+
+})
+
+
+.catch(()=>null);
+
+
+
+
+
+if(!answer){
+
+return interaction.channel.send(
+
+"❌ Troppo lento!"
+
+);
+
+}
+
+
+
+
+const time =
+
+Date.now()-start;
+
+
+
+const xp =
+
+Math.max(
+10,
+50 - Math.floor(time/100)
+);
+
+
+
+
+
+const achievements =
+win(
+answer.first().author.id,
+xp
+);
+
+
+
+
+
+interaction.channel.send(
+
+`
+⚡ Reazione completata!
+
+Tempo:
+
+${time}ms
+
+⭐ +${xp} XP
+
+${achievements.join("\n")}
+`
+
+);
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ===============================
+// IMPICCATO
+// ===============================
+
+
+
+const hangmanWords = [
+
+"javascript",
+
+"discord",
+
+"astronomia",
+
+"galassia",
+
+"computer"
+
+];
+
+
+
+
+
+const hangmanParts = [
+
+`
+ 
+ 
+
+
+`,
+
+
+`
+ O
+
+
+`,
+
+
+`
+ O
+ |
+`,
+
+
+`
+ O
+/|
+`,
+
+
+`
+ O
+/|\\
+`,
+
+
+`
+ O
+/|\\
+/ 
+`,
+
+
+`
+ O
+/|\\
+/ \\
+
+`
+
+];
+
+
+
+
+
+
+function randomHangman(){
+
+
+return hangmanWords[
+
+Math.floor(
+Math.random()*hangmanWords.length
+)
+
+];
+
+
+}
+
+
+
+
+
+
+
+async function hangmanGame(interaction){
+
+
+
+const word =
+randomHangman();
+
+
+
+
+let guessed=[];
+
+
+let errors=0;
+
+
+let finished=false;
+
+
+
+
+function display(){
+
+
+return word
+
+.split("")
+
+.map(
+
+letter =>
+
+guessed.includes(letter)
+
+?
+
+letter
+
+:
+
+"⬜"
+
+)
+
+.join(" ");
+
+}
+
+
+
+
+await interaction.channel.send(
+
+`
+🪢 **IMPICCATO**
+
+${hangmanParts[errors]}
+
+Parola:
+
+${display()}
+
+
+Scrivi una lettera.
+
+Hai 6 errori disponibili.
+`
+
+);
+
+
+
+
+
+while(!finished){
+
+
+
+const msg =
+
+await collectMessage(
+interaction,
+60
+);
+
+
+
+
+
+if(!msg)
+break;
+
+
+
+
+
+const letter =
+
+msg.content
+
+.toLowerCase()
+
+.trim();
+
+
+
+
+
+if(letter.length!==1){
+
+continue;
+
+}
+
+
+
+
+
+if(
+guessed.includes(letter)
+){
+
+await msg.reply(
+"⚠️ Lettera già usata!"
+);
+
+continue;
+
+}
+
+
+
+
+guessed.push(letter);
+
+
+
+
+if(!word.includes(letter)){
+
+
+errors++;
+
+
+}
+
+
+
+
+
+
+if(
+
+errors>=6
+
+){
+
+
+return interaction.channel.send(
+
+`
+💀 Hai perso!
+
+${hangmanParts[errors]}
+
+La parola era:
+
+**${word}**
+
+⭐ +5 XP
+`
+
+);
+
+
+}
+
+
+
+
+
+
+if(
+
+word
+
+.split("")
+
+.every(
+
+l=>
+guessed.includes(l)
+
+)
+
+){
+
+
+const achievements =
+win(
+msg.author.id,
+60
+);
+
+
+
+return interaction.channel.send(
+
+`
+🏆 Hai vinto l'Impiccato!
+
+Parola:
+
+**${word}**
+
+⭐ +60 XP
+
+${achievements.join("\n")}
+`
+
+);
+
+
+}
+
+
+
+
+
+await interaction.channel.send(
+
+`
+🪢 Stato:
+
+${hangmanParts[errors]}
+
+${display()}
+
+❌ Errori:
+${errors}/6
+
+Lettere:
+
+${guessed.join(", ")}
+`
+
+);
+
+
+
+}
+
+
+
+}
+
+
+
+
+
+module.exports.reactionGame =
+reactionGame;
+
+
+
+module.exports.hangmanGame =
+hangmanGame;

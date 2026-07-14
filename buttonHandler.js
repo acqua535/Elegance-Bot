@@ -1,8 +1,21 @@
-const ticket = require("./ticket");
-const verify = require("./verify");
+const {
+    EmbedBuilder
+} = require("discord.js");
+
+
+const minigame = require("./minigame");
+
+
+// ===============================
+// BUTTON HANDLER GLOBALE
+// ===============================
 
 
 module.exports = async function buttonHandler(interaction) {
+
+
+    if(!interaction.isButton()) return;
+
 
 
     const id = interaction.customId;
@@ -12,120 +25,164 @@ module.exports = async function buttonHandler(interaction) {
     try {
 
 
-        // VERIFY
 
-        if (id === "verify_button") {
-
-            return verify.buttonHandler(interaction);
-
-        }
+        // ===============================
+        // MINIGAME HUB
+        // ===============================
 
 
+        if(id.startsWith("game_")) {
 
-        // TICKET
 
-        if (
-
-            id.startsWith("ticket_") ||
-            id === "close_ticket" ||
-            id === "claim_ticket"
-
-        ) {
-
-            return ticket.buttonHandler(interaction);
-
-        }
+            const game =
+            id.replace(
+                "game_",
+                ""
+            );
 
 
 
+            await interaction.update({
 
-        // MINIGAME
+                embeds:[
 
-        if (
+                    new EmbedBuilder()
 
-            id === "game_number" ||
-            id === "game_quiz" ||
-            id === "game_coin" ||
-            id === "game_dice" ||
-            id === "game_rps"
+                    .setTitle(
+                        "🎮 Minigame avviato"
+                    )
 
-        ) {
+                    .setDescription(
+                        "La partita sta iniziando..."
+                    )
 
-            const minigame = require("./minigame");
+                    .setColor("Green")
 
-            return minigame.buttonHandler(interaction);
+                ],
 
-        }
+                components:[]
+
+            });
 
 
 
 
 
-        // REWARDS
-
-        if (
-
-            id === "claim_daily" ||
-            id === "view_profile"
-
-        ) {
+            switch(game) {
 
 
-            const rewards = require("./rewards");
+                case "number":
+
+                    await minigame.numberGame(interaction);
+
+                break;
 
 
-            if(rewards.buttonHandler){
 
-                return rewards.buttonHandler(interaction);
+                case "quiz":
+
+                    await minigame.quizGame(interaction);
+
+                break;
+
+
+
+                case "memory":
+
+                    await minigame.memoryGame(interaction);
+
+                break;
+
+
+
+                case "word":
+
+                    await minigame.wordGame(interaction);
+
+                break;
+
+
+
+                case "reaction":
+
+                    await minigame.reactionGame(interaction);
+
+                break;
+
+
+
+                case "hangman":
+
+                    await minigame.hangmanGame(interaction);
+
+                break;
+
+
+
+                default:
+
+
+                    await interaction.followUp({
+
+                        content:
+                        "❌ Minigame non trovato.",
+
+                        ephemeral:true
+
+                    });
+
 
             }
 
+
+            return;
+
         }
 
 
 
 
 
-        console.log(
-            "⚠️ Bottone non gestito:",
-            id
+        // ===============================
+        // ALTRI BOTTONI FUTURI
+        // ===============================
+
+
+        /*
+        
+        Esempio:
+
+        if(id === "ticket_create") {
+
+            ...
+
+        }
+
+        */
+
+
+    } catch(error) {
+
+
+        console.error(
+            "Errore Button Handler:",
+            error
         );
 
 
-        if(!interaction.replied){
 
-            return interaction.reply({
+        if(!interaction.replied) {
+
+
+            await interaction.reply({
 
                 content:
-                "⚠️ Bottone non riconosciuto.",
+                "❌ Errore durante l'esecuzione del bottone.",
 
                 ephemeral:true
 
             });
 
-        }
-
-
-
-    } catch(error){
-
-
-        console.error(
-            "❌ Button Handler:",
-            error
-        );
-
-
-        if(!interaction.replied){
-
-            interaction.reply({
-
-                content:
-                "❌ Errore bottone.",
-
-                ephemeral:true
-
-            }).catch(()=>{});
 
         }
 

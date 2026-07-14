@@ -21,7 +21,9 @@ require("./commandHandler")(client);
 
 
 // Deploy Command
-require("./deployCommand");
+require("./commandHandler")(client);
+
+console.log("DEBUG COMMANDS:", client.commands);
 
 
 // Sistemi

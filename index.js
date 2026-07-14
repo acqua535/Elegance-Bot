@@ -16,6 +16,10 @@ const client = new Client({
 client.commands = new Collection();
 
 
+// Command Handler
+require("./commandHandler")(client);
+
+
 // Deploy Command
 require("./deployCommand");
 
@@ -91,10 +95,7 @@ client.on("interactionCreate", async interaction => {
                 );
 
 
-                if (
-                    !interaction.replied &&
-                    !interaction.deferred
-                ) {
+                if (!interaction.replied && !interaction.deferred) {
 
                     await interaction.reply({
 
@@ -126,9 +127,7 @@ client.on("interactionCreate", async interaction => {
         if (interaction.isButton()) {
 
 
-            if (
-                interaction.customId === "verify_button"
-            ) {
+            if (interaction.customId === "verify_button") {
 
                 await verify.buttonHandler(interaction);
                 return;
@@ -145,9 +144,7 @@ client.on("interactionCreate", async interaction => {
         if (interaction.isModalSubmit()) {
 
 
-            if (
-                interaction.customId === "verify_modal"
-            ) {
+            if (interaction.customId === "verify_modal") {
 
                 await verify.modalHandler(interaction);
                 return;
@@ -165,10 +162,7 @@ client.on("interactionCreate", async interaction => {
         );
 
 
-        if (
-            !interaction.replied &&
-            !interaction.deferred
-        ) {
+        if (!interaction.replied && !interaction.deferred) {
 
             await interaction.reply({
 
@@ -192,6 +186,4 @@ console.log(
 );
 
 
-client.login(
-    process.env.TOKEN
-);
+client.login(process.env.TOKEN);

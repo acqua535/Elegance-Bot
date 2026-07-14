@@ -1,12 +1,7 @@
-require("dotenv").config();
-
-const {
-    REST,
-    Routes
-} = require("discord.js");
-
+const { REST, Routes } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
+require("dotenv").config();
 
 
 const commands = [];
@@ -18,29 +13,35 @@ const commandsPath = path.join(
 );
 
 
+if (!fs.existsSync(commandsPath)) {
 
-const commandFiles =
-fs.readdirSync(commandsPath)
+    console.log(
+        "❌ Cartella commands non trovata"
+    );
+
+    process.exit();
+
+}
+
+
+
+const commandFiles = fs.readdirSync(commandsPath)
 .filter(file => file.endsWith(".js"));
 
 
 
 for (const file of commandFiles) {
 
-
-    const command =
-    require(
-        path.join(commandsPath, file)
+    const command = require(
+        path.join(commandsPath,file)
     );
 
 
     if(command.data){
 
-
         commands.push(
             command.data.toJSON()
         );
-
 
         console.log(
             `✅ Comando caricato: ${command.data.name}`
@@ -65,46 +66,45 @@ const rest = new REST({
 (async()=>{
 
 
-    try {
+try {
 
 
-        console.log(
-            "🔄 Registrazione comandi..."
-        );
-
-
-
-        await rest.put(
-
-            Routes.applicationCommands(
-
-                "1526646173937565706"
-
-            ),
-
-            {
-                body: commands
-            }
-
-        );
+console.log(
+    "🔄 Registrazione comandi..."
+);
 
 
 
-        console.log(
+await rest.put(
 
-            `✅ ${commands.length} comandi registrati correttamente!`
+    Routes.applicationCommands(
+        "1526656748667146331"
+    ),
 
-        );
+    {
 
-
-
-    } catch(error){
-
-
-        console.error(error);
-
+        body: commands
 
     }
+
+);
+
+
+
+console.log(
+    `✅ ${commands.length} comandi registrati correttamente!`
+);
+
+
+
+}
+
+catch(error){
+
+console.error(error);
+
+}
+
 
 
 })();

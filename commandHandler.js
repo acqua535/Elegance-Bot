@@ -3,7 +3,7 @@ const path = require("path");
 
 module.exports = function loadCommands(client) {
 
-    const commandsPath = path.join(__dirname, "comandi");
+    const commandsPath = path.join(__dirname, "commands");
 
     if (!fs.existsSync(commandsPath)) {
         console.log("❌ Cartella comandi non trovata");

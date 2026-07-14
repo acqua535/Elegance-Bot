@@ -52,6 +52,8 @@ client.on("interactionCreate", async interaction => {
 
     try {
 
+    console.log("📩 Interazione ricevuta:", interaction.commandName);
+
         if (interaction.isChatInputCommand()) {
 
             const command = client.commands.get(interaction.commandName);

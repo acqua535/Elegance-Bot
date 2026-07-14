@@ -6,12 +6,9 @@ const {
     ButtonStyle
 } = require("discord.js");
 
-
 const gameSystem = require("./gameSystem");
 
-
 let activeGame = false;
-let lastGame = null;
 
 
 const questions = [
@@ -30,13 +27,20 @@ const questions = [
 ];
 
 
-const games = [
-    "number",
-    "quiz",
-    "coin",
-    "dice",
-    "rps"
-];
+const games = {
+
+    number: "🎯 Indovina il Numero",
+
+    quiz: "🧠 Quiz",
+
+    coin: "🪙 Testa o Croce",
+
+    dice: "🎲 Dado",
+
+    rps: "✊ Sasso Carta Forbice"
+
+};
+
 
 
 module.exports = {
@@ -45,14 +49,14 @@ module.exports = {
 
         .setName("minigame")
 
-        .setDescription("Avvia un minigame casuale"),
+        .setDescription("Apri il Minigame Hub"),
 
 
 
     async execute(interaction) {
 
 
-        if (activeGame) {
+        if(activeGame) {
 
             return interaction.reply({
 
@@ -66,118 +70,119 @@ module.exports = {
         }
 
 
-        activeGame = true;
+
+        const row = new ActionRowBuilder()
+        .addComponents(
+
+            new ButtonBuilder()
+            .setCustomId("game_number")
+            .setLabel("🎯 Numero")
+            .setStyle(ButtonStyle.Primary),
+
+
+            new ButtonBuilder()
+            .setCustomId("game_quiz")
+            .setLabel("🧠 Quiz")
+            .setStyle(ButtonStyle.Success),
+
+
+            new ButtonBuilder()
+            .setCustomId("game_coin")
+            .setLabel("🪙 Testa/Croce")
+            .setStyle(ButtonStyle.Secondary),
+
+
+            new ButtonBuilder()
+            .setCustomId("game_dice")
+            .setLabel("🎲 Dado")
+            .setStyle(ButtonStyle.Primary),
+
+
+            new ButtonBuilder()
+            .setCustomId("game_rps")
+            .setLabel("✊ Sasso")
+            .setStyle(ButtonStyle.Danger)
+
+        );
 
 
 
-        let game;
+        const embed = new EmbedBuilder()
 
+        .setTitle("🎮 Minigame Hub")
 
+        .setDescription(
 
-        do {
+`
+Scegli quale minigame vuoi giocare.
 
-            game =
-                games[
-                    Math.floor(
-                        Math.random() * games.length
-                    )
-                ];
+━━━━━━━━━━━━━━
 
-        } while(game === lastGame);
+🎯 Indovina il Numero
+🧠 Quiz
+🪙 Testa o Croce
+🎲 Dado
+✊ Sasso Carta Forbice
 
+━━━━━━━━━━━━━━
 
+Buona fortuna! 🍀
+`
 
-        lastGame = game;
+        )
 
-
-
-        const names = {
-
-            number:
-            "🎯 Indovina il Numero",
-
-            quiz:
-            "🧠 Quiz",
-
-            coin:
-            "🪙 Testa o Croce",
-
-            dice:
-            "🎲 Dado",
-
-            rps:
-            "✊ Sasso Carta Forbice"
-
-        };
+        .setColor("Gold");
 
 
 
         await interaction.reply({
 
             embeds:[
+                embed
+            ],
 
-                new EmbedBuilder()
-
-                .setTitle(
-                    `🎮 ${names[game]}`
-                )
-
-                .setDescription(
-                    "Preparazione del minigame..."
-                )
-
+            components:[
+                row
             ]
 
         });
 
 
 
-        await wait(3000);
+        const msg = await interaction.fetchReply();
 
 
 
-        for(let i = 7; i >= 1; i--) {
+        const button =
+        await msg.awaitMessageComponent({
+
+            time:30000,
+
+            filter:
+            i => i.user.id === interaction.user.id
+
+        }).catch(()=>null);
 
 
-            await interaction.editReply({
 
-                embeds:[
+        if(!button){
 
-                    new EmbedBuilder()
+            return interaction.editReply({
 
-                    .setTitle(
+                content:
+                "⏰ Tempo scaduto.",
 
-                        i === 7
+                embeds:[],
 
-                        ? "🌌 Il minigame sta prendendo forma..."
-
-                        : "🔥 Preparazione..."
-
-                    )
-
-
-                    .setDescription(
-
-`
-La scelta sta per essere svelata...
-
-⏳ ${i}
-`
-
-                    )
-
-                ]
+                components:[]
 
             });
-
-
-            await wait(1000);
 
         }
 
 
 
-        await interaction.editReply({
+        await button.update({
 
             embeds:[
 
@@ -188,72 +193,58 @@ La scelta sta per essere svelata...
                 )
 
                 .setDescription(
-                    "La sfida è partita! 🍀"
+                    "La sfida sta iniziando..."
                 )
 
-            ]
+                .setColor("Green")
+
+            ],
+
+            components:[]
 
         });
 
-        gameSystem.updateProfile(
-    interaction.user.id,
-    {
-        games:
-        gameSystem.getProfile(interaction.user.id).games + 1
-    }
-);
-
-        const unlocked =
-    gameSystem.checkAchievements(
-        interaction.user.id
-    );
 
 
-if (unlocked.length > 0) {
+        activeGame = true;
 
-    interaction.channel.send(
-`
-🏆 **Achievement sbloccato!**
 
-${unlocked.join("\n")}
 
-✨ Ricompensa XP ricevuta!
-`
-    );
-
-}
+        const type =
+        button.customId.replace(
+            "game_",
+            ""
+        );
 
 
 
         try {
 
 
-            if(game === "number")
+            if(type === "number")
                 await numberGame(interaction);
 
 
-            if(game === "quiz")
+            if(type === "quiz")
                 await quizGame(interaction);
 
 
-            if(game === "coin")
+            if(type === "coin")
                 await coinGame(interaction);
 
 
-            if(game === "dice")
+            if(type === "dice")
                 await diceGame(interaction);
 
 
-            if(game === "rps")
+            if(type === "rps")
                 await rpsGame(interaction);
 
 
 
-        } catch(error) {
-
+        } catch(error){
 
             console.error(error);
-
 
         }
 
@@ -270,39 +261,51 @@ ${unlocked.join("\n")}
 
 
 
-function gameWin(userId) {
+function gameWin(userId){
 
 
-    const profile =
-        gameSystem.getProfile(userId);
+    gameSystem.gameWin(userId);
 
 
-
-    gameSystem.updateProfile(userId, {
-
-
-        wins:
-        profile.wins + 1,
-
-
-        games:
-        profile.games + 1
-
-
-    });
+    const unlocked =
+    gameSystem.checkAchievements(userId);
 
 
 
-    gameSystem.addXP(
-        userId,
-        25
-    );
+    if(unlocked.length > 0){
+
+        return unlocked;
+
+    }
 
 
-    gameSystem.addCoins(
-        userId,
-        50
-    );
+    return [];
+
+}
+
+
+
+
+function gameLose(userId){
+
+
+    gameSystem.gameLose(userId);
+
+
+
+    const unlocked =
+    gameSystem.checkAchievements(userId);
+
+
+
+    if(unlocked.length > 0){
+
+        return unlocked;
+
+    }
+
+
+    return [];
 
 }
 
@@ -310,56 +313,20 @@ function gameWin(userId) {
 
 
 
-function gameLose(userId) {
-
-
-    const profile =
-        gameSystem.getProfile(userId);
-
-
-
-    gameSystem.updateProfile(userId, {
-
-
-        losses:
-        profile.losses + 1,
-
-
-        games:
-        profile.games + 1
-
-
-    });
-
-
-
-    gameSystem.addXP(
-        userId,
-        5
-    );
-
-}
-
-
-
-
-
-async function numberGame(interaction) {
+async function numberGame(interaction){
 
 
     const number =
-        Math.floor(
-            Math.random() * 10
-        ) + 1;
+    Math.floor(Math.random()*10)+1;
 
 
 
     await interaction.channel.send(
 
 `
-🎯 **Indovina il numero!**
+🎯 **Indovina il numero**
 
-Sto pensando a un numero da **1 a 10**.
+Sto pensando ad un numero da **1 a 10**.
 
 Hai 20 secondi!
 `
@@ -369,41 +336,37 @@ Hai 20 secondi!
 
 
     const msg =
-        await collectMessage(
-            interaction,
-            20
-        );
+    await collectMessage(interaction,20);
 
 
 
-    if(!msg) {
-
-
+    if(!msg)
         return interaction.channel.send(
             "⏰ Tempo scaduto!"
         );
 
 
-    }
+
+    if(msg.content === String(number)){
 
 
+        const achievements =
+        gameWin(msg.author.id);
 
-    if(msg.content === String(number)) {
-
-
-        gameWin(
-            msg.author.id
-        );
 
 
         return interaction.channel.send(
 
-`🏆 ${msg.author} ha indovinato!
+`
+🏆 ${msg.author} ha vinto!
 
-Era **${number}**
+Numero corretto: **${number}**
 
 ⭐ +25 XP
-🪙 +50 monete`
+🪙 +50 monete
+
+${achievements.join("\n")}
+`
 
         );
 
@@ -411,32 +374,40 @@ Era **${number}**
     }
 
 
-    gameLose(
-        msg.author.id
-    );
+
+    gameLose(msg.author.id);
+
 
 
     interaction.channel.send(
 
-`❌ Nessuno ha indovinato.
+`
+❌ Hai perso!
 
-Era **${number}**
+Il numero era **${number}**
 
-⭐ +5 XP`
+⭐ +5 XP
+`
 
     );
 
+
 }
 
-async function quizGame(interaction) {
+
+
+
+
+
+async function quizGame(interaction){
 
 
     const q =
-        questions[
-            Math.floor(
-                Math.random() * questions.length
-            )
-        ];
+    questions[
+        Math.floor(
+            Math.random()*questions.length
+        )
+    ];
 
 
 
@@ -447,7 +418,7 @@ async function quizGame(interaction) {
 
 ${q.question}
 
-⏳ Hai 20 secondi!
+Hai 20 secondi!
 `
 
     );
@@ -455,44 +426,36 @@ ${q.question}
 
 
     const msg =
-        await collectMessage(
-            interaction,
-            20
-        );
+    await collectMessage(interaction,20);
 
 
 
-    if(!msg) {
-
-
-        return interaction.channel.send(
-
-            "⏰ Tempo scaduto!"
-
-        );
-
-
-    }
+    if(!msg)
+        return;
 
 
 
     if(
         msg.content.toLowerCase()
         === q.answer
-    ) {
+    ){
 
 
-        gameWin(
-            msg.author.id
-        );
+        const achievements =
+        gameWin(msg.author.id);
+
 
 
         interaction.channel.send(
 
-`🏆 ${msg.author} ha risposto correttamente!
+`
+🏆 Risposta corretta!
 
 ⭐ +25 XP
-🪙 +50 monete`
+🪙 +50 monete
+
+${achievements.join("\n")}
+`
 
         );
 
@@ -500,23 +463,24 @@ ${q.question}
     } else {
 
 
-        gameLose(
-            msg.author.id
-        );
+        gameLose(msg.author.id);
 
 
         interaction.channel.send(
 
-`❌ Risposta errata!
+`
+❌ Risposta errata!
 
-La risposta era **${q.answer}**
+Era **${q.answer}**
 
-⭐ +5 XP`
+⭐ +5 XP
+`
 
         );
 
 
     }
+
 
 }
 
@@ -524,69 +488,69 @@ La risposta era **${q.answer}**
 
 
 
-async function coinGame(interaction) {
+
+async function coinGame(interaction){
 
 
     const row =
-        new ActionRowBuilder()
+    new ActionRowBuilder()
 
-        .addComponents(
+    .addComponents(
 
-            new ButtonBuilder()
+        new ButtonBuilder()
 
-            .setCustomId("testa")
+        .setCustomId("testa")
 
-            .setLabel("Testa")
+        .setLabel("Testa")
 
-            .setStyle(ButtonStyle.Primary),
+        .setStyle(ButtonStyle.Primary),
 
 
+        new ButtonBuilder()
 
-            new ButtonBuilder()
+        .setCustomId("croce")
 
-            .setCustomId("croce")
+        .setLabel("Croce")
 
-            .setLabel("Croce")
+        .setStyle(ButtonStyle.Secondary)
 
-            .setStyle(ButtonStyle.Secondary)
-
-        );
+    );
 
 
 
     const msg =
-        await interaction.channel.send({
+    await interaction.channel.send({
 
-            content:
-            "🪙 Scegli il risultato!",
+        content:
+        "🪙 Scegli il risultato!",
 
-            components:[row]
+        components:[
+            row
+        ]
 
-        });
+    });
 
 
 
     const result =
-        Math.random() > 0.5
-
-        ? "testa"
-
-        : "croce";
+    Math.random()>0.5
+    ?
+    "testa"
+    :
+    "croce";
 
 
 
     const btn =
-        await msg.awaitMessageComponent({
+    await msg.awaitMessageComponent({
 
-            time:20000
+        time:20000
 
-        }).catch(()=>null);
-
-
-
-    if(!btn) {
+    }).catch(()=>null);
 
 
+
+    if(!btn)
         return msg.edit({
 
             content:
@@ -597,28 +561,29 @@ async function coinGame(interaction) {
         });
 
 
-    }
+
+    if(btn.customId === result){
+
+
+        const achievements =
+        gameWin(btn.user.id);
 
 
 
-    if(btn.customId === result) {
-
-
-        gameWin(
-            btn.user.id
-        );
-
-
-        await btn.update({
+        btn.update({
 
             content:
 
-`🏆 Hai vinto!
+`
+🏆 Hai vinto!
 
 Era **${result}**
 
 ⭐ +25 XP
-🪙 +50 monete`,
+🪙 +50 monete
+
+${achievements.join("\n")}
+`,
 
             components:[]
 
@@ -629,20 +594,21 @@ Era **${result}**
     } else {
 
 
-        gameLose(
-            btn.user.id
-        );
+        gameLose(btn.user.id);
 
 
-        await btn.update({
+
+        btn.update({
 
             content:
 
-`❌ Hai perso!
+`
+❌ Hai perso!
 
 Era **${result}**
 
-⭐ +5 XP`,
+⭐ +5 XP
+`,
 
             components:[]
 
@@ -652,28 +618,26 @@ Era **${result}**
     }
 
 
-}
-
-
-
-
+        }
 
 async function diceGame(interaction){
 
 
     const roll =
-        Math.floor(
-            Math.random()*6
-        ) + 1;
+    Math.floor(
+        Math.random()*6
+    ) + 1;
 
 
 
     await interaction.channel.send(
 
 `
-🎲 **Il dado è stato lanciato!**
+🎲 **Dado**
 
-Indovina il numero da 1 a 6.
+Indovina il numero da **1 a 6**.
+
+Hai 20 secondi!
 `
 
     );
@@ -681,64 +645,71 @@ Indovina il numero da 1 a 6.
 
 
     const msg =
-        await collectMessage(
-            interaction,
-            20
-        );
+    await collectMessage(
+        interaction,
+        20
+    );
 
 
 
     if(!msg)
-        return;
+        return interaction.channel.send(
+            "⏰ Tempo scaduto!"
+        );
 
 
 
     if(
         msg.content === String(roll)
-    ) {
+    ){
 
 
-        gameWin(
-            msg.author.id
-        );
+        const achievements =
+        gameWin(msg.author.id);
+
 
 
         interaction.channel.send(
 
-`🏆 ${msg.author} ha vinto!
+`
+🏆 ${msg.author} ha vinto!
 
 Il numero era **${roll}**
 
 ⭐ +25 XP
-🪙 +50 monete`
+🪙 +50 monete
+
+${achievements.join("\n")}
+`
 
         );
-
 
 
     } else {
 
 
-        gameLose(
-            msg.author.id
-        );
+        gameLose(msg.author.id);
+
 
 
         interaction.channel.send(
 
-`❌ Hai perso!
+`
+❌ Hai perso!
 
 Il numero era **${roll}**
 
-⭐ +5 XP`
+⭐ +5 XP
+`
 
         );
 
 
     }
 
-
 }
+
+
 
 
 
@@ -757,6 +728,8 @@ Scrivi:
 sasso
 carta
 forbice
+
+Hai 20 secondi!
 `
 
     );
@@ -764,56 +737,63 @@ forbice
 
 
     const msg =
-        await collectMessage(
-            interaction,
-            20
-        );
+    await collectMessage(
+        interaction,
+        20
+    );
 
 
 
     if(!msg)
-        return;
-
-
-
-    const bot =
-
-        [
-            "sasso",
-            "carta",
-            "forbice"
-        ]
-
-        [
-            Math.floor(
-                Math.random()*3
-            )
-        ];
+        return interaction.channel.send(
+            "⏰ Tempo scaduto!"
+        );
 
 
 
     const player =
-        msg.content.toLowerCase();
+    msg.content.toLowerCase();
 
 
 
     if(
-        player !== "sasso" &&
-        player !== "carta" &&
-        player !== "forbice"
-    ) {
 
+        player !== "sasso" &&
+
+        player !== "carta" &&
+
+        player !== "forbice"
+
+    ){
 
         return interaction.channel.send(
             "❌ Scelta non valida!"
         );
 
-
     }
 
 
 
-    let result = "pareggio";
+    const bot = [
+
+        "sasso",
+
+        "carta",
+
+        "forbice"
+
+    ][
+
+        Math.floor(
+            Math.random()*3
+        )
+
+    ];
+
+
+
+    let result =
+    "pareggio";
 
 
 
@@ -825,8 +805,7 @@ forbice
 
         (player==="forbice" && bot==="carta")
 
-    ) {
-
+    ){
 
         result="win";
 
@@ -842,8 +821,7 @@ forbice
 
         (bot==="forbice" && player==="carta")
 
-    ) {
-
+    ){
 
         result="lose";
 
@@ -856,53 +834,75 @@ forbice
     if(result==="win"){
 
 
-        gameWin(
-            msg.author.id
+        const achievements =
+        gameWin(msg.author.id);
+
+
+
+        return interaction.channel.send(
+
+`
+🏆 Hai vinto!
+
+Tu: **${player}**
+Bot: **${bot}**
+
+⭐ +25 XP
+🪙 +50 monete
+
+${achievements.join("\n")}
+`
+
         );
 
-
     }
+
+
 
 
 
     if(result==="lose"){
 
 
-        gameLose(
-            msg.author.id
+        gameLose(msg.author.id);
+
+
+
+        return interaction.channel.send(
+
+`
+❌ Hai perso!
+
+Tu: **${player}**
+Bot: **${bot}**
+
+⭐ +5 XP
+`
+
         );
 
-
     }
+
+
 
 
 
     interaction.channel.send(
 
 `
+🤝 Pareggio!
+
 Tu: **${player}**
-
 Bot: **${bot}**
-
-
-${
-result==="win"
-?
-"🏆 Hai vinto! ⭐ +25 XP 🪙 +50 monete"
-:
-result==="lose"
-?
-"❌ Hai perso! ⭐ +5 XP"
-:
-"🤝 Pareggio!"
-}
-
 `
 
     );
 
 
 }
+
+
+
 
 
 
@@ -927,26 +927,10 @@ function collectMessage(interaction,time){
     })
 
 
-    .then(c=>c.first())
+    .then(c => c.first())
 
 
-    .catch(()=>null);
-
-
-}
-
-
-
-
-
-function wait(ms){
-
-
-    return new Promise(
-
-        resolve => setTimeout(resolve,ms)
-
-    );
+    .catch(() => null);
 
 
 }

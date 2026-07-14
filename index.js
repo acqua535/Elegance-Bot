@@ -4,59 +4,99 @@ const {
     Collection
 } = require("discord.js");
 
+
 const client = new Client({
+
     intents: [
+
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent
+
     ]
+
 });
 
+
 client.commands = new Collection();
+
 
 
 // Command Handler
 require("./commandHandler")(client);
 
 
-// Deploy Command
-require("./commandHandler")(client);
+console.log(
+    "DEBUG COMMANDS:",
+    client.commands
+);
 
-console.log("DEBUG COMMANDS:", client.commands);
 
 
 // Sistemi
 const ticket = require("./ticket");
 const verify = require("./verify");
+const buttonHandler = require("./buttonHandler");
+
 
 
 // Error Handling
+
 process.on("unhandledRejection", error => {
-    console.error("❌ Errore non gestito:", error);
+
+    console.error(
+        "❌ Errore non gestito:",
+        error
+    );
+
 });
 
+
 process.on("uncaughtException", error => {
-    console.error("❌ Eccezione non gestita:", error);
+
+    console.error(
+        "❌ Eccezione non gestita:",
+        error
+    );
+
 });
+
+
 
 
 // Ready
+
 client.once("ready", () => {
 
-    console.log(`⚜️ Elegance-Bot online come ${client.user.tag}`);
 
-    client.user.setActivity("Elegance Community", {
-        type: 3
-    });
+    console.log(
+        `⚜️ Elegance-Bot online come ${client.user.tag}`
+    );
+
+
+    client.user.setActivity(
+        "Elegance Community",
+        {
+            type: 3
+        }
+    );
+
 
 });
 
 
+
+
 // Interazioni
-client.on("interactionCreate", async interaction => {
+
+client.on(
+"interactionCreate",
+async interaction => {
+
 
     try {
+
 
         console.log(
             "📩 Interazione ricevuta:",
@@ -64,31 +104,44 @@ client.on("interactionCreate", async interaction => {
         );
 
 
+
+        // SLASH COMMANDS
+
         if (interaction.isChatInputCommand()) {
 
+
             const command =
-                client.commands.get(
-                    interaction.commandName
-                );
+            client.commands.get(
+                interaction.commandName
+            );
+
 
 
             if (!command) {
+
 
                 console.log(
                     "❌ Comando non trovato:",
                     interaction.commandName
                 );
 
+
                 return;
 
             }
 
 
+
             try {
 
-                await command.execute(interaction);
+
+                await command.execute(
+                    interaction
+                );
+
 
             } catch(error) {
+
 
                 console.error(
                     "❌ Errore comando:",
@@ -97,7 +150,11 @@ client.on("interactionCreate", async interaction => {
                 );
 
 
-                if (!interaction.replied && !interaction.deferred) {
+
+                if(
+                    !interaction.replied &&
+                    !interaction.deferred
+                ){
 
                     await interaction.reply({
 
@@ -108,8 +165,10 @@ client.on("interactionCreate", async interaction => {
 
                     }).catch(()=>{});
 
+
                 }
 
+
             }
 
 
@@ -118,45 +177,73 @@ client.on("interactionCreate", async interaction => {
         }
 
 
-        if (interaction.isStringSelectMenu()) {
 
-            await ticket.categoryHandler(interaction);
+
+        // MENU SELECT
+
+        if(interaction.isStringSelectMenu()){
+
+
+            await ticket.categoryHandler(
+                interaction
+            );
+
+
             return;
+
 
         }
 
 
-        if (interaction.isButton()) {
 
 
-            if (interaction.customId === "verify_button") {
+        // BUTTONS
 
-                await verify.buttonHandler(interaction);
+        if(interaction.isButton()){
+
+
+            await buttonHandler(
+                interaction
+            );
+
+
+            return;
+
+
+        }
+
+
+
+
+
+        // MODALS
+
+        if(interaction.isModalSubmit()){
+
+
+            if(
+                interaction.customId === "verify_modal"
+            ){
+
+
+                await verify.modalHandler(
+                    interaction
+                );
+
+
                 return;
 
+
             }
 
-
-            await ticket.buttonHandler(interaction);
-            return;
 
         }
 
 
-        if (interaction.isModalSubmit()) {
+
+    } catch(error){
 
 
-            if (interaction.customId === "verify_modal") {
-
-                await verify.modalHandler(interaction);
-                return;
-
-            }
-
-        }
-
-
-    } catch (error) {
 
         console.error(
             "❌ Errore interaction:",
@@ -164,7 +251,12 @@ client.on("interactionCreate", async interaction => {
         );
 
 
-        if (!interaction.replied && !interaction.deferred) {
+
+        if(
+            !interaction.replied &&
+            !interaction.deferred
+        ){
+
 
             await interaction.reply({
 
@@ -175,17 +267,30 @@ client.on("interactionCreate", async interaction => {
 
             }).catch(()=>{});
 
+
         }
 
+
     }
+
 
 });
 
 
+
+
+
 console.log(
+
     "TOKEN PRESENTE:",
     process.env.TOKEN ? "SI" : "NO"
+
 );
 
 
-client.login(process.env.TOKEN);
+
+
+
+client.login(
+    process.env.TOKEN
+);

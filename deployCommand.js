@@ -3,108 +3,71 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
-
 const commands = [];
+const loaded = new Set();
 
+const locations = [
+    path.join(__dirname, "commands"),
+    __dirname
+];
 
-const commandsPath = path.join(
-    __dirname,
-    "commands"
-);
+for (const location of locations) {
 
+    if (!fs.existsSync(location)) continue;
 
-if (!fs.existsSync(commandsPath)) {
+    const files = fs.readdirSync(location)
+        .filter(file => file.endsWith(".js"))
+        .filter(file => file !== "index.js")
+        .filter(file => file !== "deployCommand.js")
+        .filter(file => file !== "commandHandler.js");
 
-    console.log(
-        "❌ Cartella commands non trovata"
-    );
+    for (const file of files) {
 
-    process.exit();
+        try {
 
-}
+            const command = require(path.join(location, file));
 
+            if (!command.data) continue;
 
+            if (loaded.has(command.data.name)) continue;
 
-const commandFiles = fs.readdirSync(commandsPath)
-.filter(file => file.endsWith(".js"));
+            loaded.add(command.data.name);
 
+            commands.push(command.data.toJSON());
 
+            console.log(`✅ Comando caricato: ${command.data.name}`);
 
-for (const file of commandFiles) {
+        } catch (err) {
 
-    const command = require(
-        path.join(commandsPath,file)
-    );
+            console.error(`❌ Errore caricando ${file}:`, err);
 
-
-    if(command.data){
-
-        commands.push(
-            command.data.toJSON()
-        );
-
-        console.log(
-            `✅ Comando caricato: ${command.data.name}`
-        );
+        }
 
     }
 
 }
 
+const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
+(async () => {
 
-const rest = new REST({
+    try {
 
-    version:"10"
+        console.log("🔄 Registrazione comandi...");
 
-}).setToken(
-    process.env.TOKEN
-);
+        await rest.put(
+            Routes.applicationCommands("1526656748667146331"),
+            {
+                body: commands
+            }
+        );
 
+        console.log(`✅ ${commands.length} comandi registrati correttamente!`);
 
+    } catch (error) {
 
-(async()=>{
-
-
-try {
-
-
-console.log(
-    "🔄 Registrazione comandi..."
-);
-
-
-
-await rest.put(
-
-    Routes.applicationCommands(
-        "1526656748667146331"
-    ),
-
-    {
-
-        body: commands
+        console.error(error);
 
     }
-
-);
-
-
-
-console.log(
-    `✅ ${commands.length} comandi registrati correttamente!`
-);
-
-
-
-}
-
-catch(error){
-
-console.error(error);
-
-}
-
-
 
 })();

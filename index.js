@@ -4,14 +4,19 @@ const {
     Collection
 } = require("discord.js");
 
+require("dotenv").config();
+
 
 const client = new Client({
 
     intents: [
 
         GatewayIntentBits.Guilds,
+
         GatewayIntentBits.GuildMembers,
+
         GatewayIntentBits.GuildMessages,
+
         GatewayIntentBits.MessageContent
 
     ]
@@ -19,120 +24,149 @@ const client = new Client({
 });
 
 
+
 client.commands = new Collection();
 
 
 
-// Command Handler
+// =====================
+// COMMAND HANDLER
+// =====================
+
 require("./commandHandler")(client);
 
 
-console.log(
-    "DEBUG COMMANDS:",
-    client.commands
-);
+
+// =====================
+// AUTO SLASH DEPLOY
+// =====================
+
+require("./deployCommand")();
 
 
 
-// Sistemi
+// =====================
+// SYSTEMS
+// =====================
+
 const ticket = require("./ticket");
+
 const verify = require("./verify");
+
 const buttonHandler = require("./buttonHandler");
 
 
 
-// Error Handling
+// =====================
+// ERROR HANDLING
+// =====================
 
-process.on("unhandledRejection", error => {
+process.on(
+    "unhandledRejection",
+    error => {
 
-    console.error(
-        "❌ Errore non gestito:",
-        error
-    );
+        console.error(
+            "❌ Unhandled Rejection:",
+            error
+        );
 
-});
-
-
-process.on("uncaughtException", error => {
-
-    console.error(
-        "❌ Eccezione non gestita:",
-        error
-    );
-
-});
+    }
+);
 
 
 
+process.on(
+    "uncaughtException",
+    error => {
 
-// Ready
+        console.error(
+            "❌ Uncaught Exception:",
+            error
+        );
 
-client.once("ready", () => {
-
-
-    console.log(
-        `⚜️ Elegance-Bot online come ${client.user.tag}`
-    );
-
-
-    client.user.setActivity(
-        "Elegance Community",
-        {
-            type: 3
-        }
-    );
-
-
-});
+    }
+);
 
 
 
 
-// Interazioni
+// =====================
+// READY
+// =====================
 
-client.on(
-"interactionCreate",
-async interaction => {
-
-
-    try {
+client.once(
+    "clientReady",
+    () => {
 
 
         console.log(
-            "📩 Interazione ricevuta:",
-            interaction.commandName
+            `⚜️ Elegance-Bot online come ${client.user.tag}`
         );
 
 
 
-        // SLASH COMMANDS
+        client.user.setActivity(
+            "Elegance Community",
+            {
+                type: 3
+            }
+        );
 
-        if (interaction.isChatInputCommand()) {
+
+    }
+);
 
 
-            const command =
-            client.commands.get(
-                interaction.commandName
+
+
+// =====================
+// INTERACTIONS
+// =====================
+
+client.on(
+    "interactionCreate",
+    async interaction => {
+
+
+        try {
+
+
+
+            console.log(
+                "📩 Interazione ricevuta:",
+                interaction.commandName ||
+                interaction.customId
             );
 
 
 
-            if (!command) {
 
 
-                console.log(
-                    "❌ Comando non trovato:",
+            // SLASH COMMANDS
+
+            if(
+                interaction.isChatInputCommand()
+            ){
+
+
+                const command =
+                client.commands.get(
                     interaction.commandName
                 );
 
 
-                return;
 
-            }
+                if(!command){
 
+                    console.log(
+                        "❌ Comando non trovato:",
+                        interaction.commandName
+                    );
 
+                    return;
 
-            try {
+                }
+
 
 
                 await command.execute(
@@ -140,95 +174,93 @@ async interaction => {
                 );
 
 
-            } catch(error) {
-
-
-                console.error(
-                    "❌ Errore comando:",
-                    interaction.commandName,
-                    error
-                );
-
-
-
-                if(
-                    !interaction.replied &&
-                    !interaction.deferred
-                ){
-
-                    await interaction.reply({
-
-                        content:
-                        "❌ Errore durante il comando.",
-
-                        ephemeral:true
-
-                    }).catch(()=>{});
-
-
-                }
-
+                return;
 
             }
 
 
-            return;
-
-        }
 
 
 
 
-        // MENU SELECT
-
-        if(interaction.isStringSelectMenu()){
-
-
-            await ticket.categoryHandler(
-                interaction
-            );
-
-
-            return;
-
-
-        }
-
-
-
-
-        // BUTTONS
-
-        if(interaction.isButton()){
-
-
-            await buttonHandler(
-                interaction
-            );
-
-
-            return;
-
-
-        }
-
-
-
-
-
-        // MODALS
-
-        if(interaction.isModalSubmit()){
-
+            // SELECT MENU
 
             if(
-                interaction.customId === "verify_modal"
+                interaction.isStringSelectMenu()
             ){
 
 
-                await verify.modalHandler(
-                    interaction
-                );
+                if(ticket?.categoryHandler){
+
+                    await ticket.categoryHandler(
+                        interaction
+                    );
+
+                }
+
+
+                return;
+
+            }
+
+
+
+
+
+
+
+            // BUTTONS
+
+            if(
+                interaction.isButton()
+            ){
+
+
+
+                // VERIFY
+
+                if(
+                    interaction.customId ===
+                    "verify_button"
+                ){
+
+                    await verify.buttonHandler(
+                        interaction
+                    );
+
+                    return;
+
+                }
+
+
+
+
+                // GENERAL BUTTON HANDLER
+
+                if(buttonHandler){
+
+                    await buttonHandler(
+                        interaction
+                    );
+
+                    return;
+
+                }
+
+
+
+                // TICKET FALLBACK
+
+                if(ticket?.buttonHandler){
+
+                    await ticket.buttonHandler(
+                        interaction
+                    );
+
+                    return;
+
+                }
+
 
 
                 return;
@@ -237,35 +269,65 @@ async interaction => {
             }
 
 
-        }
 
 
 
-    } catch(error){
+
+
+            // MODALS
+
+            if(
+                interaction.isModalSubmit()
+            ){
+
+
+                if(
+                    interaction.customId ===
+                    "verify_modal"
+                ){
+
+                    await verify.modalHandler(
+                        interaction
+                    );
+
+                    return;
+
+                }
+
+
+            }
 
 
 
-        console.error(
-            "❌ Errore interaction:",
-            error
-        );
+
+
+        } catch(error){
+
+
+            console.error(
+                "❌ Errore interaction:",
+                error
+            );
 
 
 
-        if(
-            !interaction.replied &&
-            !interaction.deferred
-        ){
+            if(
+                !interaction.replied &&
+                !interaction.deferred
+            ){
 
 
-            await interaction.reply({
+                await interaction.reply({
 
-                content:
-                "❌ Errore durante l'esecuzione.",
+                    content:
+                    "❌ Errore durante l'esecuzione.",
 
-                ephemeral:true
+                    ephemeral:true
 
-            }).catch(()=>{});
+                }).catch(()=>{});
+
+
+            }
 
 
         }
@@ -273,18 +335,19 @@ async interaction => {
 
     }
 
-
-});
+);
 
 
 
 
 
 console.log(
-
     "TOKEN PRESENTE:",
-    process.env.TOKEN ? "SI" : "NO"
-
+    process.env.TOKEN
+    ?
+    "SI"
+    :
+    "NO"
 );
 
 

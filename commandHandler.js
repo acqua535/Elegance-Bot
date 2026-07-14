@@ -1,71 +1,44 @@
-const fs = require("fs");
-const path = require("path");
+const commands = [];
 
-module.exports = function loadCommands(client) {
+const locations = [
+    path.join(__dirname, "commands"),
+    __dirname
+];
 
-    client.commands = new Map();
+const loaded = new Set();
 
-    const locations = [
-        path.join(__dirname, "commands"),
-        __dirname
-    ];
+for (const location of locations) {
 
+    if (!fs.existsSync(location)) continue;
 
-    for (const location of locations) {
+    const files = fs.readdirSync(location)
+        .filter(file => file.endsWith(".js"))
+        .filter(file => file !== "index.js")
+        .filter(file => file !== "deployCommand.js")
+        .filter(file => file !== "commandHandler.js");
 
-        if (!fs.existsSync(location)) {
-            continue;
-        }
+    for (const file of files) {
 
+        try {
 
-        const files = fs.readdirSync(location)
-            .filter(file => file.endsWith(".js"))
-            .filter(file => file !== "commandHandler.js")
-            .filter(file => file !== "deployCommand.js");
+            const command = require(path.join(location, file));
 
+            if (!command.data) continue;
 
-        for (const file of files) {
+            if (loaded.has(command.data.name)) continue;
 
-            try {
+            loaded.add(command.data.name);
 
-                const command = require(
-                    path.join(location, file)
-                );
+            commands.push(command.data.toJSON());
 
+            console.log(`✅ Comando caricato: ${command.data.name}`);
 
-                if (!command.data || !command.execute) {
-                    continue;
-                }
+        } catch (err) {
 
-
-                // evita duplicati
-                if (client.commands.has(command.data.name)) {
-                    continue;
-                }
-
-
-                client.commands.set(
-                    command.data.name,
-                    command
-                );
-
-
-                console.log(
-                    `✅ Comando caricato: ${command.data.name}`
-                );
-
-
-            } catch(error) {
-
-                console.error(
-                    `❌ Errore caricando ${file}:`,
-                    error
-                );
-
-            }
+            console.error(`❌ Errore caricando ${file}:`, err);
 
         }
 
     }
 
-};
+}

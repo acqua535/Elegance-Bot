@@ -1,164 +1,111 @@
 const {
-    SlashCommandBuilder
+SlashCommandBuilder
 } = require("discord.js");
+
+
+const {
+createRequest
+} = require("./requestSystem");
+
 
 
 module.exports = {
 
-    data: new SlashCommandBuilder()
 
-        .setName("partner")
+data:
 
-        .setDescription(
-            "Crea una richiesta partnership"
-        )
+new SlashCommandBuilder()
 
+.setName("partner")
 
-        .addStringOption(option =>
-            option
+.setDescription(
+"Crea una richiesta partnership"
+)
 
-                .setName("link")
 
-                .setDescription(
-                    "Link invito del server partner"
-                )
+.addStringOption(option=>
 
-                .setRequired(true)
-        )
+option
 
+.setName("link")
 
-        .addUserOption(option =>
-            option
+.setDescription(
+"Link invito server"
+)
 
-                .setName("manager")
+.setRequired(true)
 
-                .setDescription(
-                    "Referente del server partner"
-                )
+)
 
-                .setRequired(true)
-        )
 
+.addUserOption(option=>
 
-        .addStringOption(option =>
-            option
+option
 
-                .setName("category")
+.setName("autore")
 
-                .setDescription(
-                    "Categoria del server partner"
-                )
+.setDescription(
+"Autore della richiesta"
+)
 
-                .setRequired(true)
+.setRequired(true)
 
-                .addChoices(
+)
 
-                    {
-                        name: "🌐 Community",
-                        value: "🌐 Community"
-                    },
 
-                    {
-                        name: "🎮 Gaming",
-                        value: "🎮 Gaming"
-                    },
+.addStringOption(option=>
 
-                    {
-                        name: "🎭 Roleplay",
-                        value: "🎭 Roleplay"
-                    },
+option
 
-                    {
-                        name: "🚗 FiveM",
-                        value: "🚗 FiveM"
-                    }
+.setName("category")
 
-                )
-        ),
+.setDescription(
+"Categoria server"
+)
 
+.setRequired(true)
 
+.addChoices(
 
-    async execute(interaction) {
+{
+name:"🌐 Community",
+value:"🌐 Community"
+},
 
+{
+name:"🎮 Gaming",
+value:"🎮 Gaming"
+},
 
-        const link =
-            interaction.options.getString("link");
+{
+name:"🎭 Roleplay",
+value:"🎭 Roleplay"
+},
 
+{
+name:"🚗 FiveM",
+value:"🚗 FiveM"
+}
 
-        const manager =
-            interaction.options.getUser("manager");
+)
 
+),
 
-        const category =
-            interaction.options.getString("category");
 
 
+async execute(interaction){
 
-        let invite;
 
+await createRequest(
 
-        try {
+interaction,
 
-            invite =
-                await interaction.client.fetchInvite(link);
+"🤝 NUOVA PARTNERSHIP"
 
+);
 
-        } catch (error) {
 
+}
 
-            return interaction.reply({
-
-                content:
-                    "❌ Link Discord non valido.",
-
-                ephemeral: true
-
-            });
-
-        }
-
-
-
-        const partnerServer =
-            invite.guild?.name || "Sconosciuto";
-
-
-        const members =
-            invite.approximateMemberCount || "N/D";
-
-
-
-        await interaction.reply({
-
-            content:
-
-`━━━━━━━👑━━━━━━━
-
-🤝 **NUOVA PARTNERSHIP**
-
-**_AUTHOR_**
-${interaction.user}
-
-**_MANAGER_**
-${manager}
-
-**_CATEGORY_**
-${category}
-
-**_SERVER_**
-${interaction.guild.name}
-
-**_PARTNER SERVER_**
-${partnerServer}
-
-**_MEMBERS_**
-${members}
-
-━━━━━━━👑━━━━━━━`
-
-        });
-
-
-    }
 
 };

@@ -46,7 +46,6 @@ function addWarning(userId, moderatorId, reason) {
     }
 
 
-
     data[userId].push({
 
         moderator: moderatorId,
@@ -56,7 +55,6 @@ function addWarning(userId, moderatorId, reason) {
         date: Date.now()
 
     });
-
 
 
     saveWarnings(data);
@@ -93,12 +91,28 @@ function clearWarnings(userId) {
 
 
 
+function updateWarnings(userId, warnings) {
+
+    const data = loadWarnings();
+
+
+    data[userId] = warnings;
+
+
+    saveWarnings(data);
+
+}
+
+
+
 module.exports = {
 
     addWarning,
 
     getWarnings,
 
-    clearWarnings
+    clearWarnings,
+
+    updateWarnings
 
 };

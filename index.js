@@ -17,7 +17,7 @@ client.commands = new Collection();
 
 
 // Deploy Command
-require("./deployCommand")
+require("./deployCommand");
 
 
 // Sistemi
@@ -52,18 +52,68 @@ client.on("interactionCreate", async interaction => {
 
     try {
 
-    console.log("📩 Interazione ricevuta:", interaction.commandName);
+        console.log(
+            "📩 Interazione ricevuta:",
+            interaction.commandName
+        );
+
 
         if (interaction.isChatInputCommand()) {
 
-            const command = client.commands.get(interaction.commandName);
+            const command =
+                client.commands.get(
+                    interaction.commandName
+                );
 
-            if (!command) return;
 
-            await command.execute(interaction);
+            if (!command) {
+
+                console.log(
+                    "❌ Comando non trovato:",
+                    interaction.commandName
+                );
+
+                return;
+
+            }
+
+
+            try {
+
+                await command.execute(interaction);
+
+            } catch(error) {
+
+                console.error(
+                    "❌ Errore comando:",
+                    interaction.commandName,
+                    error
+                );
+
+
+                if (
+                    !interaction.replied &&
+                    !interaction.deferred
+                ) {
+
+                    await interaction.reply({
+
+                        content:
+                        "❌ Errore durante il comando.",
+
+                        ephemeral:true
+
+                    }).catch(()=>{});
+
+                }
+
+            }
+
+
             return;
 
         }
+
 
         if (interaction.isStringSelectMenu()) {
 
@@ -72,23 +122,32 @@ client.on("interactionCreate", async interaction => {
 
         }
 
+
         if (interaction.isButton()) {
 
-            if (interaction.customId === "verify_button") {
+
+            if (
+                interaction.customId === "verify_button"
+            ) {
 
                 await verify.buttonHandler(interaction);
                 return;
 
             }
 
+
             await ticket.buttonHandler(interaction);
             return;
 
         }
 
+
         if (interaction.isModalSubmit()) {
 
-            if (interaction.customId === "verify_modal") {
+
+            if (
+                interaction.customId === "verify_modal"
+            ) {
 
                 await verify.modalHandler(interaction);
                 return;
@@ -97,16 +156,28 @@ client.on("interactionCreate", async interaction => {
 
         }
 
+
     } catch (error) {
 
-        console.error("❌ Errore interaction:", error);
+        console.error(
+            "❌ Errore interaction:",
+            error
+        );
 
-        if (!interaction.replied && !interaction.deferred) {
+
+        if (
+            !interaction.replied &&
+            !interaction.deferred
+        ) {
 
             await interaction.reply({
-                content: "❌ Errore durante l'esecuzione.",
-                ephemeral: true
-            }).catch(() => {});
+
+                content:
+                "❌ Errore durante l'esecuzione.",
+
+                ephemeral:true
+
+            }).catch(()=>{});
 
         }
 
@@ -114,9 +185,13 @@ client.on("interactionCreate", async interaction => {
 
 });
 
+
 console.log(
     "TOKEN PRESENTE:",
     process.env.TOKEN ? "SI" : "NO"
 );
 
-client.login(process.env.TOKEN);
+
+client.login(
+    process.env.TOKEN
+);

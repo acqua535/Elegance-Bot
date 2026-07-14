@@ -1,111 +1,155 @@
 const {
-SlashCommandBuilder
+    SlashCommandBuilder,
+    EmbedBuilder
 } = require("discord.js");
 
 
-const {
-createRequest
-} = require("./requestSystem");
-
+const PARTNER_CHANNEL = "1508774443286003815";
 
 
 module.exports = {
 
+    data: new SlashCommandBuilder()
 
-data:
+        .setName("partner")
 
-new SlashCommandBuilder()
+        .setDescription("Crea una richiesta partnership")
 
-.setName("partner")
+        .addStringOption(option =>
+            option
+                .setName("link")
+                .setDescription("Link invito del server partner")
+                .setRequired(true)
+        )
 
-.setDescription(
-"Crea una richiesta partnership"
-)
+        .addStringOption(option =>
+            option
+                .setName("category")
+                .setDescription("Categoria del server partner")
+                .setRequired(true)
 
-
-.addStringOption(option=>
-
-option
-
-.setName("link")
-
-.setDescription(
-"Link invito server"
-)
-
-.setRequired(true)
-
-)
-
-
-.addUserOption(option=>
-
-option
-
-.setName("autore")
-
-.setDescription(
-"Autore della richiesta"
-)
-
-.setRequired(true)
-
-)
+                .addChoices(
+                    {
+                        name: "🌐 Community",
+                        value: "🌐 Community"
+                    },
+                    {
+                        name: "🎮 Gaming",
+                        value: "🎮 Gaming"
+                    },
+                    {
+                        name: "🎭 Roleplay",
+                        value: "🎭 Roleplay"
+                    },
+                    {
+                        name: "🚗 FiveM",
+                        value: "🚗 FiveM"
+                    }
+                )
+        ),
 
 
-.addStringOption(option=>
+    async execute(interaction) {
 
-option
 
-.setName("category")
+        const link =
+            interaction.options.getString("link");
 
-.setDescription(
-"Categoria server"
-)
 
-.setRequired(true)
+        const category =
+            interaction.options.getString("category");
 
-.addChoices(
 
-{
-name:"🌐 Community",
-value:"🌐 Community"
-},
+        let invite;
 
-{
-name:"🎮 Gaming",
-value:"🎮 Gaming"
-},
 
-{
-name:"🎭 Roleplay",
-value:"🎭 Roleplay"
-},
+        try {
 
-{
-name:"🚗 FiveM",
-value:"🚗 FiveM"
-}
+            invite =
+                await interaction.client.fetchInvite(link);
 
-)
+        } catch {
 
-),
+            return interaction.reply({
+                content:"❌ Link Discord non valido.",
+                ephemeral:true
+            });
+
+        }
 
 
 
-async execute(interaction){
+        const guildName =
+            invite.guild?.name || "Sconosciuto";
 
 
-await createRequest(
-
-interaction,
-
-"🤝 NUOVA PARTNERSHIP"
-
-);
+        const description =
+            invite.guild?.description || 
+            "Nessuna descrizione disponibile.";
 
 
-}
 
+        const embed =
+        new EmbedBuilder()
+
+        .setTitle("🤝 NUOVA PARTNERSHIP")
+
+        .setDescription(
+`
+━━━━━━━⚜️━━━━━━━
+
+👤 **Autore**
+${interaction.user}
+
+📌 **Richiesta da**
+${interaction.user}
+
+🏷️ **Categoria**
+${category}
+
+🏛️ **Server**
+${guildName}
+
+📝 **Descrizione**
+
+${description}
+
+━━━━━━━⚜️━━━━━━━
+`
+        )
+
+        .setColor("Gold")
+
+        .setTimestamp();
+
+
+
+        const channel =
+            interaction.guild.channels.cache.get(
+                PARTNER_CHANNEL
+            );
+
+
+        if(channel){
+
+            await channel.send({
+                embeds:[embed]
+            });
+
+        }
+
+
+
+        await interaction.reply({
+
+            content:
+            "✅ Richiesta partnership inviata correttamente.",
+
+            ephemeral:true
+
+        });
+
+
+    }
 
 };

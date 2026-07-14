@@ -14,7 +14,7 @@ const commands = [];
 
 const commandsPath = path.join(
     __dirname,
-    "comandi"
+    "commands"
 );
 
 

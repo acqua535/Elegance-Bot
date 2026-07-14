@@ -1,11 +1,13 @@
 const {
     SlashCommandBuilder,
-    EmbedBuilder
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require("discord.js");
 
-
+const gameSystem = require("./gameSystem");
 const dailySystem = require("./dailySystem");
-
 
 
 module.exports = {
@@ -13,10 +15,10 @@ module.exports = {
 
     data: new SlashCommandBuilder()
 
-        .setName("daily-reward")
+        .setName("rewards")
 
         .setDescription(
-            "Riscatta la ricompensa giornaliera"
+            "Visualizza tutte le ricompense disponibili"
         ),
 
 
@@ -25,89 +27,163 @@ module.exports = {
 
 
         const userId =
-            interaction.user.id;
+        interaction.user.id;
 
 
 
-        const check =
-            dailySystem.canClaim(userId);
+        const profile =
+        gameSystem.getProfile(userId);
 
 
 
-        if(!check.available) {
-
-
-            const embed =
-                new EmbedBuilder()
-
-                .setTitle(
-                    "⏳ Daily Reward già riscattato"
-                )
-
-                .setDescription(
-
-`
-Hai già ricevuto la tua ricompensa!
-
-Potrai riscattarla nuovamente tra:
-
-⏰ **${dailySystem.formatTime(check.remaining)}**
-`
-
-                )
-
-                .setColor("Orange");
+        const daily =
+        dailySystem.canClaim(userId);
 
 
 
-            return interaction.reply({
+        const dailyStatus =
+        daily.available
 
-                embeds:[embed],
+        ? "🟢 Disponibile"
 
-                ephemeral:true
-
-            });
-
-
-        }
+        : "🔴 Riscattata";
 
 
 
 
+        const streak =
+        profile.streak || 0;
 
-        const reward =
-            dailySystem.claim(userId);
 
+
+        const nextStreak =
+        3 - (streak % 3);
 
 
 
 
         const embed =
-            new EmbedBuilder()
+        new EmbedBuilder()
 
-            .setTitle(
-                "🎁 Daily Reward ricevuto!"
-            )
 
-            .setDescription(
+        .setTitle(
+            "🎁 Rewards Hub"
+        )
+
+
+        .setDescription(
 
 `
-Complimenti ${interaction.user}! 🎉
+Benvenuto ${interaction.user}!
 
-Hai ottenuto:
+Qui puoi controllare tutte le ricompense disponibili.
 
-⭐ **+${reward.xp} XP**
+━━━━━━━━━━━━━━━━
 
-🪙 **+${reward.coins} monete**
+🎁 **Daily Reward**
 
-━━━━━━━━━━━━━━
+${dailyStatus}
 
-⏰ Torna tra 24 ore per una nuova ricompensa!
+Ricompensa giornaliera ogni 24 ore.
+
+
+━━━━━━━━━━━━━━━━
+
+🔥 **Streak Rewards**
+
+Streak attuale:
+**${streak} vittorie consecutive**
+
+Prossima ricompensa:
+**${nextStreak} vittorie**
+
+Ricompensa ogni 3 streak.
+
+
+━━━━━━━━━━━━━━━━
+
+🏆 **Achievement Reward**
+
+Gli achievement vengono sbloccati automaticamente.
+
+Esempi:
+
+⚔️ 5 vittorie consecutive
+👑 10 vittorie consecutive
+🎮 Primo gioco
+🪙 Ricchezza
+
+
+━━━━━━━━━━━━━━━━
+
+🎲 **Special Reward**
+
+Continua a giocare per ottenere:
+
+⭐ XP
+
+🪙 Monete
+
+🎁 Oggetti esclusivi
+
+━━━━━━━━━━━━━━━━
 `
 
+        )
+
+
+        .setColor("Gold")
+
+        .setThumbnail(
+            interaction.user.displayAvatarURL({
+                dynamic:true
+            })
+        )
+
+        .setTimestamp();
+
+
+
+
+
+        const row =
+        new ActionRowBuilder()
+
+        .addComponents(
+
+
+            new ButtonBuilder()
+
+            .setCustomId(
+                "claim_daily"
             )
 
-            .setColor("Gold");
+            .setLabel(
+                "🎁 Daily Reward"
+            )
+
+            .setStyle(
+                ButtonStyle.Success
+            ),
+
+
+
+            new ButtonBuilder()
+
+            .setCustomId(
+                "view_profile"
+            )
+
+            .setLabel(
+                "👤 Profilo"
+            )
+
+            .setStyle(
+                ButtonStyle.Secondary
+            )
+
+
+        );
 
 
 
@@ -115,9 +191,16 @@ Hai ottenuto:
 
         await interaction.reply({
 
-            embeds:[embed]
+            embeds:[
+                embed
+            ],
+
+            components:[
+                row
+            ]
 
         });
+
 
 
     }

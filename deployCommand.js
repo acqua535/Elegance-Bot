@@ -98,10 +98,33 @@ module.exports = async function deployCommands() {
     try {
 
 
-        console.log(
-            "🔄 Aggiornamento slash command..."
-        );
+    console.log(
+        "🧹 Pulizia vecchi comandi globali..."
+    );
 
+
+    await rest.put(
+
+        Routes.applicationCommands(
+            "1526656748667146331"
+        ),
+
+        {
+            body: []
+        }
+
+    );
+
+
+    console.log(
+        "✅ Global command eliminati"
+    );
+
+
+
+    console.log(
+        "🔄 Aggiornamento slash command..."
+    );
 
 
         await rest.put(

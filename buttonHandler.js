@@ -3,6 +3,7 @@ const {
 } = require("discord.js");
 
 
+
 const ticket = require("./ticket");
 
 const minigame = require("./minigame");
@@ -15,7 +16,7 @@ const minigame = require("./minigame");
 // ===============================
 
 
-module.exports = async function interactionHandler(interaction){
+module.exports = async function buttonHandler(interaction){
 
 
 
@@ -59,7 +60,11 @@ module.exports = async function interactionHandler(interaction){
             id === "ticket_manage"
         ){
 
+
+
             return ticket.router(interaction);
+
+
 
         }
 
@@ -68,10 +73,8 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
-
 // ===============================
-// TICKET BUTTONS
+// OLD TICKET BUTTONS
 // ===============================
 
 
@@ -79,16 +82,17 @@ module.exports = async function interactionHandler(interaction){
             interaction.isButton() &&
             (
                 id === "claim_ticket" ||
-                id === "close_ticket" ||
-                id === "ping_staff"
+                id === "close_ticket"
             )
         ){
 
+
+
             return ticket.buttonHandler(interaction);
 
+
+
         }
-
-
 
 
 
@@ -107,18 +111,24 @@ module.exports = async function interactionHandler(interaction){
             await interaction.update({
 
 
+
                 content:
 
                 "🔤 Modalità Facile selezionata!",
 
 
+
                 embeds:[],
+
 
 
                 components:[]
 
 
+
             });
+
+
 
 
 
@@ -135,6 +145,7 @@ module.exports = async function interactionHandler(interaction){
             return;
 
 
+
         }
 
 
@@ -149,18 +160,24 @@ module.exports = async function interactionHandler(interaction){
             await interaction.update({
 
 
+
                 content:
 
                 "🔤 Modalità Media selezionata!",
 
 
+
                 embeds:[],
+
 
 
                 components:[]
 
 
+
             });
+
+
 
 
 
@@ -177,8 +194,8 @@ module.exports = async function interactionHandler(interaction){
             return;
 
 
-        }
 
+        }
 
 
 
@@ -192,18 +209,24 @@ module.exports = async function interactionHandler(interaction){
             await interaction.update({
 
 
+
                 content:
 
                 "🔤 Modalità Difficile selezionata!",
 
 
+
                 embeds:[],
+
 
 
                 components:[]
 
 
+
             });
+
+
 
 
 
@@ -220,8 +243,8 @@ module.exports = async function interactionHandler(interaction){
             return;
 
 
-        }
 
+        }
 
 
 
@@ -303,9 +326,6 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
-
-
             switch(game){
 
 
@@ -326,7 +346,6 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
                 case "memory":
 
 
@@ -339,7 +358,6 @@ module.exports = async function interactionHandler(interaction){
 
 
                 break;
-
 
 
 
@@ -360,7 +378,6 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
                 case "reaction":
 
 
@@ -373,7 +390,6 @@ module.exports = async function interactionHandler(interaction){
 
 
                 break;
-
 
 
 
@@ -394,7 +410,6 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
                 default:
 
 
@@ -402,40 +417,44 @@ module.exports = async function interactionHandler(interaction){
                     await interaction.followUp({
 
 
+
                         content:
 
                         "❌ Minigame non trovato.",
 
 
+
                         ephemeral:true
 
 
+
                     });
+
 
 
             }
 
 
 
+
+
             return;
+
 
 
         }
 
-
-
-
-
+    
 
 
 // ===============================
-// UNKNOWN
+// UNKNOWN INTERACTION
 // ===============================
 
 
         console.log(
 
-            "Interazione non gestita:",
+            "⚠️ Interazione non gestita:",
 
             id
 
@@ -451,7 +470,7 @@ module.exports = async function interactionHandler(interaction){
 
         console.error(
 
-            "❌ Errore Interaction Handler:",
+            "❌ Errore Button Handler:",
 
             error
 
@@ -471,12 +490,15 @@ module.exports = async function interactionHandler(interaction){
             await interaction.reply({
 
 
+
                 content:
 
-                "❌ Errore durante l'esecuzione.",
+                "❌ Errore durante l'esecuzione del comando.",
+
 
 
                 ephemeral:true
+
 
 
             }).catch(()=>{});

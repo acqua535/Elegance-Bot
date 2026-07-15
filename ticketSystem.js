@@ -1,26 +1,30 @@
 const fs = require("fs");
-const { EmbedBuilder } = require("discord.js");
 
+
+// =====================================
+// CONFIG
+// =====================================
 
 const file = "./ticketsData.json";
 
 
 
-const TICKET_CATEGORY_ID = "1525919850764177408";
+// =====================================
+// LOAD DATABASE
+// =====================================
+
+function loadData(){
 
 
-
-
-
-function loadData() {
-
-
-    if(!fs.existsSync(file)) {
+    if(!fs.existsSync(file)){
 
 
         fs.writeFileSync(
+
             file,
+
             "{}"
+
         );
 
 
@@ -28,14 +32,35 @@ function loadData() {
 
 
 
-    return JSON.parse(
+    try{
 
-        fs.readFileSync(
-            file,
-            "utf8"
-        )
 
-    );
+        return JSON.parse(
+
+            fs.readFileSync(
+
+                file,
+
+                "utf8"
+
+            )
+
+        );
+
+
+    }catch(error){
+
+
+        console.error(
+            "❌ Errore lettura ticketsData.json:",
+            error
+        );
+
+
+        return {};
+
+
+    }
 
 
 }
@@ -45,7 +70,11 @@ function loadData() {
 
 
 
-function saveData(data) {
+// =====================================
+// SAVE DATABASE
+// =====================================
+
+function saveData(data){
 
 
     fs.writeFileSync(
@@ -53,9 +82,13 @@ function saveData(data) {
         file,
 
         JSON.stringify(
+
             data,
+
             null,
+
             4
+
         )
 
     );
@@ -68,29 +101,18 @@ function saveData(data) {
 
 
 
+// =====================================
+// SAVE TICKET
+// =====================================
+
+function saveTicket(userId, ticket){
 
 
-function savePanel(guildId, channelId, messageId) {
-
-
-    const data =
-    loadData();
-
-
-
-    data[guildId] = {
-
-
-        panelChannel:
-        channelId,
-
-
-        panelMessage:
-        messageId
+    const data = loadData();
 
 
 
-    };
+    data[userId] = ticket;
 
 
 
@@ -104,81 +126,53 @@ function savePanel(guildId, channelId, messageId) {
 
 
 
+// =====================================
+// GET TICKET
+// =====================================
+
+function getTicket(userId){
+
+
+    const data = loadData();
 
 
 
-function getTicketStats(guild) {
+    return data[userId] || null;
 
 
-    const tickets =
-
-    guild.channels.cache.filter(
-
-        channel =>
-
-        channel.parentId === TICKET_CATEGORY_ID
-
-    );
+}
 
 
 
 
-    return {
 
 
-        partner:
+// =====================================
+// UPDATE TICKET
+// =====================================
 
-        tickets.filter(
+function updateTicket(userId, ticket){
 
-            c =>
-            c.name.includes(
-                "supporto-partner"
-            )
 
-        ).size,
+    const data = loadData();
 
 
 
-        staff:
-
-        tickets.filter(
-
-            c =>
-            c.name.includes(
-                "bando-staff"
-            )
-
-        ).size,
+    if(!data[userId])
+        return false;
 
 
 
-        bug:
 
-        tickets.filter(
-
-            c =>
-            c.name.includes(
-                "segnalazione-bug"
-            )
-
-        ).size,
+    data[userId] = ticket;
 
 
 
-        idea:
-
-        tickets.filter(
-
-            c =>
-            c.name.includes(
-                "idee-suggerimenti"
-            )
-
-        ).size
+    saveData(data);
 
 
 
-    };
+    return true;
 
 
 }
@@ -189,139 +183,34 @@ function getTicketStats(guild) {
 
 
 
+// =====================================
+// DELETE TICKET
+// =====================================
 
+function deleteTicket(userId){
 
-async function updatePanel(guild) {
 
+    const data = loadData();
 
 
-    const data =
-    loadData();
 
+    if(data[userId]){
 
 
-    const panelData =
-    data[guild.id];
+        delete data[userId];
 
 
+        saveData(data);
 
-    if(!panelData)
-    return;
 
+        return true;
 
 
-    const channel =
+    }
 
-    guild.channels.cache.get(
 
-        panelData.panelChannel
 
-    );
-
-
-
-    if(!channel)
-    return;
-
-
-
-
-
-    const message =
-
-    await channel.messages.fetch(
-
-        panelData.panelMessage
-
-    )
-
-    .catch(() => null);
-
-
-
-
-    if(!message)
-    return;
-
-
-
-
-
-
-
-    const stats =
-
-    getTicketStats(guild);
-
-
-
-
-
-
-
-    const embed =
-
-    new EmbedBuilder()
-
-
-
-    .setTitle(
-        "🎫 Elegance Support"
-    )
-
-
-
-    .setDescription(
-
-`
-Seleziona la categoria del tuo ticket.
-
-━━━━━━━━━━━━━━━━
-
-📊 **Ticket Live**
-
-🤝 Supporto Partner
-${stats.partner > 0 ? "🔴" : "🟢"} ${stats.partner} aperti
-
-
-🛡️ Bando Staff
-${stats.staff > 0 ? "🔴" : "🟢"} ${stats.staff} aperti
-
-
-🐞 Segnalazioni / Bug
-${stats.bug > 0 ? "🔴" : "🟢"} ${stats.bug} aperti
-
-
-💡 Idee / Suggerimenti
-${stats.idea > 0 ? "🔴" : "🟢"} ${stats.idea} aperti
-
-
-━━━━━━━━━━━━━━━━
-`
-
-    )
-
-
-    .setTimestamp();
-
-
-
-
-
-
-
-    await message.edit({
-
-        embeds:[
-
-            embed
-
-        ]
-
-    })
-
-    .catch(() => {});
-
+    return false;
 
 
 }
@@ -332,18 +221,71 @@ ${stats.idea > 0 ? "🔴" : "🟢"} ${stats.idea} aperti
 
 
 
+// =====================================
+// CHECK OPEN TICKET
+// =====================================
+
+function hasOpenTicket(userId){
+
+
+    const data = loadData();
+
+
+
+    return Boolean(
+
+        data[userId]
+
+    );
+
+
+}
+
+
+
+
+
+
+// =====================================
+// GET ALL TICKETS
+// =====================================
+
+function getAllTickets(){
+
+
+    return loadData();
+
+
+}
+
+
+
+
+
+
+// =====================================
+// EXPORT
+// =====================================
 
 module.exports = {
 
 
-    getTicketStats,
+    saveTicket,
 
 
-    savePanel,
+    getTicket,
 
 
-    updatePanel
+    updateTicket,
 
+
+    deleteTicket,
+
+
+    hasOpenTicket,
+
+
+    getAllTickets
 
 
 };

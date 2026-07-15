@@ -2609,3 +2609,170 @@ Valuta il supporto da ⭐ 1 a ⭐ 5.
 
 
 },
+
+    // =====================================
+// ROUTER
+// =====================================
+
+
+async router(interaction){
+
+
+
+    if(interaction.isStringSelectMenu()){
+
+
+
+        // ==========================
+        // MENU GESTIONE TICKET
+        // ==========================
+
+
+        if(
+            interaction.customId === "ticket_manage"
+        ){
+
+
+
+            const value = interaction.values[0];
+
+
+
+            switch(value){
+
+
+
+                case "add":
+
+
+                    return this.addMemberHandler(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "remove":
+
+
+                    return this.removeMemberHandler(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "rename":
+
+
+                    return this.renameHandler(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "transcript":
+
+
+                    return this.createTranscript(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "close":
+
+
+                    return this.closeTicket(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "claim":
+
+
+                    return this.menuHandler(
+
+                        interaction
+
+                    );
+
+
+
+
+                case "priority":
+
+
+                    return this.menuHandler(
+
+                        interaction
+
+                    );
+
+
+
+            }
+
+
+        }
+
+
+
+
+
+
+        // ==========================
+        // PRIORITY MENU
+        // ==========================
+
+
+        if(
+
+            interaction.customId === "ticket_priority"
+
+        ){
+
+
+            return this.priorityHandler(
+
+                interaction
+
+            );
+
+
+        }
+
+
+
+    }
+
+
+
+},
+
+
+
+
+
+
+
+// =====================================
+// EXPORT
+// =====================================
+
+
+};

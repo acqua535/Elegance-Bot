@@ -78,7 +78,22 @@ module.exports = {
 
 
 
-        const messaggio =
+        const partnerMessage =
+
+`━━━━━━━⚜️━━━━━━━
+
+🤝 **RICHIESTA COLLABORAZIONE**
+
+Una nuova collaborazione è stata proposta.
+
+Lo Staff valuterà la richiesta appena possibile.
+
+━━━━━━━⚜️━━━━━━━`;
+
+
+
+
+        const collabMessage =
 
 `━━━━━━━⚜️━━━━━━━
 
@@ -122,7 +137,12 @@ ${descrizione}
 
 
         await channel.send(
-            messaggio
+            partnerMessage
+        );
+
+
+        await channel.send(
+            collabMessage
         );
 
 

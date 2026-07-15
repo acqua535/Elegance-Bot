@@ -216,12 +216,38 @@ try {
 
 
 
-        await command.execute(
+        try {
 
-            interaction
+    await command.execute(
+        interaction
+    );
 
-        );
+} catch(error) {
 
+    console.error(
+        "❌ Errore comando:",
+        error
+    );
+
+    if(
+        !interaction.replied &&
+        !interaction.deferred
+    ){
+
+        await interaction.reply({
+
+            content:
+            "❌ Errore durante il comando.",
+
+            ephemeral:true
+
+        }).catch(()=>{});
+
+    }
+
+}
+
+return;
 
         return;
 
@@ -308,7 +334,7 @@ try {
 
         if(
 
-            interaction.customId === "ticket_management"
+            interaction.customId === "ticket_manage"
 
         ){
 

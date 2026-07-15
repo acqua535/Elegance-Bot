@@ -78,26 +78,23 @@ module.exports = {
 
 
 
-        const partnerMessage =
+        const primoMessaggio =
 
 `━━━━━━━⚜️━━━━━━━
 
-🤝 **RICHIESTA COLLABORAZIONE**
+🌐 **NUOVA COLLABORAZIONE**
 
-Una nuova collaborazione è stata proposta.
-
-Lo Staff valuterà la richiesta appena possibile.
+📝 **Descrizione**
+${descrizione}
 
 ━━━━━━━⚜️━━━━━━━`;
 
 
 
 
-        const collabMessage =
+        const secondoMessaggio =
 
 `━━━━━━━⚜️━━━━━━━
-
-🌐 **NUOVA COLLABORAZIONE**
 
 👤 **Autore**
 ${interaction.user}
@@ -108,10 +105,9 @@ ${richiesta}
 🏷️ **Categoria**
 ${categoria}
 
-📝 **Descrizione**
-${descrizione}
-
 ━━━━━━━⚜️━━━━━━━`;
+
+
 
 
 
@@ -119,6 +115,7 @@ ${descrizione}
             interaction.guild.channels.cache.get(
                 CHANNEL_ID
             );
+
 
 
         if(!channel){
@@ -137,13 +134,15 @@ ${descrizione}
 
 
         await channel.send(
-            partnerMessage
+            primoMessaggio
         );
 
 
         await channel.send(
-            collabMessage
+            secondoMessaggio
         );
+
+
 
 
 

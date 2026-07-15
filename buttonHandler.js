@@ -10,6 +10,7 @@ const {
 const ticket = require("./ticket");
 const minigame = require("./minigame");
 const verify = require("./verify");
+const horrorEngine = require("./horrorEngine");
 
 
 
@@ -46,7 +47,6 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
         // ===============================
         // VERIFY
         // ===============================
@@ -63,6 +63,63 @@ module.exports = async function buttonHandler(interaction){
             );
 
         }
+
+
+
+
+
+
+        // ===============================
+        // HORROR SYSTEM
+        // ===============================
+
+
+        // Avvio storia
+        if(
+            interaction.isButton()
+            &&
+            id.startsWith("horror_start_")
+        ){
+
+            const storyId =
+            Number(
+                id.replace(
+                    "horror_start_",
+                    ""
+                )
+            );
+
+
+            return horrorEngine.startStory(
+                interaction,
+                storyId
+            );
+
+        }
+
+
+
+
+
+        // Gestione storia
+        if(
+            interaction.isButton()
+            &&
+            (
+                id === "horror_inventory"
+                ||
+                id === "horror_restart"
+                ||
+                id.startsWith("horror_")
+            )
+        ){
+
+            return horrorEngine.buttonHandler(
+                interaction
+            );
+
+        }
+
 
 
 
@@ -127,11 +184,15 @@ module.exports = async function buttonHandler(interaction){
 
 
         if(
-            id === "word_easy"
-            ||
-            id === "word_medium"
-            ||
-            id === "word_hard"
+            interaction.isButton()
+            &&
+            (
+                id === "word_easy"
+                ||
+                id === "word_medium"
+                ||
+                id === "word_hard"
+            )
         ){
 
 
@@ -139,18 +200,23 @@ module.exports = async function buttonHandler(interaction){
             const difficulty =
 
             id === "word_easy"
+
             ?
+
             "facile"
 
             :
 
             id === "word_medium"
+
             ?
+
             "medio"
 
             :
 
             "difficile";
+
 
 
 
@@ -216,7 +282,6 @@ module.exports = async function buttonHandler(interaction){
             await interaction.update({
 
 
-
                 embeds:[
 
                     new EmbedBuilder()
@@ -255,15 +320,11 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-
                 case "memory":
 
                     return minigame.memoryGame(
                         interaction
                     );
-
-
 
 
 
@@ -275,8 +336,6 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-
                 case "reaction":
 
                     return minigame.reactionGame(
@@ -285,15 +344,11 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-
                 case "hangman":
 
                     return minigame.hangmanGame(
                         interaction
                     );
-
-
 
 
 
@@ -337,6 +392,7 @@ module.exports = async function buttonHandler(interaction){
             id
 
         );
+
 
 
 

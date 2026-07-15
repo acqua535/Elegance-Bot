@@ -1,1 +1,12 @@
 { }
+
+{
+    owner: interaction.user.id,
+    type: type,
+    claimedBy: null,
+    staffPing: {
+        used: false,
+        time: null,
+        staffReplied: false
+    }
+}

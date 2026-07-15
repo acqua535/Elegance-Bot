@@ -2,6 +2,12 @@ const fs = require("fs");
 
 const file = "./gameData.json";
 
+const fs = require("fs");
+
+console.log(
+    fs.existsSync("./achievement.js")
+);
+
 
 
 // =====================================

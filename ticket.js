@@ -2145,6 +2145,43 @@ async renameHandler(interaction){
 
     const collector = interaction.channel.createMessageCollector({
 
+    filter:
+
+    m =>
+    m.author.id === interaction.user.id,
+
+    max:1,
+
+    time:30000
+
+});
+
+
+collector.on(
+"collect",
+async message => {
+
+
+    const newName =
+    message.content
+    .toLowerCase()
+    .replace(/\s+/g,"-");
+
+
+    await interaction.channel.setName(
+
+        `🎫・${newName}`
+
+    );
+
+
+    message.reply(
+        "✅ Nome ticket aggiornato."
+    );
+
+
+});
+
         filter:
 
         m =>

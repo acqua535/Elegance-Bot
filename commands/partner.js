@@ -27,23 +27,29 @@ option
 .setName("categoria")
 .setDescription("Categoria")
 .setRequired(true)
+
 .addChoices(
+
 {
 name:"🌐 Community",
 value:"🌐 Community"
 },
+
 {
 name:"🎮 Gaming",
 value:"🎮 Gaming"
 },
+
 {
 name:"🎭 Roleplay",
 value:"🎭 Roleplay"
 },
+
 {
 name:"🚗 FiveM",
 value:"🚗 FiveM"
 }
+
 )
 )
 
@@ -72,11 +78,23 @@ interaction.options.getString("descrizione");
 
 
 
-const testo =
+const primoMessaggio =
 
 `━━━━━━━⚜️━━━━━━━
 
 🤝 **NUOVA PARTNERSHIP**
+
+📝 **Descrizione**
+${descrizione}
+
+━━━━━━━⚜️━━━━━━━`;
+
+
+
+
+const secondoMessaggio =
+
+`━━━━━━━⚜️━━━━━━━
 
 👤 **Autore**
 ${interaction.user}
@@ -86,9 +104,6 @@ ${richiesta}
 
 🏷️ **Categoria**
 ${categoria}
-
-📝 **Descrizione**
-${descrizione}
 
 ━━━━━━━⚜️━━━━━━━`;
 
@@ -102,15 +117,21 @@ interaction.guild.channels.cache.get(CHANNEL_ID);
 if(!channel){
 
 return interaction.reply({
+
 content:"❌ Canale non trovato.",
+
 ephemeral:true
+
 });
 
 }
 
 
 
-await channel.send(testo);
+await channel.send(primoMessaggio);
+
+
+await channel.send(secondoMessaggio);
 
 
 

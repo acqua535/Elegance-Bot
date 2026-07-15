@@ -7,9 +7,6 @@ const {
 } = require("discord.js");
 
 
-
-const horrorEngine = require("../horrorEngine");
-
 const stories = require("../horrorStories");
 
 
@@ -20,42 +17,15 @@ module.exports = {
 
 
 
+    data:
 
+    new SlashCommandBuilder()
 
-data:
+    .setName("horror")
 
-new SlashCommandBuilder()
-
-.setName("horror")
-
-.setDescription(
-    "Avvia una storia horror interattiva"
-),
-
-
-
-
-
-
-
-async execute(interaction){
-
-
-
-    if(!stories || stories.length === 0){
-
-
-        return interaction.reply({
-
-            content:
-            "❌ Nessuna storia horror disponibile.",
-
-            ephemeral:true
-
-        });
-
-
-    }
+    .setDescription(
+        "Avvia una storia horror interattiva"
+    ),
 
 
 
@@ -63,37 +33,174 @@ async execute(interaction){
 
 
 
-    const rows = [];
-
-    let row = new ActionRowBuilder();
-
-    let count = 0;
+    async execute(interaction){
 
 
 
+        if(
+            !stories ||
+            stories.length === 0
+        ){
+
+
+            return interaction.reply({
+
+                content:
+
+                "❌ Nessuna storia horror disponibile.",
+
+                ephemeral:true
+
+            });
+
+
+        }
 
 
 
 
-    for(const story of stories){
 
 
 
-        row.addComponents(
+        const rows = [];
+
+        let row =
+        new ActionRowBuilder();
+
+        let count = 0;
 
 
-            new ButtonBuilder()
 
-            .setCustomId(
-                `horror_start_${story.id}`
-            )
 
-            .setLabel(
-                story.title.substring(0,80)
-            )
 
-            .setStyle(
-                ButtonStyle.Danger
+
+
+        for(const story of stories){
+
+
+
+            row.addComponents(
+
+
+                new ButtonBuilder()
+
+                .setCustomId(
+
+                    `horror_start_${story.id}`
+
+                )
+
+
+                .setLabel(
+
+                    story.title.substring(0,80)
+
+                )
+
+
+                .setStyle(
+
+                    ButtonStyle.Danger
+
+                )
+
+
+            );
+
+
+
+
+
+            count++;
+
+
+
+
+
+
+
+            if(count === 5){
+
+
+
+                rows.push(row);
+
+
+
+                row =
+                new ActionRowBuilder();
+
+
+
+                count = 0;
+
+
+
+            }
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+        if(count > 0){
+
+
+
+            rows.push(row);
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+        // INVENTARIO
+
+        rows.push(
+
+
+            new ActionRowBuilder()
+
+            .addComponents(
+
+
+                new ButtonBuilder()
+
+                .setCustomId(
+
+                    "horror_inventory"
+
+                )
+
+
+                .setLabel(
+
+                    "🎒 Inventario"
+
+                )
+
+
+                .setStyle(
+
+                    ButtonStyle.Primary
+
+                )
+
+
             )
 
 
@@ -101,136 +208,71 @@ async execute(interaction){
 
 
 
-        count++;
 
 
 
 
 
 
-        if(count === 5){
+        const embed =
 
 
-            rows.push(row);
+        new EmbedBuilder()
 
 
-            row = new ActionRowBuilder();
+        .setTitle(
 
-
-            count = 0;
-
-
-        }
-
-
-
-    }
-
-
-
-
-
-
-
-    if(count > 0){
-
-
-        rows.push(row);
-
-
-    }
-
-
-
-
-
-
-
-
-
-    rows.push(
-
-
-        new ActionRowBuilder()
-
-        .addComponents(
-
-
-            new ButtonBuilder()
-
-            .setCustomId(
-                "horror_inventory"
-            )
-
-            .setLabel(
-                "🎒 Inventario"
-            )
-
-            .setStyle(
-                ButtonStyle.Primary
-            )
-
+            "👻 Horror Adventure"
 
         )
 
 
-    );
-
-
-
-
-
-
-
-
-
-    const embed = new EmbedBuilder()
-
-
-    .setTitle(
-        "👻 Horror Adventure"
-    )
-
-
-    .setDescription(
+        .setDescription(
 
 `
 Benvenuto in **Horror Adventure**.
 
 Scegli una storia e prova a sopravvivere.
 
-⚠️ Ogni scelta può modificare il finale.
+⚠️ Ogni scelta può cambiare completamente il finale.
 `
 
-    )
+        )
 
 
-    .setColor(
-        "DarkRed"
-    )
+        .setColor(
+
+            "DarkRed"
+
+        )
 
 
-
-
-
-
-
-
-
-    await interaction.reply({
-
-        embeds:[embed],
-
-        components:rows
-
-    });
+        .setTimestamp();
 
 
 
 
-}
 
 
+
+
+
+        await interaction.reply({
+
+
+            embeds:[embed],
+
+
+            components:rows
+
+
+        });
+
+
+
+
+
+    }
 
 
 

@@ -8,11 +8,9 @@ const {
 require("dotenv").config();
 
 
-
 // ==========================
 // CLIENT
 // ==========================
-
 
 const client = new Client({
 
@@ -40,7 +38,6 @@ client.commands = new Collection();
 // HANDLERS
 // ==========================
 
-
 const loadCommands =
 require("./commandHandler");
 
@@ -59,24 +56,17 @@ require("./verify");
 
 
 
-
 // ==========================
-// COMMAND LOADER
+// LOAD COMMANDS
 // ==========================
-
 
 loadCommands(client);
 
 
-
 console.log(
-
-"📦 Comandi caricati:",
-
-client.commands.size
-
+    "📦 Comandi caricati:",
+    client.commands.size
 );
-
 
 
 
@@ -85,47 +75,31 @@ client.commands.size
 // ERROR SYSTEM
 // ==========================
 
-
 process.on(
+    "unhandledRejection",
+    error => {
 
-"unhandledRejection",
+        console.error(
+            "❌ Unhandled Promise:",
+            error
+        );
 
-error=>{
-
-
-console.error(
-
-"❌ Unhandled Promise:",
-
-error
-
+    }
 );
-
-
-});
-
 
 
 
 process.on(
+    "uncaughtException",
+    error => {
 
-"uncaughtException",
+        console.error(
+            "❌ Uncaught Exception:",
+            error
+        );
 
-error=>{
-
-
-console.error(
-
-"❌ Uncaught Exception:",
-
-error
-
+    }
 );
-
-
-});
-
-
 
 
 
@@ -135,38 +109,26 @@ error
 // READY
 // ==========================
 
-
 client.once(
-
-"ready",
-
-()=>{
+    "ready",
+    () => {
 
 
-console.log(
-
-`⚜️ Elegance-Bot online come ${client.user.tag}`
-
-);
+        console.log(
+            `⚜️ Elegance-Bot online come ${client.user.tag}`
+        );
 
 
 
-client.user.setActivity(
-
-"Elegance Community",
-
-{
-
-type:3
-
-}
-
-);
+        client.user.setActivity(
+            "Elegance Community",
+            {
+                type:3
+            }
+        );
 
 
-
-}
-
+    }
 );
 
 
@@ -179,343 +141,271 @@ type:3
 // INTERACTION ROUTER
 // ==========================
 
-
 client.on(
-
-"interactionCreate",
-
-async interaction => {
+    "interactionCreate",
+    async interaction => {
 
 
-
-try {
+        try {
 
 
 
+            // ==========================
+            // SLASH COMMANDS
+            // ==========================
 
-
-// ==========================
-// SLASH COMMANDS
-// ==========================
-
-
-if(
-
-interaction.isChatInputCommand()
-
-){
+            if(
+                interaction.isChatInputCommand()
+            ){
 
 
 
-const command =
+                const command =
+                client.commands.get(
+                    interaction.commandName
+                );
 
-client.commands.get(
 
-interaction.commandName
 
+                if(!command){
+
+                    console.log(
+                        "❌ Comando non trovato:",
+                        interaction.commandName
+                    );
+
+                    return;
+
+                }
+
+
+
+                try {
+
+
+                    await command.execute(
+                        interaction
+                    );
+
+
+                } catch(error){
+
+
+                    console.error(
+                        "❌ Errore comando:",
+                        error
+                    );
+
+
+
+                    if(
+                        !interaction.replied &&
+                        !interaction.deferred
+                    ){
+
+                        await interaction.reply({
+
+                            content:
+                            "❌ Errore durante il comando.",
+
+                            ephemeral:true
+
+                        }).catch(()=>{});
+
+                    }
+
+
+                }
+
+
+                return;
+
+            }
+
+
+
+
+
+
+
+
+            // ==========================
+            // BUTTONS
+            // ==========================
+
+            if(
+                interaction.isButton()
+            ){
+
+
+                await buttonHandler(
+                    interaction
+                );
+
+
+                return;
+
+            }
+
+
+
+
+
+
+
+
+
+            // ==========================
+            // SELECT MENUS
+            // ==========================
+
+            if(
+                interaction.isStringSelectMenu()
+            ){
+
+
+
+                // Apertura ticket
+
+                if(
+                    interaction.customId === "ticket_category"
+                ){
+
+
+                    await ticket.categoryHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+
+
+
+                // Gestione ticket
+
+                if(
+                    interaction.customId === "ticket_manage"
+                ){
+
+
+                    await buttonHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+
+
+
+                // Priorità ticket
+
+                if(
+                    interaction.customId === "ticket_priority"
+                ){
+
+
+                    await ticket.router(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+
+
+            }
+
+
+
+
+
+
+
+
+            // ==========================
+            // MODALS
+            // ==========================
+
+            if(
+                interaction.isModalSubmit()
+            ){
+
+
+
+                if(
+                    interaction.customId === "verify_modal"
+                ){
+
+
+                    await verify.modalHandler(
+                        interaction
+                    );
+
+
+                    return;
+
+                }
+
+
+            }
+
+
+
+
+
+
+        } catch(error){
+
+
+
+            console.error(
+                "❌ Errore interaction:",
+                error
+            );
+
+
+
+            if(
+                !interaction.replied &&
+                !interaction.deferred
+            ){
+
+
+                await interaction.reply({
+
+                    content:
+                    "❌ Si è verificato un errore.",
+
+                    ephemeral:true
+
+                }).catch(()=>{});
+
+
+            }
+
+
+
+        }
+
+
+
+    }
 );
-
-
-
-if(!command){
-
-
-console.log(
-
-"❌ Comando non trovato:",
-
-interaction.commandName
-
-);
-
-
-return;
-
-}
-
-
-
-
-
-try {
-
-
-await command.execute(
-
-interaction
-
-);
-
-
-
-} catch(error){
-
-
-
-console.error(
-
-"❌ Errore comando:",
-
-error
-
-);
-
-
-
-if(
-
-!interaction.replied &&
-
-!interaction.deferred
-
-){
-
-
-
-await interaction.reply({
-
-content:
-
-"❌ Errore durante il comando.",
-
-ephemeral:true
-
-}).catch(()=>{});
-
-
-
-}
-
-
-
-}
-
-
-
-return;
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// BUTTONS
-// ==========================
-
-
-if(
-
-interaction.isButton()
-
-){
-
-
-
-await buttonHandler(
-
-interaction
-
-);
-
-
-
-return;
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// SELECT MENUS
-// ==========================
-
-
-if(
-
-interaction.isStringSelectMenu()
-
-){
-
-
-
-// ==========================
-// APERTURA TICKET
-// ==========================
-
-
-if(
-
-interaction.customId === "ticket_category"
-
-){
-
-
-
-await ticket.categoryHandler(
-
-interaction
-
-);
-
-
-
-return;
-
-
-}
-
-
-
-
-
-
-// ==========================
-// ALTRI SELECT
-// ==========================
-
-
-if(
-
-interaction.customId === "ticket_priority"
-
-){
-
-
-
-await ticket.router(
-
-interaction
-
-);
-
-
-
-return;
-
-
-}
-
-
-
-}
-
-
-
-
-
-
-
-
-
-// ==========================
-// MODALS
-// ==========================
-
-
-if(
-
-interaction.isModalSubmit()
-
-){
-
-
-
-if(
-
-interaction.customId === "verify_modal"
-
-){
-
-
-
-await verify.modalHandler(
-
-interaction
-
-);
-
-
-
-return;
-
-
-}
-
-
-
-}
-
-
-
-
-
-
-
-}
-
-catch(error){
-
-
-
-console.error(
-
-"❌ Errore interaction:",
-
-error
-
-);
-
-
-
-
-
-if(
-
-!interaction.replied &&
-
-!interaction.deferred
-
-){
-
-
-
-await interaction.reply({
-
-content:
-
-"❌ Si è verificato un errore.",
-
-ephemeral:true
-
-}).catch(()=>{});
-
-
-
-}
-
-
-
-}
-
-
-
-});
-
-
 
 
 
@@ -527,23 +417,14 @@ ephemeral:true
 // TOKEN CHECK
 // ==========================
 
-
 console.log(
-
-"TOKEN PRESENTE:",
-
-process.env.TOKEN
-
-?
-
-"SI"
-
-:
-
-"NO"
-
+    "TOKEN PRESENTE:",
+    process.env.TOKEN
+    ?
+    "SI"
+    :
+    "NO"
 );
-
 
 
 
@@ -554,9 +435,6 @@ process.env.TOKEN
 // LOGIN
 // ==========================
 
-
 client.login(
-
-process.env.TOKEN
-
+    process.env.TOKEN
 );

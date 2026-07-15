@@ -7,13 +7,19 @@ const {
 } = require("discord.js");
 
 
+
 const horrorEngine = require("../horrorEngine");
 
 const stories = require("../horrorStories");
 
 
 
+
+
 module.exports = {
+
+
+
 
 
 data:
@@ -30,7 +36,30 @@ new SlashCommandBuilder()
 
 
 
+
+
 async execute(interaction){
+
+
+
+    if(!stories || stories.length === 0){
+
+
+        return interaction.reply({
+
+            content:
+            "❌ Nessuna storia horror disponibile.",
+
+            ephemeral:true
+
+        });
+
+
+    }
+
+
+
+
 
 
 
@@ -42,11 +71,16 @@ async execute(interaction){
 
 
 
+
+
+
+
     for(const story of stories){
 
 
 
         row.addComponents(
+
 
             new ButtonBuilder()
 
@@ -55,12 +89,13 @@ async execute(interaction){
             )
 
             .setLabel(
-                story.title
+                story.title.substring(0,80)
             )
 
             .setStyle(
                 ButtonStyle.Danger
             )
+
 
         );
 
@@ -70,13 +105,20 @@ async execute(interaction){
 
 
 
+
+
+
         if(count === 5){
+
 
             rows.push(row);
 
+
             row = new ActionRowBuilder();
 
+
             count = 0;
+
 
         }
 
@@ -86,9 +128,15 @@ async execute(interaction){
 
 
 
+
+
+
+
     if(count > 0){
 
+
         rows.push(row);
+
 
     }
 
@@ -97,11 +145,16 @@ async execute(interaction){
 
 
 
+
+
+
     rows.push(
+
 
         new ActionRowBuilder()
 
         .addComponents(
+
 
             new ButtonBuilder()
 
@@ -114,10 +167,12 @@ async execute(interaction){
             )
 
             .setStyle(
-                ButtonStyle.Secondary
+                ButtonStyle.Primary
             )
 
+
         )
+
 
     );
 
@@ -127,25 +182,34 @@ async execute(interaction){
 
 
 
+
+
     const embed = new EmbedBuilder()
+
 
     .setTitle(
         "👻 Horror Adventure"
     )
+
 
     .setDescription(
 
 `
 Benvenuto in **Horror Adventure**.
 
-Scegli una delle storie disponibili.
+Scegli una storia e prova a sopravvivere.
 
-⚠️ Ogni scelta può cambiare il finale.
+⚠️ Ogni scelta può modificare il finale.
 `
 
     )
 
-    .setColor("DarkRed");
+
+    .setColor(
+        "DarkRed"
+    )
+
+
 
 
 
@@ -163,7 +227,11 @@ Scegli una delle storie disponibili.
 
 
 
+
 }
+
+
+
 
 
 };

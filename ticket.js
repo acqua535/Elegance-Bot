@@ -1,150 +1,356 @@
 const {
+
     SlashCommandBuilder,
     EmbedBuilder,
     ActionRowBuilder,
     StringSelectMenuBuilder,
     ChannelType,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    AttachmentBuilder
+
 } = require("discord.js");
 
-const fs = require("fs");
 
-
-// ===============================
+// =====================================
 // CONFIG
-// ===============================
+// =====================================
 
 const LOG_CHANNEL_ID = "1505261606483923105";
+
 const TICKET_CATEGORY_ID = "1525919850764177408";
 
+
 const TICKET_STAFF_ROLES = [
+
     "1505192718068879430",
     "1505192964769714287"
+
 ];
 
 
-// ===============================
+// =====================================
 // STORAGE
-// ===============================
+// =====================================
 
 const tickets = new Map();
-const claimed = new Map();
-const priorities = new Map();
+
+const claimedTickets = new Map();
+
+const ticketPriority = new Map();
 
 
-// ===============================
+// =====================================
 // EMBED SYSTEM
-// ===============================
+// =====================================
 
-function embed(title, description, color = "Gold") {
+function createEmbed(
+    title,
+    description,
+    color = "Gold"
+){
 
     return new EmbedBuilder()
+
         .setTitle(title)
+
         .setDescription(description)
+
         .setColor(color)
+
         .setTimestamp();
 
 }
 
 
-// ===============================
-// QUESTIONS
-// ===============================
+// =====================================
+// QUESTIONS SYSTEM
+// =====================================
 
-const questions = {
+const ticketQuestions = {
 
-    partner: [
-        "Nome del progetto/server?",
-        "Che collaborazione proponi?",
+
+    partner:[
+
+        "Qual è il nome del tuo progetto/server?",
+
+        "Che tipo di collaborazione proponi?",
+
         "Perché dovremmo collaborare?"
+
     ],
 
-    staff: [
-        "Che esperienza hai nello staff?",
-        "Perché vuoi entrare?",
+
+
+    staff:[
+
+        "Qual è la tua esperienza nello Staff?",
+
+        "Perché vuoi entrare nel team?",
+
         "Quanto tempo puoi dedicare?"
+
     ],
 
-    bug: [
-        "Descrivi il problema.",
-        "Quando succede?",
-        "Hai prove o screenshot?"
+
+
+    bug:[
+
+        "Descrivi il problema riscontrato.",
+
+        "Quando succede il problema?",
+
+        "Hai screenshot o prove?"
+
     ],
 
-    idea: [
+
+
+    idea:[
+
         "Qual è la tua idea?",
+
         "Come migliorerebbe il server?",
-        "Altri dettagli?"
+
+        "Hai altri dettagli?"
+
     ]
 
 };
 
 
-// ===============================
+
+
+// =====================================
+// AUTO QUESTIONS
+// =====================================
+
+async function askTicketQuestions(
+    interaction,
+    type
+){
+
+
+    const questions =
+    ticketQuestions[type];
+
+
+    let answers = [];
+
+
+
+    await interaction.followUp({
+
+        embeds:[
+
+            createEmbed(
+
+                "🤖 Assistenza iniziale",
+
+                `
+Ciao!
+
+Prima della creazione del ticket ti farò alcune domande automatiche.
+
+Rispondi normalmente.
+
+Le risposte verranno mostrate allo Staff.
+
+`
+
+            )
+
+        ],
+
+        ephemeral:true
+
+    });
+
+
+
+
+    for(
+        const question of questions
+    ){
+
+
+        await interaction.followUp({
+
+            content:
+
+            `❓ ${question}`,
+
+            ephemeral:true
+
+        });
+
+
+
+        const message =
+        await interaction.channel.awaitMessages({
+
+            filter:
+
+            msg =>
+            msg.author.id === interaction.user.id,
+
+            max:1,
+
+            time:60000
+
+        }).catch(()=>null);
+
+
+
+        if(message){
+
+            answers.push(
+
+                message.first().content
+
+            );
+
+        }
+
+
+    }
+
+
+
+    return answers;
+
+
+}
+
+
+
+
+// =====================================
 // COMMAND
-// ===============================
+// =====================================
 
 module.exports = {
 
 
-data: new SlashCommandBuilder()
-    .setName("ticket")
-    .setDescription("Apri un ticket di supporto"),
+data:
+
+new SlashCommandBuilder()
+
+.setName("ticket")
+
+.setDescription(
+
+"Apri un ticket di supporto"
+
+),
 
 
 
-async execute(interaction) {
+async execute(interaction){
 
 
     const menu = new StringSelectMenuBuilder()
 
-        .setCustomId("ticket_category")
 
-        .setPlaceholder("Seleziona categoria")
+    .setCustomId(
 
-        .addOptions([
+        "ticket_category"
 
-            {
-                label:"Supporto Partner",
-                value:"partner",
-                emoji:"🤝"
-            },
+    )
 
-            {
-                label:"Bando Staff",
-                value:"staff",
-                emoji:"🛡️"
-            },
 
-            {
-                label:"Segnalazione Bug",
-                value:"bug",
-                emoji:"🐞"
-            },
+    .setPlaceholder(
 
-            {
-                label:"Idea",
-                value:"idea",
-                emoji:"💡"
-            }
+        "🎫 Seleziona categoria"
 
-        ]);
+    )
+
+
+    .addOptions([
+
+
+        {
+
+            label:"Supporto Partner",
+
+            description:"Collaborazioni e partnership",
+
+            value:"partner",
+
+            emoji:"🤝"
+
+        },
+
+
+
+        {
+
+            label:"Bando Staff",
+
+            description:"Candidatura Staff",
+
+            value:"staff",
+
+            emoji:"🛡️"
+
+        },
+
+
+
+        {
+
+            label:"Segnalazione Bug",
+
+            description:"Problemi tecnici",
+
+            value:"bug",
+
+            emoji:"🐞"
+
+        },
+
+
+
+        {
+
+            label:"Idea",
+
+            description:"Suggerimenti community",
+
+            value:"idea",
+
+            emoji:"💡"
+
+        }
+
+
+    ]);
+
 
 
     await interaction.reply({
 
         embeds:[
 
-            embed(
+            createEmbed(
+
                 "🎫 Elegance Support",
-                "Seleziona il tipo di richiesta."
+
+                `
+Benvenuto nel supporto ufficiale.
+
+Seleziona la categoria del tuo ticket.
+
+`
+
             )
 
         ],
 
+
         components:[
 
             new ActionRowBuilder()
+
             .addComponents(menu)
 
         ]
@@ -154,93 +360,158 @@ async execute(interaction) {
 
 },
 
-    // ===============================
+    // =====================================
 // CATEGORY HANDLER
-// ===============================
+// =====================================
 
-async categoryHandler(interaction) {
+
+async categoryHandler(interaction){
 
 
     await interaction.deferReply({
+
         ephemeral:true
+
     });
 
 
-    const type = interaction.values[0];
+
+    const type =
+    interaction.values[0];
 
 
-    const channelName = {
+
+    const answers =
+    await askTicketQuestions(
+
+        interaction,
+
+        type
+
+    );
+
+
+
+    const names = {
+
 
         partner:"supporto-partner",
+
         staff:"bando-staff",
+
         bug:"segnalazione-bug",
+
         idea:"idee"
 
     };
 
 
 
-    const channel = await interaction.guild.channels.create({
 
-        name:`🎫・${channelName[type]}-${interaction.user.username}`,
 
-        type:ChannelType.GuildText,
+    const channel =
+    await interaction.guild.channels.create({
 
-        parent:TICKET_CATEGORY_ID,
+
+
+        name:
+
+        `🎫・${names[type]}-${interaction.user.username}`,
+
+
+
+        type:
+
+        ChannelType.GuildText,
+
+
+
+        parent:
+
+        TICKET_CATEGORY_ID,
+
 
 
         permissionOverwrites:[
 
+
+
             {
 
-                id:interaction.guild.id,
+                id:
+
+                interaction.guild.id,
+
 
                 deny:[
+
                     PermissionFlagsBits.ViewChannel
+
                 ]
 
             },
 
 
+
             {
 
-                id:interaction.user.id,
+                id:
+
+                interaction.user.id,
+
 
                 allow:[
 
                     PermissionFlagsBits.ViewChannel,
+
                     PermissionFlagsBits.SendMessages,
+
                     PermissionFlagsBits.ReadMessageHistory
 
                 ]
 
             },
+
 
 
             ...TICKET_STAFF_ROLES.map(role => ({
 
+
                 id:role,
+
 
                 allow:[
 
                     PermissionFlagsBits.ViewChannel,
+
                     PermissionFlagsBits.SendMessages,
+
                     PermissionFlagsBits.ReadMessageHistory
 
                 ]
+
 
             }))
 
         ]
 
+
+
     });
 
 
 
-    priorities.set(
+
+
+    ticketPriority.set(
+
         channel.id,
+
         "🟢 Basso"
+
     );
+
+
 
 
 
@@ -250,11 +521,22 @@ async categoryHandler(interaction) {
 
         {
 
-            owner:interaction.user.id,
 
-            type:type,
+            owner:
 
-            created:Date.now()
+            interaction.user.id,
+
+
+            type,
+
+
+            answers,
+
+
+            created:
+
+            Date.now()
+
 
         }
 
@@ -263,207 +545,393 @@ async categoryHandler(interaction) {
 
 
 
-    const management = new StringSelectMenuBuilder()
 
-        .setCustomId("ticket_manage")
-
-        .setPlaceholder("🎫 Gestione Ticket")
-
-        .addOptions([
+// =====================================
+// MANAGEMENT MENU
+// =====================================
 
 
-            {
-                label:"Reclama",
-                value:"claim",
-                emoji:"👤"
-            },
-
-
-            {
-                label:"Cambia priorità",
-                value:"priority",
-                emoji:"📌"
-            },
-
-
-            {
-                label:"Aggiungi membro",
-                value:"add",
-                emoji:"👥"
-            },
-
-
-            {
-                label:"Rimuovi membro",
-                value:"remove",
-                emoji:"🚫"
-            },
-
-
-            {
-                label:"Cambia nome",
-                value:"rename",
-                emoji:"✏️"
-            },
-
-
-            {
-                label:"Transcript",
-                value:"transcript",
-                emoji:"📋"
-            },
-
-
-            {
-                label:"Informazioni",
-                value:"info",
-                emoji:"📊"
-            },
-
-
-            {
-                label:"Chiudi",
-                value:"close",
-                emoji:"🔒"
-            }
-
-
-        ]);
+const managementMenu = new StringSelectMenuBuilder()
 
 
 
+.setCustomId(
 
-    const ticketEmbed = embed(
+"ticket_management"
 
-        "🎫 Ticket Aperto",
+)
 
-        `
+
+
+.setPlaceholder(
+
+"🎫 Gestione Ticket"
+
+)
+
+
+
+.addOptions([
+
+
+
+{
+
+label:"Reclama",
+
+description:"Prendi in gestione il ticket",
+
+value:"claim",
+
+emoji:"👤"
+
+},
+
+
+
+{
+
+label:"Passa ad altro Staff",
+
+description:"Trasferisci il ticket",
+
+value:"transfer",
+
+emoji:"🔄"
+
+},
+
+
+
+{
+
+label:"Cambia priorità",
+
+description:"Modifica urgenza ticket",
+
+value:"priority",
+
+emoji:"📌"
+
+},
+
+
+
+{
+
+label:"Aggiungi membro",
+
+description:"Aggiungi un utente",
+
+value:"add_member",
+
+emoji:"👥"
+
+},
+
+
+
+{
+
+label:"Rimuovi membro",
+
+description:"Rimuovi un utente",
+
+value:"remove_member",
+
+emoji:"🚫"
+
+},
+
+
+
+{
+
+label:"Cambia nome",
+
+description:"Rinomina il ticket",
+
+value:"rename",
+
+emoji:"✏️"
+
+},
+
+
+
+{
+
+label:"Transcript",
+
+description:"Crea copia conversazione",
+
+value:"transcript",
+
+emoji:"📋"
+
+},
+
+
+
+{
+
+label:"Informazioni",
+
+description:"Mostra dati ticket",
+
+value:"info",
+
+emoji:"📊"
+
+},
+
+
+
+{
+
+label:"Chiudi",
+
+description:"Chiude il ticket",
+
+value:"close",
+
+emoji:"🔒"
+
+}
+
+
+
+]);
+
+
+
+
+
+
+// =====================================
+// TICKET EMBED
+// =====================================
+
+
+const ticketEmbed = new EmbedBuilder()
+
+
+.setTitle(
+
+"🎫 Ticket Aperto"
+
+)
+
+
+.setDescription(
+
+`
+
 Benvenuto nel tuo ticket.
 
 Lo Staff risponderà appena possibile.
 
+
 ━━━━━━━━━━━━━━
+
 
 👤 Utente:
+
 ${interaction.user}
 
+
+
 📂 Categoria:
+
 ${type}
 
+
+
 📌 Priorità:
+
 🟢 Basso
 
+
+
 ━━━━━━━━━━━━━━
+
 
 Utilizza il menu qui sotto per gestire il ticket.
-        `,
-
-        "Green"
-
-    );
 
 
+`
+
+)
 
 
-    await channel.send({
+.setColor("Green")
 
-        content:
 
-        `${interaction.user} ${TICKET_STAFF_ROLES.map(r=>`<@&${r}>`).join(" ")}`,
-
-        embeds:[ticketEmbed],
-
-        components:[
-
-            new ActionRowBuilder()
-            .addComponents(management)
-
-        ]
-
-    });
+.setTimestamp();
 
 
 
 
-    const log = interaction.guild.channels.cache.get(
-        LOG_CHANNEL_ID
-    );
 
 
-    if(log){
 
-        log.send({
+await channel.send({
 
-            embeds:[
 
-                embed(
 
-                    "🎫 Ticket Creato",
+content:
 
-                    `
+
+`${interaction.user} ${TICKET_STAFF_ROLES.map(role=>`<@&${role}>`).join(" ")}`,
+
+
+
+embeds:[
+
+ticketEmbed
+
+],
+
+
+
+components:[
+
+new ActionRowBuilder()
+
+.addComponents(
+
+managementMenu
+
+)
+
+]
+
+});
+
+
+
+
+
+
+// =====================================
+// LOG CREAZIONE
+// =====================================
+
+
+const logs =
+
+interaction.guild.channels.cache.get(
+
+LOG_CHANNEL_ID
+
+);
+
+
+
+if(logs){
+
+
+
+await logs.send({
+
+embeds:[
+
+
+createEmbed(
+
+"🎫 Ticket Creato",
+
+`
+
 👤 Utente:
+
 ${interaction.user}
 
+
 📂 Categoria:
+
 ${type}
 
+
 📌 Priorità:
+
 🟢 Basso
 
+
 📍 Canale:
+
 ${channel}
-                    `
-
-                )
-
-            ]
-
-        });
-
-    }
 
 
+`
 
-    await interaction.editReply({
+)
 
-        content:`✅ Ticket creato: ${channel}`
+]
 
-    });
+});
+
+
+
+}
+
+
+
+
+
+await interaction.editReply({
+
+content:
+
+`✅ Ticket creato: ${channel}`
+
+});
+
 
 
 },
 
-        // ===============================
+    // =====================================
 // MENU HANDLER
-// ===============================
-
-async menuHandler(interaction) {
+// =====================================
 
 
-    const value = interaction.values[0];
+async menuHandler(interaction){
+
+
+    const value =
+    interaction.values[0];
 
 
 
-    // ===========================
+    // =================================
     // CLAIM
-    // ===========================
+    // =================================
 
 
     if(value === "claim"){
 
 
-        const allowed = TICKET_STAFF_ROLES.some(
 
-            role => interaction.member.roles.cache.has(role)
+        const allowed =
+
+        TICKET_STAFF_ROLES.some(
+
+            role =>
+
+            interaction.member.roles.cache.has(role)
 
         );
+
 
 
         if(!allowed){
 
             return interaction.reply({
 
-                content:"❌ Non puoi reclamare ticket.",
+                content:
+
+                "❌ Non puoi reclamare questo ticket.",
 
                 ephemeral:true
 
@@ -473,7 +941,7 @@ async menuHandler(interaction) {
 
 
 
-        claimed.set(
+        claimedTickets.set(
 
             interaction.channel.id,
 
@@ -487,17 +955,69 @@ async menuHandler(interaction) {
 
             embeds:[
 
-                embed(
+                createEmbed(
 
                     "👤 Ticket Reclamato",
 
                     `
+
 Questo ticket è stato preso in gestione da:
 
 ${interaction.user}
+
                     `,
 
                     "Blue"
+
+                )
+
+            ]
+
+        });
+
+
+
+    }
+
+
+
+
+
+
+    // =================================
+    // TRANSFER
+    // =================================
+
+
+    if(value === "transfer"){
+
+
+
+        claimedTickets.delete(
+
+            interaction.channel.id
+
+        );
+
+
+
+        return interaction.reply({
+
+            embeds:[
+
+                createEmbed(
+
+                    "🔄 Ticket Disponibile",
+
+                    `
+
+Il ticket è stato rimosso dall'attuale Staff.
+
+Un altro membro potrà reclamarlo.
+
+                    `,
+
+                    "Orange"
 
                 )
 
@@ -512,19 +1032,36 @@ ${interaction.user}
 
 
 
-    // ===========================
+
+
+    // =================================
     // PRIORITY MENU
-    // ===========================
+    // =================================
 
 
     if(value === "priority"){
 
 
+
         const menu = new StringSelectMenuBuilder()
 
-        .setCustomId("ticket_priority")
 
-        .setPlaceholder("📌 Seleziona priorità")
+
+        .setCustomId(
+
+            "ticket_priority"
+
+        )
+
+
+
+        .setPlaceholder(
+
+            "📌 Seleziona priorità"
+
+        )
+
+
 
         .addOptions([
 
@@ -562,6 +1099,7 @@ ${interaction.user}
             }
 
 
+
         ]);
 
 
@@ -576,9 +1114,12 @@ ${interaction.user}
 
             ],
 
+
             ephemeral:true
 
+
         });
+
 
 
     }
@@ -587,47 +1128,51 @@ ${interaction.user}
 
 
 
-    // ===========================
-    // INFO
-    // ===========================
 
 
-    if(value === "info"){
+    // =================================
+    // ADD MEMBER
+    // =================================
 
 
-        const data = tickets.get(
-
-            interaction.channel.id
-
-        );
+    if(value === "add_member"){
 
 
 
         return interaction.reply({
 
-            embeds:[
+            content:
 
-                embed(
+            "👥 Menziona l'utente da aggiungere.",
 
-                    "📊 Informazioni Ticket",
+            ephemeral:true
 
-                    `
-👤 Proprietario:
-<@${data?.owner}>
+        });
 
-📂 Categoria:
-${data?.type}
 
-📌 Priorità:
-${priorities.get(interaction.channel.id)}
 
-🕒 Creato:
-<t:${Math.floor(data.created / 1000)}:R>
-                    `
+    }
 
-                )
 
-            ],
+
+
+
+
+
+    // =================================
+    // REMOVE MEMBER
+    // =================================
+
+
+    if(value === "remove_member"){
+
+
+
+        return interaction.reply({
+
+            content:
+
+            "🚫 Menziona l'utente da rimuovere.",
 
             ephemeral:true
 
@@ -640,12 +1185,15 @@ ${priorities.get(interaction.channel.id)}
 
 
 
-    // ===========================
+
+
+    // =================================
     // RENAME
-    // ===========================
+    // =================================
 
 
     if(value === "rename"){
+
 
 
         return interaction.reply({
@@ -665,9 +1213,111 @@ ${priorities.get(interaction.channel.id)}
 
 
 
-    // ===========================
+
+
+    // =================================
+    // INFO
+    // =================================
+
+
+    if(value === "info"){
+
+
+
+        const data =
+
+        tickets.get(
+
+            interaction.channel.id
+
+        );
+
+
+
+        return interaction.reply({
+
+            embeds:[
+
+                createEmbed(
+
+                    "📊 Informazioni Ticket",
+
+                    `
+
+👤 Proprietario:
+
+<@${data?.owner || "N/D"}>
+
+
+📂 Categoria:
+
+${data?.type || "N/D"}
+
+
+📌 Priorità:
+
+${ticketPriority.get(
+
+interaction.channel.id
+
+) || "🟢 Basso"}
+
+
+🕒 Creato:
+
+<t:${Math.floor(
+
+(data?.created || Date.now()) / 1000
+
+)}:R>
+
+
+                    `
+
+                )
+
+            ],
+
+            ephemeral:true
+
+        });
+
+
+    }
+
+
+
+
+
+
+
+
+    // =================================
+    // TRANSCRIPT
+    // =================================
+
+
+    if(value === "transcript"){
+
+
+        return this.createTranscript(
+
+            interaction
+
+        );
+
+
+    }
+
+
+
+
+
+
+
+    // =================================
     // CLOSE
-    // ===========================
+    // =================================
 
 
     if(value === "close"){
@@ -685,27 +1335,42 @@ ${priorities.get(interaction.channel.id)}
 
 },
 
-    // ===============================
+
+
+
+
+
+
+// =====================================
 // PRIORITY HANDLER
-// ===============================
+// =====================================
+
 
 async priorityHandler(interaction){
 
 
-    const value = interaction.values[0];
+
+    const value =
+
+    interaction.values[0];
 
 
-    let name;
+
+    let priority;
+
     let color;
+
 
 
 
     switch(value){
 
 
+
         case "low":
 
-            name = "🟢 Basso";
+            priority = "🟢 Basso";
+
             color = "Green";
 
         break;
@@ -714,7 +1379,8 @@ async priorityHandler(interaction){
 
         case "medium":
 
-            name = "🟠 Medio";
+            priority = "🟠 Medio";
+
             color = "Orange";
 
         break;
@@ -723,7 +1389,8 @@ async priorityHandler(interaction){
 
         case "high":
 
-            name = "🔴 Alto";
+            priority = "🔴 Alto";
+
             color = "Red";
 
         break;
@@ -733,17 +1400,23 @@ async priorityHandler(interaction){
 
 
 
-    priorities.set(
+
+
+    ticketPriority.set(
 
         interaction.channel.id,
 
-        name
+        priority
 
     );
 
 
 
-    const messages = await interaction.channel.messages.fetch({
+
+
+    const messages =
+
+    await interaction.channel.messages.fetch({
 
         limit:10
 
@@ -751,7 +1424,11 @@ async priorityHandler(interaction){
 
 
 
-    const ticketMessage = messages.find(
+
+
+    const message =
+
+    messages.find(
 
         msg =>
 
@@ -763,24 +1440,31 @@ async priorityHandler(interaction){
 
 
 
-    if(ticketMessage){
 
 
-        const old = ticketMessage.embeds[0];
+    if(message){
 
 
 
-        const updated = EmbedBuilder.from(old)
+        const oldEmbed =
+
+        message.embeds[0];
+
+
+
+        const newEmbed =
+
+        EmbedBuilder.from(oldEmbed)
 
         .setColor(color)
 
         .setDescription(
 
-            old.description.replace(
+            oldEmbed.description.replace(
 
                 /📌 Priorità:\n.*/,
 
-                `📌 Priorità:\n${name}`
+                `📌 Priorità:\n${priority}`
 
             )
 
@@ -788,9 +1472,9 @@ async priorityHandler(interaction){
 
 
 
-        await ticketMessage.edit({
+        await message.edit({
 
-            embeds:[updated]
+            embeds:[newEmbed]
 
         });
 
@@ -799,9 +1483,13 @@ async priorityHandler(interaction){
 
 
 
+
+
     await interaction.reply({
 
-        content:`✅ Priorità aggiornata: ${name}`,
+        content:
+
+        `✅ Priorità cambiata: ${priority}`,
 
         ephemeral:true
 
@@ -810,22 +1498,433 @@ async priorityHandler(interaction){
 
 },
 
+    // =====================================
+// PROFESSIONAL HTML TRANSCRIPT
+// =====================================
+
+
+async createTranscript(interaction){
+
+
+    await interaction.deferReply({
+
+        ephemeral:true
+
+    });
+
+
+
+    let messages = [];
+
+    let lastId;
+
+
+
+    while(true){
+
+
+        const options = {
+
+            limit:100
+
+        };
+
+
+
+        if(lastId){
+
+            options.before = lastId;
+
+        }
+
+
+
+        const fetched =
+
+        await interaction.channel.messages.fetch(options);
+
+
+
+        if(fetched.size === 0){
+
+            break;
+
+        }
+
+
+
+        messages.push(
+
+            ...fetched.values()
+
+        );
+
+
+
+        lastId = fetched.last().id;
+
+
+    }
 
 
 
 
 
-// ===============================
+    messages.sort(
+
+        (a,b)=>
+
+        a.createdTimestamp -
+
+        b.createdTimestamp
+
+    );
+
+
+
+
+
+    let html = `
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+<title>
+
+Ticket Transcript
+
+</title>
+
+
+<style>
+
+
+body{
+
+background:#313338;
+
+color:white;
+
+font-family:Arial;
+
+padding:20px;
+
+}
+
+
+.header{
+
+background:#5865F2;
+
+padding:20px;
+
+border-radius:12px;
+
+margin-bottom:20px;
+
+}
+
+
+.message{
+
+background:#2b2d31;
+
+padding:15px;
+
+border-radius:10px;
+
+margin-bottom:12px;
+
+}
+
+
+.author{
+
+font-weight:bold;
+
+color:#00aff4;
+
+}
+
+
+.time{
+
+font-size:12px;
+
+color:#aaa;
+
+}
+
+
+.content{
+
+margin-top:8px;
+
+white-space:pre-wrap;
+
+}
+
+
+.embed{
+
+border-left:4px solid #5865F2;
+
+padding-left:10px;
+
+margin-top:10px;
+
+}
+
+
+img{
+
+max-width:400px;
+
+border-radius:8px;
+
+}
+
+
+</style>
+
+
+</head>
+
+
+<body>
+
+
+
+<div class="header">
+
+
+<h2>
+
+🎫 Elegance Ticket Transcript
+
+</h2>
+
+
+<p>
+
+Canale:
+
+${interaction.channel.name}
+
+</p>
+
+
+<p>
+
+Creato:
+
+${new Date().toLocaleString()}
+
+</p>
+
+
+</div>
+
+
+`;
+
+
+
+
+
+
+
+for(const msg of messages){
+
+
+
+html += `
+
+
+<div class="message">
+
+
+<div class="author">
+
+${msg.author.tag}
+
+(ID: ${msg.author.id})
+
+</div>
+
+
+<div class="time">
+
+${new Date(msg.createdTimestamp).toLocaleString()}
+
+</div>
+
+
+<div class="content">
+
+${msg.content || "*Nessun contenuto*"}
+
+</div>
+
+
+`;
+
+
+
+
+
+if(msg.attachments.size){
+
+
+msg.attachments.forEach(file=>{
+
+
+html += `
+
+
+<br>
+
+📎 Allegato:
+
+<a href="${file.url}" target="_blank">
+
+${file.name}
+
+</a>
+
+
+`;
+
+
+});
+
+
+}
+
+
+
+
+
+
+
+if(msg.embeds.length){
+
+
+msg.embeds.forEach(embed=>{
+
+
+html += `
+
+
+<div class="embed">
+
+
+<b>
+
+${embed.title || "Embed"}
+
+</b>
+
+
+<br>
+
+
+${embed.description || ""}
+
+
+</div>
+
+
+`;
+
+
+});
+
+
+}
+
+
+
+
+
+html += `
+
+</div>
+
+`;
+
+
+
+}
+
+
+
+
+
+
+html += `
+
+
+</body>
+
+</html>
+
+`;
+
+
+
+
+
+
+const file = new AttachmentBuilder(
+
+Buffer.from(html),
+
+{
+
+name:
+
+`transcript-${interaction.channel.name}.html`
+
+}
+
+);
+
+
+
+
+
+await interaction.editReply({
+
+content:
+
+"📋 Transcript HTML creato.",
+
+files:[file]
+
+});
+
+
+},
+
+    // =====================================
 // ADD MEMBER
-// ===============================
+// =====================================
+
 
 async addMemberHandler(interaction){
 
 
-
     await interaction.reply({
 
-        content:"👥 Menziona l'utente da aggiungere.",
+        content:
+
+        "👥 Menziona l'utente da aggiungere.",
 
         ephemeral:true
 
@@ -837,7 +1936,9 @@ async addMemberHandler(interaction){
 
         filter:
 
-        m => m.author.id === interaction.user.id,
+        m =>
+
+        m.author.id === interaction.user.id,
 
         max:1,
 
@@ -847,52 +1948,68 @@ async addMemberHandler(interaction){
 
 
 
-    collector.on("collect", async msg => {
+
+
+    collector.on(
+
+        "collect",
+
+        async message => {
 
 
 
-        const member = msg.mentions.members.first();
+            const member =
+
+            message.mentions.members.first();
 
 
 
-        if(!member){
-
-            return msg.reply(
-
-                "❌ Utente non trovato."
-
-            );
-
-        }
 
 
+            if(!member){
 
-        await interaction.channel.permissionOverwrites.edit(
+                return message.reply(
 
-            member.id,
+                    "❌ Utente non trovato."
 
-            {
-
-                ViewChannel:true,
-
-                SendMessages:true,
-
-                ReadMessageHistory:true
+                );
 
             }
 
-        );
 
 
 
-        msg.reply(
 
-            `✅ ${member} aggiunto al ticket.`
+            await interaction.channel.permissionOverwrites.edit(
 
-        );
+                member.id,
+
+                {
+
+                    ViewChannel:true,
+
+                    SendMessages:true,
+
+                    ReadMessageHistory:true
+
+                }
+
+            );
 
 
-    });
+
+
+
+            message.reply(
+
+                `✅ ${member} aggiunto al ticket.`
+
+            );
+
+
+        }
+
+    );
 
 
 },
@@ -902,16 +2019,20 @@ async addMemberHandler(interaction){
 
 
 
-// ===============================
+
+// =====================================
 // REMOVE MEMBER
-// ===============================
+// =====================================
+
 
 async removeMemberHandler(interaction){
 
 
     await interaction.reply({
 
-        content:"🚫 Menziona l'utente da rimuovere.",
+        content:
+
+        "🚫 Menziona l'utente da rimuovere.",
 
         ephemeral:true
 
@@ -919,11 +2040,15 @@ async removeMemberHandler(interaction){
 
 
 
+
+
     const collector = interaction.channel.createMessageCollector({
 
         filter:
 
-        m => m.author.id === interaction.user.id,
+        m =>
+
+        m.author.id === interaction.user.id,
 
         max:1,
 
@@ -933,42 +2058,58 @@ async removeMemberHandler(interaction){
 
 
 
-    collector.on("collect", async msg => {
+
+
+    collector.on(
+
+        "collect",
+
+        async message => {
 
 
 
-        const member = msg.mentions.members.first();
+            const member =
+
+            message.mentions.members.first();
 
 
 
-        if(!member){
 
-            return msg.reply(
 
-                "❌ Utente non trovato."
+            if(!member){
+
+                return message.reply(
+
+                    "❌ Utente non trovato."
+
+                );
+
+            }
+
+
+
+
+
+            await interaction.channel.permissionOverwrites.delete(
+
+                member.id
 
             );
 
+
+
+
+
+            message.reply(
+
+                `✅ ${member} rimosso dal ticket.`
+
+            );
+
+
         }
 
-
-
-        await interaction.channel.permissionOverwrites.delete(
-
-            member.id
-
-        );
-
-
-
-        msg.reply(
-
-            `✅ ${member} rimosso dal ticket.`
-
-        );
-
-
-    });
+    );
 
 
 },
@@ -978,79 +2119,122 @@ async removeMemberHandler(interaction){
 
 
 
-// ===============================
-// TRANSCRIPT
-// ===============================
 
-async transcriptHandler(interaction){
-
-
-    const messages = await interaction.channel.messages.fetch({
-
-        limit:100
-
-    });
+// =====================================
+// RENAME TICKET
+// =====================================
 
 
-
-    let text = "";
-
-
-
-    messages.reverse().forEach(msg=>{
-
-
-        text +=
-
-        `[${new Date(msg.createdTimestamp).toLocaleString()}] ${msg.author.tag}: ${msg.content}\n`;
-
-
-    });
-
-
-
-    const file = new AttachmentBuilder(
-
-        Buffer.from(text),
-
-        {
-
-            name:`transcript-${interaction.channel.name}.txt`
-
-        }
-
-    );
+async renameHandler(interaction){
 
 
 
     await interaction.reply({
 
-        content:"📋 Transcript creato.",
+        content:
 
-        files:[file],
+        "✏️ Scrivi il nuovo nome del ticket.",
 
         ephemeral:true
 
     });
 
 
+
+
+
+    const collector = interaction.channel.createMessageCollector({
+
+        filter:
+
+        m =>
+
+        m.author.id === interaction.user.id,
+
+        max:1,
+
+        time:30000
+
+    });
+
+
+
+
+
+    collector.on(
+
+        "collect",
+
+        async message => {
+
+
+
+            const name =
+
+            message.content
+
+            .toLowerCase()
+
+            .replace(/[^a-z0-9-_]/g,"-");
+
+
+
+
+
+            await interaction.channel.setName(
+
+                `🎫・${name}`
+
+            );
+
+
+
+
+
+            message.reply(
+
+                "✅ Nome ticket cambiato."
+
+            );
+
+
+        }
+
+    );
+
+
 },
 
-    // ===============================
+
+
+
+
+
+
+// =====================================
 // CLOSE TICKET
-// ===============================
+// =====================================
+
 
 async closeTicket(interaction){
 
 
-    const data = tickets.get(
+
+    const data =
+
+    tickets.get(
 
         interaction.channel.id
 
     );
 
 
-    const staff = claimed.get(
+
+
+
+    const staff =
+
+    claimed.get(
 
         interaction.channel.id
 
@@ -1058,37 +2242,209 @@ async closeTicket(interaction){
 
 
 
-    const messages = await interaction.channel.messages.fetch({
 
-        limit:100
+
+    let messages = [];
+
+    let lastId;
+
+
+
+
+
+    while(true){
+
+
+
+        const fetched =
+
+        await interaction.channel.messages.fetch({
+
+            limit:100,
+
+            ...(lastId && {
+
+                before:lastId
+
+            })
+
+        });
+
+
+
+
+
+        if(!fetched.size){
+
+            break;
+
+        }
+
+
+
+
+
+        messages.push(
+
+            ...fetched.values()
+
+        );
+
+
+
+
+
+        lastId =
+
+        fetched.last().id;
+
+
+    }
+
+
+
+
+
+    messages.sort(
+
+        (a,b)=>
+
+        a.createdTimestamp -
+
+        b.createdTimestamp
+
+    );
+
+
+
+
+
+    let html = `
+
+<html>
+
+<head>
+
+<meta charset="UTF-8">
+
+
+<style>
+
+body{
+
+background:#313338;
+
+color:white;
+
+font-family:Arial;
+
+padding:20px;
+
+}
+
+
+.message{
+
+background:#2b2d31;
+
+padding:12px;
+
+margin:10px;
+
+border-radius:10px;
+
+}
+
+
+.author{
+
+color:#00aff4;
+
+font-weight:bold;
+
+}
+
+
+</style>
+
+
+</head>
+
+
+<body>
+
+
+<h1>
+
+🔒 Ticket Chiuso
+
+</h1>
+
+
+`;
+
+
+
+
+
+    messages.forEach(msg=>{
+
+
+        html += `
+
+
+<div class="message">
+
+
+<div class="author">
+
+${msg.author.tag}
+
+</div>
+
+
+<div>
+
+${msg.content || ""}
+
+</div>
+
+
+</div>
+
+
+`;
+
 
     });
 
 
 
-    let transcript = "";
+
+
+    html += `
+
+</body>
+
+</html>
+
+`;
 
 
 
-    messages.reverse().forEach(msg=>{
 
 
-        transcript +=
+    const transcript =
 
-        `[${new Date(msg.createdTimestamp).toLocaleString()}] ${msg.author.tag}: ${msg.content}\n`;
+    new AttachmentBuilder(
 
-
-    });
-
-
-
-    const file = new AttachmentBuilder(
-
-        Buffer.from(transcript),
+        Buffer.from(html),
 
         {
 
-            name:`ticket-${interaction.channel.name}.txt`
+            name:
+
+            `ticket-${interaction.channel.name}.html`
 
         }
 
@@ -1097,7 +2453,12 @@ async closeTicket(interaction){
 
 
 
-    const logs = interaction.guild.channels.cache.get(
+
+
+
+    const logs =
+
+    interaction.guild.channels.cache.get(
 
         LOG_CHANNEL_ID
 
@@ -1105,7 +2466,10 @@ async closeTicket(interaction){
 
 
 
+
+
     if(logs){
+
 
 
         await logs.send({
@@ -1117,17 +2481,26 @@ async closeTicket(interaction){
                     "🔒 Ticket Chiuso",
 
                     `
+
 👤 Chiuso da:
+
 ${interaction.user}
 
+
 📂 Categoria:
+
 ${data?.type || "N/D"}
 
+
 👨‍💼 Staff:
+
 ${staff ? `<@${staff}>` : "Nessuno"}
 
+
 📍 Canale:
+
 ${interaction.channel}
+
                     `,
 
                     "Red"
@@ -1136,7 +2509,7 @@ ${interaction.channel}
 
             ],
 
-            files:[file]
+            files:[transcript]
 
         });
 
@@ -1147,19 +2520,21 @@ ${interaction.channel}
 
 
 
-    // ===========================
-    // DM VALUTAZIONE
-    // ===========================
 
 
     try{
 
 
-        const user = await interaction.client.users.fetch(
+
+        const user =
+
+        await interaction.client.users.fetch(
 
             data.owner
 
         );
+
+
 
 
 
@@ -1169,14 +2544,12 @@ ${interaction.channel}
 
                 embed(
 
-                    "⭐ Valuta la tua assistenza",
+                    "⭐ Valuta assistenza",
 
                     `
+
 Il tuo ticket è stato chiuso.
 
-Grazie per aver contattato Elegance Support.
-
-━━━━━━━━━━━━━━
 
 👨‍💼 Staff:
 
@@ -1185,24 +2558,15 @@ ${staff ? `<@${staff}>` : "Non assegnato"}
 
 📂 Categoria:
 
-${data.type}
+${data?.type || "N/D"}
 
 
-Come valuti l'assistenza?
+Valuta il supporto da ⭐ 1 a ⭐ 5.
 
-Invia un voto da ⭐ 1 a ⭐ 5.
-
-Dopo il voto puoi scrivere una descrizione.
-
-━━━━━━━━━━━━━━
-
-Firma automatica:
 
 ⚜️ Elegance Support System
 
-                    `,
-
-                    "Gold"
+                    `
 
                 )
 
@@ -1211,7 +2575,9 @@ Firma automatica:
         });
 
 
-    }catch(e){}
+    }
+
+    catch(error){}
 
 
 
@@ -1229,6 +2595,8 @@ Firma automatica:
 
 
 
+
+
     setTimeout(()=>{
 
 
@@ -1237,71 +2605,7 @@ Firma automatica:
         .catch(()=>{})
 
 
-
     },5000);
 
 
-
 },
-
-
-
-
-
-
-// ===============================
-// ROUTER
-// ===============================
-
-async router(interaction){
-
-
-
-    if(interaction.isStringSelectMenu()){
-
-
-
-        if(interaction.customId === "ticket_manage"){
-
-
-            return this.menuHandler(
-
-                interaction
-
-            );
-
-
-        }
-
-
-
-
-        if(interaction.customId === "ticket_priority"){
-
-
-            return this.priorityHandler(
-
-                interaction
-
-            );
-
-
-        }
-
-
-    }
-
-
-
-},
-
-
-
-
-
-
-// ===============================
-// EXPORT
-// ===============================
-
-};

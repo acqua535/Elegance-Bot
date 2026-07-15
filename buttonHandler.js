@@ -3,29 +3,30 @@ const {
 } = require("discord.js");
 
 
+
 const ticket = require("./ticket");
+
+const verify = require("./verify");
 
 const minigame = require("./minigame");
 
 
 
 
+
 // ===============================
-// GLOBAL INTERACTION HANDLER
+// GLOBAL BUTTON HANDLER
 // ===============================
+
 
 module.exports = async function buttonHandler(interaction){
 
 
 
     if(
-
         !interaction.isButton() &&
-
         !interaction.isStringSelectMenu()
-
     ) return;
-
 
 
 
@@ -37,14 +38,48 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
     try {
 
 
 
 
+
 // ===============================
-// TICKET MENU
+// VERIFY
+// ===============================
+
+
+        if(
+
+            interaction.isButton()
+
+            &&
+
+            id === "verify_button"
+
+        ){
+
+
+
+            return verify.buttonHandler(
+
+                interaction
+
+            );
+
+
+
+        }
+
+
+
+
+
+
+
+
+// ===============================
+// TICKET SELECT MENU
 // ===============================
 
 
@@ -125,6 +160,7 @@ module.exports = async function buttonHandler(interaction){
         if(id === "word_easy"){
 
 
+
             await interaction.update({
 
 
@@ -143,6 +179,8 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
+
             await minigame.startWordGame(
 
                 interaction,
@@ -152,10 +190,13 @@ module.exports = async function buttonHandler(interaction){
             );
 
 
+
             return;
 
 
+
         }
+
 
 
 
@@ -185,6 +226,8 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
+
             await minigame.startWordGame(
 
                 interaction,
@@ -194,7 +237,9 @@ module.exports = async function buttonHandler(interaction){
             );
 
 
+
             return;
+
 
 
         }
@@ -228,6 +273,8 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
+
             await minigame.startWordGame(
 
                 interaction,
@@ -237,7 +284,9 @@ module.exports = async function buttonHandler(interaction){
             );
 
 
+
             return;
+
 
 
         }
@@ -274,6 +323,8 @@ module.exports = async function buttonHandler(interaction){
                 ""
 
             );
+
+
 
 
 
@@ -324,11 +375,13 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
             switch(game){
 
 
 
                 case "quiz":
+
 
 
                     await minigame.quizGame(
@@ -337,7 +390,9 @@ module.exports = async function buttonHandler(interaction){
 
                     );
 
+
                 break;
+
 
 
 
@@ -346,13 +401,16 @@ module.exports = async function buttonHandler(interaction){
                 case "memory":
 
 
+
                     await minigame.memoryGame(
 
                         interaction
 
                     );
 
+
                 break;
+
 
 
 
@@ -361,13 +419,16 @@ module.exports = async function buttonHandler(interaction){
                 case "word":
 
 
+
                     await minigame.wordGame(
 
                         interaction
 
                     );
 
+
                 break;
+
 
 
 
@@ -376,13 +437,16 @@ module.exports = async function buttonHandler(interaction){
                 case "reaction":
 
 
+
                     await minigame.reactionGame(
 
                         interaction
 
                     );
 
+
                 break;
+
 
 
 
@@ -391,11 +455,13 @@ module.exports = async function buttonHandler(interaction){
                 case "hangman":
 
 
+
                     await minigame.hangmanGame(
 
                         interaction
 
                     );
+
 
                 break;
 
@@ -403,7 +469,10 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
+
                 default:
+
 
 
                     await interaction.followUp({
@@ -420,11 +489,15 @@ module.exports = async function buttonHandler(interaction){
                     });
 
 
+
             }
 
 
 
+
+
             return;
+
 
 
         }
@@ -436,14 +509,15 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+
 // ===============================
-// UNKNOWN
+// UNKNOWN BUTTON
 // ===============================
 
 
         console.log(
 
-            "⚠️ Interazione non gestita:",
+            "⚠️ Bottone non gestito:",
 
             id
 
@@ -471,9 +545,7 @@ module.exports = async function buttonHandler(interaction){
 
         if(
 
-            !interaction.replied
-
-            &&
+            !interaction.replied &&
 
             !interaction.deferred
 
@@ -484,15 +556,12 @@ module.exports = async function buttonHandler(interaction){
             await interaction.reply({
 
 
-
                 content:
 
-                "❌ Errore durante l'esecuzione.",
-
+                "❌ Errore durante il bottone.",
 
 
                 ephemeral:true
-
 
 
             }).catch(()=>{});

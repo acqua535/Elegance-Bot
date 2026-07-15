@@ -897,46 +897,143 @@ ${data.claimedBy ? `<@${data.claimedBy}>` : "Nessuno"}
 // BUTTON / MANAGEMENT HANDLER
 // =====================================
 
-async buttonHandler(interaction){
+async router(interaction){
+
+
+    const option = interaction.values[0];
 
 
 
-    const logs = interaction.guild.channels.cache.get(
-
-        LOG_CHANNEL_ID
-
-    );
+    if(option === "claim_ticket"){
 
 
+        interaction.customId = "claim_ticket";
 
 
-    const data = ticketData.get(
+        return module.exports.buttonHandler(interaction);
 
-        interaction.channel.id
 
-    );
+    }
 
 
 
 
-    if(!data){
+
+    if(option === "close_ticket"){
+
+
+        interaction.customId = "close_ticket";
+
+
+        return module.exports.buttonHandler(interaction);
+
+
+    }
+
+
+
+
+
+    if(option === "ticket_info"){
+
+
+
+        const data = ticketData.get(
+
+            interaction.channel.id
+
+        );
+
+
+
+        if(!data){
+
+
+            return interaction.reply({
+
+
+                content:
+
+                "❌ Dati ticket non trovati.",
+
+
+                ephemeral:true
+
+
+            });
+
+
+        }
+
+
+
 
 
         return interaction.reply({
 
 
-            content:
 
-            "❌ Ticket non trovato.",
+            embeds:[
+
+
+
+                new EmbedBuilder()
+
+
+
+                .setTitle(
+
+                    "📋 Informazioni Ticket"
+
+                )
+
+
+
+                .setDescription(
+
+`
+👤 **Proprietario**
+
+<@${data.owner}>
+
+
+📂 **Categoria**
+
+${data.type}
+
+
+🙋 **Staff assegnato**
+
+${data.claimedBy ? `<@${data.claimedBy}>` : "Nessuno"}
+`
+
+                )
+
+
+
+                .setTimestamp()
+
+
+
+            ],
+
 
 
             ephemeral:true
 
 
+
         });
 
 
+
     }
+
+
+
+}
+
+
 
 
 

@@ -10,11 +10,15 @@ const {
 } = require("discord.js");
 
 
+const fs = require("fs");
+
+
 // =====================================
 // TRANSCRIPT MANAGER
 // =====================================
 
 const transcriptManager = require("./transcript");
+
 
 
 
@@ -39,6 +43,110 @@ const TICKET_STAFF_ROLES = [
 
 
 // =====================================
+// TICKETS DATABASE
+// =====================================
+
+const TICKETS_FILE = "./ticketsData.json";
+
+
+
+function loadTickets(){
+
+
+    if(!fs.existsSync(TICKETS_FILE)){
+
+
+        fs.writeFileSync(
+
+            TICKETS_FILE,
+
+            "{}"
+
+        );
+
+
+    }
+
+
+
+    return JSON.parse(
+
+        fs.readFileSync(
+
+            TICKETS_FILE,
+
+            "utf8"
+
+        )
+
+    );
+
+
+}
+
+
+
+
+
+function saveTickets(data){
+
+
+    fs.writeFileSync(
+
+        TICKETS_FILE,
+
+
+        JSON.stringify(
+
+            data,
+
+            null,
+
+            4
+
+        )
+
+
+    );
+
+
+}
+
+
+
+
+
+
+// =====================================
+// STAFF CHECK
+// =====================================
+
+function isStaff(member){
+
+
+    if(!member)
+
+        return false;
+
+
+
+    return TICKET_STAFF_ROLES.some(
+
+        role =>
+
+        member.roles.cache.has(role)
+
+    );
+
+
+}
+
+
+
+
+
+
+// =====================================
 // MODULE EXPORT
 // =====================================
 
@@ -48,13 +156,17 @@ module.exports = {
 
 data:
 
+
 new SlashCommandBuilder()
 
 .setName("ticket")
 
 .setDescription(
+
     "Apri un ticket di supporto"
+
 ),
+
 
 
 
@@ -64,21 +176,28 @@ new SlashCommandBuilder()
 // OPEN TICKET PANEL
 // =====================================
 
-async execute(interaction) {
+async execute(interaction){
 
 
 
     const menu = new StringSelectMenuBuilder()
 
 
+
     .setCustomId(
+
         "ticket_category"
+
     )
+
 
 
     .setPlaceholder(
+
         "Seleziona il tipo di richiesta"
+
     )
+
 
 
     .addOptions([
@@ -88,15 +207,19 @@ async execute(interaction) {
         {
 
             label:
+
             "Supporto Partner",
 
             description:
+
             "Richieste partnership e collaborazioni",
 
             value:
+
             "partner",
 
             emoji:
+
             "🤝"
 
         },
@@ -106,15 +229,19 @@ async execute(interaction) {
         {
 
             label:
+
             "Bando Staff",
 
             description:
+
             "Candidature staff",
 
             value:
+
             "staff",
 
             emoji:
+
             "🛡️"
 
         },
@@ -124,15 +251,19 @@ async execute(interaction) {
         {
 
             label:
+
             "Segnalazioni e/o Bug",
 
             description:
+
             "Segnala problemi o bug",
 
             value:
+
             "bug",
 
             emoji:
+
             "🐞"
 
         },
@@ -142,15 +273,19 @@ async execute(interaction) {
         {
 
             label:
+
             "Idee / Suggerimenti",
 
             description:
+
             "Invia una proposta",
 
             value:
+
             "idea",
 
             emoji:
+
             "💡"
 
         }
@@ -163,7 +298,12 @@ async execute(interaction) {
 
     const row = new ActionRowBuilder()
 
-    .addComponents(menu);
+    .addComponents(
+
+        menu
+
+    );
+
 
 
 
@@ -172,9 +312,13 @@ async execute(interaction) {
     const embed = new EmbedBuilder()
 
 
+
     .setTitle(
+
         "🎫 Supporto"
+
     )
+
 
 
     .setDescription(
@@ -184,7 +328,9 @@ async execute(interaction) {
     )
 
 
+
     .setTimestamp();
+
 
 
 
@@ -199,7 +345,6 @@ async execute(interaction) {
     });
 
 
-
 },
 
     // =====================================
@@ -207,7 +352,7 @@ async execute(interaction) {
 // =====================================
 
 
-async categoryHandler(interaction) {
+async categoryHandler(interaction){
 
 
 
@@ -221,7 +366,9 @@ async categoryHandler(interaction) {
 
 
 
+
     const type = interaction.values[0];
+
 
 
 
@@ -230,20 +377,29 @@ async categoryHandler(interaction) {
     const names = {
 
 
+
         partner:
+
         "supporto-partner",
 
 
+
         staff:
+
         "bando-staff",
 
 
+
         bug:
+
         "segnalazione-bug",
 
 
+
         idea:
+
         "idee-suggerimenti"
+
 
 
     };
@@ -253,11 +409,56 @@ async categoryHandler(interaction) {
 
 
 
+
+    // =====================================
+    // CONTROLLO TICKET ESISTENTE
+    // =====================================
+
+
+    const tickets = loadTickets();
+
+
+
+
+    if(tickets[interaction.user.id]){
+
+
+
+        return interaction.editReply({
+
+
+
+            content:
+
+            "❌ Hai già un ticket aperto. Chiudi quello precedente prima di crearne un altro."
+
+
+
+        });
+
+
+
+    }
+
+
+
+
+
+
+
+
+
+    // =====================================
+    // CREAZIONE CANALE
+    // =====================================
+
+
     const channel = await interaction.guild.channels.create({
 
 
 
         name:
+
 
         `🎫・┆${names[type]}-${interaction.user.username}`,
 
@@ -279,6 +480,7 @@ async categoryHandler(interaction) {
 
 
 
+
             {
 
 
@@ -293,7 +495,10 @@ async categoryHandler(interaction) {
 
                 ]
 
+
             },
+
+
 
 
 
@@ -308,6 +513,7 @@ async categoryHandler(interaction) {
                 allow:[
 
 
+
                     PermissionFlagsBits.ViewChannel,
 
 
@@ -317,9 +523,14 @@ async categoryHandler(interaction) {
                     PermissionFlagsBits.ReadMessageHistory
 
 
+
                 ]
 
+
             },
+
+
+
 
 
 
@@ -336,6 +547,7 @@ async categoryHandler(interaction) {
                 allow:[
 
 
+
                     PermissionFlagsBits.ViewChannel,
 
 
@@ -345,11 +557,14 @@ async categoryHandler(interaction) {
                     PermissionFlagsBits.ReadMessageHistory
 
 
+
                 ]
 
 
 
             }))
+
+
 
 
 
@@ -365,9 +580,66 @@ async categoryHandler(interaction) {
 
 
 
+
+    // =====================================
+    // SALVATAGGIO DATABASE
+    // =====================================
+
+
+
+    tickets[interaction.user.id] = {
+
+
+
+        channelId:
+
+        channel.id,
+
+
+
+        type:
+
+        type,
+
+
+
+        claimedBy:
+
+        null,
+
+
+
+        createdAt:
+
+        Date.now()
+
+
+
+    };
+
+
+
+
+    saveTickets(tickets);
+
+
+
+
+
+
+
+
+
+    // =====================================
+    // BUTTONS
+    // =====================================
+
+
+
     const buttons = new ActionRowBuilder()
 
-    .addComponents(
+    .addComponents([
+
 
 
 
@@ -396,6 +668,7 @@ async categoryHandler(interaction) {
 
 
 
+
         new ButtonBuilder()
 
         .setCustomId(
@@ -418,8 +691,9 @@ async categoryHandler(interaction) {
 
 
 
-    );
 
+
+    ]);
 
 
 
@@ -457,6 +731,7 @@ async categoryHandler(interaction) {
 
             .setDescription(
 
+
                 "Lo Staff risponderà appena possibile.\n\nUsa i bottoni qui sotto per gestire il ticket."
 
             )
@@ -479,10 +754,7 @@ async categoryHandler(interaction) {
 
     });
 
-
-
-
-
+        
 
 
 
@@ -491,7 +763,6 @@ async categoryHandler(interaction) {
         LOG_CHANNEL_ID
 
     );
-
 
 
 
@@ -516,7 +787,7 @@ async categoryHandler(interaction) {
 
                 .setTitle(
 
-                    "Ticket Creato"
+                    "🎫 Ticket Creato"
 
                 )
 
@@ -525,7 +796,7 @@ async categoryHandler(interaction) {
                 .setDescription(
 
 
-                    `Utente\n${interaction.user}\n\nCanale\n${channel}`
+                    `👤 Utente\n${interaction.user}\n\n📌 Canale\n${channel}`
 
 
                 )
@@ -553,13 +824,14 @@ async categoryHandler(interaction) {
 
 
 
+
     await interaction.editReply({
 
 
 
         content:
 
-        `Ticket creato: ${channel}`
+        `✅ Ticket creato: ${channel}`
 
 
 
@@ -569,12 +841,18 @@ async categoryHandler(interaction) {
 
 },
 
-    // =====================================
+
+
+
+
+
+
+// =====================================
 // BUTTON HANDLER
 // =====================================
 
 
-async buttonHandler(interaction) {
+async buttonHandler(interaction){
 
 
 
@@ -583,6 +861,17 @@ async buttonHandler(interaction) {
         LOG_CHANNEL_ID
 
     );
+
+
+
+
+    const tickets = loadTickets();
+
+
+
+
+    const ticket = tickets[interaction.user.id];
+
 
 
 
@@ -598,13 +887,45 @@ async buttonHandler(interaction) {
 
 
 
+
+
+        if(!isStaff(interaction.member)){
+
+
+
+            return interaction.reply({
+
+
+
+                content:
+
+                "❌ Solo lo Staff può reclamare i ticket.",
+
+
+
+                ephemeral:true
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+
         await interaction.reply({
 
 
 
             content:
 
-            `Ticket reclamato da ${interaction.user}`,
+            `🙋 Ticket reclamato da ${interaction.user}.`,
 
 
 
@@ -613,6 +934,8 @@ async buttonHandler(interaction) {
 
 
         });
+
+
 
 
 
@@ -637,7 +960,7 @@ async buttonHandler(interaction) {
 
                     .setTitle(
 
-                        "Ticket Reclamato"
+                        "🙋 Ticket Reclamato"
 
                     )
 
@@ -646,7 +969,7 @@ async buttonHandler(interaction) {
                     .setDescription(
 
 
-                        `Staff\n${interaction.user}\n\nCanale\n${interaction.channel}`
+                        `👤 Staff\n${interaction.user}\n\n📌 Canale\n${interaction.channel}`
 
 
                     )
@@ -670,12 +993,12 @@ async buttonHandler(interaction) {
 
 
 
-
         return;
 
 
 
     }
+
 
 
 
@@ -696,13 +1019,94 @@ async buttonHandler(interaction) {
 
 
 
+        const owner = Object.keys(tickets).find(
+
+
+            userId =>
+
+            tickets[userId].channelId === interaction.channel.id
+
+
+        );
+
+
+
+
+
+
+        if(!owner && !isStaff(interaction.member)){
+
+
+
+            return interaction.reply({
+
+
+
+                content:
+
+                "❌ Questo ticket non è riconosciuto.",
+
+
+
+                ephemeral:true
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+
+        if(
+
+            interaction.user.id !== owner &&
+
+            !isStaff(interaction.member)
+
+        ){
+
+
+
+            return interaction.reply({
+
+
+
+                content:
+
+                "❌ Non hai il permesso di chiudere questo ticket.",
+
+
+
+                ephemeral:true
+
+
+
+            });
+
+
+
+        }
+
+
+
+
+
+
+
         await interaction.reply({
 
 
 
             content:
 
-            "Ticket chiuso. Creazione transcript HTML...",
+            "🔒 Ticket chiuso. Creazione transcript HTML...",
 
 
 
@@ -725,22 +1129,22 @@ async buttonHandler(interaction) {
 
 
 
-        try {
 
+        try {
 
 
 
             transcriptFile = await transcriptManager.createTranscript(
 
+
                 interaction.channel
+
 
             );
 
 
 
-
-        } catch(error) {
-
+        } catch(error){
 
 
 
@@ -754,15 +1158,13 @@ async buttonHandler(interaction) {
 
 
 
-
-
             return interaction.followUp({
 
 
 
                 content:
 
-                "Errore durante la creazione del transcript.",
+                "❌ Errore nella creazione del transcript.",
 
 
 
@@ -775,7 +1177,6 @@ async buttonHandler(interaction) {
 
 
         }
-
 
 
 
@@ -802,7 +1203,7 @@ async buttonHandler(interaction) {
 
                     .setTitle(
 
-                        "Ticket Chiuso"
+                        "🔒 Ticket Chiuso"
 
                     )
 
@@ -811,7 +1212,7 @@ async buttonHandler(interaction) {
                     .setDescription(
 
 
-                        `Chiuso da\n${interaction.user}\n\nCanale\n${interaction.channel}`
+                        `👤 Chiuso da\n${interaction.user}\n\n📌 Canale\n${interaction.channel}`
 
 
                     )
@@ -829,17 +1230,37 @@ async buttonHandler(interaction) {
 
                 files:[
 
-
-
                     transcriptFile
-
-
 
                 ]
 
 
 
             });
+
+
+
+        }
+
+
+
+
+
+
+
+
+
+        // RIMOZIONE DAL DATABASE
+
+
+        if(owner){
+
+
+
+            delete tickets[owner];
+
+
+            saveTickets(tickets);
 
 
 
@@ -870,6 +1291,7 @@ async buttonHandler(interaction) {
 
 
 
+
         return;
 
 
@@ -879,5 +1301,7 @@ async buttonHandler(interaction) {
 
 
 }
-    
+
+
+
 };

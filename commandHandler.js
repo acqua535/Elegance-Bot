@@ -1,133 +1,190 @@
 const fs = require("fs");
 const path = require("path");
 
+
+
 module.exports = function loadCommands(client) {
 
 
-    const locations = [
 
-        path.join(__dirname, "commands"),
+    const commandsPath = path.join(
+        __dirname,
+        "commands"
+    );
 
-        __dirname
 
-    ];
 
+    console.log(
+        "📂 Cartella comandi:",
+        commandsPath
+    );
 
 
-    for (const location of locations) {
 
+    if(!fs.existsSync(commandsPath)){
 
-        if (!fs.existsSync(location)) {
 
-            console.log(
-                `⚠️ Percorso non trovato: ${location}`
-            );
+        console.error(
+            "❌ Cartella commands non trovata!"
+        );
 
-            continue;
 
-        }
-
-
-
-        const files = fs.readdirSync(location)
-
-            .filter(file => file.endsWith(".js"))
-
-            .filter(file => file !== "commandHandler.js")
-
-            .filter(file => file !== "deployCommand.js")
-
-            .filter(file => file !== "index.js");
-
-
-
-
-
-        for (const file of files) {
-
-
-            try {
-
-
-                const command = require(
-                    path.join(location, file)
-                );
-
-
-
-                if (!command.data || !command.execute) {
-
-                    continue;
-
-                }
-
-
-
-
-
-                if (client.commands.has(command.data.name)) {
-
-
-                    console.log(
-                        `⚠️ Comando duplicato ignorato: ${command.data.name}`
-                    );
-
-
-                    continue;
-
-                }
-
-
-
-
-
-                client.commands.set(
-
-                    command.data.name,
-
-                    command
-
-                );
-
-
-
-
-
-                console.log(
-
-                    `✅ Comando caricato: ${command.data.name}`
-
-                );
-
-
-
-
-
-            } catch(error) {
-
-
-                console.error(
-
-                    `❌ Errore caricando ${file}:`,
-
-                    error
-
-                );
-
-
-            }
-
-
-        }
+        return;
 
 
     }
 
 
 
+
+
+
+    const files = fs.readdirSync(commandsPath)
+
+    .filter(file => file.endsWith(".js"))
+
+    .filter(file => file !== "commandHandler.js")
+
+    .filter(file => file !== "deployCommand.js");
+
+
+
+
+
+
+
+
+    for(const file of files){
+
+
+
+        try {
+
+
+
+            const filePath = path.join(
+                commandsPath,
+                file
+            );
+
+
+
+            const command = require(filePath);
+
+
+
+
+
+            if(
+                !command.data ||
+                !command.execute
+            ){
+
+
+                console.log(
+                    `⚠️ File ignorato: ${file}`
+                );
+
+
+                continue;
+
+
+            }
+
+
+
+
+
+
+
+            const name = command.data.name;
+
+
+
+
+
+
+            if(
+                client.commands.has(name)
+            ){
+
+
+
+                console.log(
+                    `⚠️ Comando duplicato ignorato: ${name}`
+                );
+
+
+                continue;
+
+
+            }
+
+
+
+
+
+
+
+
+            client.commands.set(
+
+                name,
+
+                command
+
+            );
+
+
+
+
+
+
+
+
+            console.log(
+
+                `✅ Comando caricato: ${name}`
+
+            );
+
+
+
+
+
+
+
+        } catch(error){
+
+
+
+            console.error(
+
+                `❌ Errore caricando ${file}:`,
+
+                error
+
+            );
+
+
+        }
+
+
+
+    }
+
+
+
+
+
+
+
     console.log(
+
         `📦 Totale comandi caricati: ${client.commands.size}`
+
     );
+
 
 
 };

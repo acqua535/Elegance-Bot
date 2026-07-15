@@ -3,13 +3,13 @@ const {
 } = require("discord.js");
 
 
+// ===============================
+// IMPORT
+// ===============================
 
 const ticket = require("./ticket");
-
-const verify = require("./verify");
-
 const minigame = require("./minigame");
-
+const verify = require("./verify");
 
 
 
@@ -18,23 +18,27 @@ const minigame = require("./minigame");
 // GLOBAL BUTTON HANDLER
 // ===============================
 
-
 module.exports = async function buttonHandler(interaction){
 
 
-
     if(
-        !interaction.isButton() &&
+        !interaction.isButton()
+        &&
         !interaction.isStringSelectMenu()
-    ) return;
-
-
+    ){
+        return;
+    }
 
 
 
     const id = interaction.customId;
 
 
+
+    console.log(
+        "🔘 Interazione ricevuta:",
+        id
+    );
 
 
 
@@ -43,31 +47,20 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-// ===============================
-// VERIFY
-// ===============================
+        // ===============================
+        // VERIFY
+        // ===============================
 
 
         if(
-
             interaction.isButton()
-
             &&
-
             id === "verify_button"
-
         ){
-
-
 
             return verify.buttonHandler(
-
                 interaction
-
             );
-
-
 
         }
 
@@ -77,31 +70,20 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-// ===============================
-// TICKET SELECT MENU
-// ===============================
+        // ===============================
+        // TICKET MANAGEMENT MENU
+        // ===============================
 
 
         if(
-
             interaction.isStringSelectMenu()
-
             &&
-
             id === "ticket_manage"
-
         ){
-
-
 
             return ticket.router(
-
                 interaction
-
             );
-
-
 
         }
 
@@ -111,89 +93,24 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-// ===============================
-// TICKET BUTTONS
-// ===============================
+        // ===============================
+        // TICKET BUTTONS
+        // ===============================
 
 
         if(
-
             interaction.isButton()
-
             &&
-
             (
-
                 id === "claim_ticket"
-
                 ||
-
                 id === "close_ticket"
-
             )
-
         ){
-
-
 
             return ticket.buttonHandler(
-
                 interaction
-
             );
-
-
-
-        }
-
-
-
-
-
-
-
-// ===============================
-// WORD DIFFICULTY
-// ===============================
-
-
-        if(id === "word_easy"){
-
-
-
-            await interaction.update({
-
-
-                content:
-
-                "🔤 Modalità Facile selezionata!",
-
-
-                embeds:[],
-
-
-                components:[]
-
-
-            });
-
-
-
-
-
-            await minigame.startWordGame(
-
-                interaction,
-
-                "facile"
-
-            );
-
-
-
-            return;
-
-
 
         }
 
@@ -204,127 +121,93 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-        if(id === "word_medium"){
-
-
-
-            await interaction.update({
-
-
-                content:
-
-                "🔤 Modalità Media selezionata!",
-
-
-                embeds:[],
-
-
-                components:[]
-
-
-            });
-
-
-
-
-
-            await minigame.startWordGame(
-
-                interaction,
-
-                "medio"
-
-            );
-
-
-
-            return;
-
-
-
-        }
-
-
-
-
-
-
-
-
-        if(id === "word_hard"){
-
-
-
-            await interaction.update({
-
-
-                content:
-
-                "🔤 Modalità Difficile selezionata!",
-
-
-                embeds:[],
-
-
-                components:[]
-
-
-            });
-
-
-
-
-
-            await minigame.startWordGame(
-
-                interaction,
-
-                "difficile"
-
-            );
-
-
-
-            return;
-
-
-
-        }
-
-
-
-
-
-
-
-
-
-// ===============================
-// MINIGAME HUB
-// ===============================
+        // ===============================
+        // WORD DIFFICULTY
+        // ===============================
 
 
         if(
-
-            interaction.isButton()
-
-            &&
-
-            id.startsWith("game_")
-
+            id === "word_easy"
+            ||
+            id === "word_medium"
+            ||
+            id === "word_hard"
         ){
 
 
 
-            const game = id.replace(
+            const difficulty =
 
-                "game_",
+            id === "word_easy"
+            ?
+            "facile"
 
-                ""
+            :
+
+            id === "word_medium"
+            ?
+            "medio"
+
+            :
+
+            "difficile";
+
+
+
+
+
+            await interaction.update({
+
+                content:
+
+                `🔤 Modalità ${difficulty} selezionata!`,
+
+                embeds:[],
+
+                components:[]
+
+            });
+
+
+
+
+
+            return minigame.startWordGame(
+
+                interaction,
+
+                difficulty
 
             );
 
+        }
 
+
+
+
+
+
+
+
+
+        // ===============================
+        // MINIGAME HUB
+        // ===============================
+
+
+        if(
+            interaction.isButton()
+            &&
+            id.startsWith("game_")
+        ){
+
+
+
+            const game =
+            id.replace(
+                "game_",
+                ""
+            );
 
 
 
@@ -336,39 +219,23 @@ module.exports = async function buttonHandler(interaction){
 
                 embeds:[
 
-
-
                     new EmbedBuilder()
 
-
-
                     .setTitle(
-
                         "🎮 Minigame avviato"
-
                     )
-
-
 
                     .setDescription(
-
                         "La partita sta iniziando..."
-
                     )
 
-
-
                 ],
-
 
 
                 components:[]
 
 
-
             });
-
-
 
 
 
@@ -382,17 +249,9 @@ module.exports = async function buttonHandler(interaction){
 
                 case "quiz":
 
-
-
-                    await minigame.quizGame(
-
+                    return minigame.quizGame(
                         interaction
-
                     );
-
-
-                break;
-
 
 
 
@@ -400,17 +259,9 @@ module.exports = async function buttonHandler(interaction){
 
                 case "memory":
 
-
-
-                    await minigame.memoryGame(
-
+                    return minigame.memoryGame(
                         interaction
-
                     );
-
-
-                break;
-
 
 
 
@@ -418,17 +269,9 @@ module.exports = async function buttonHandler(interaction){
 
                 case "word":
 
-
-
-                    await minigame.wordGame(
-
+                    return minigame.wordGame(
                         interaction
-
                     );
-
-
-                break;
-
 
 
 
@@ -436,17 +279,9 @@ module.exports = async function buttonHandler(interaction){
 
                 case "reaction":
 
-
-
-                    await minigame.reactionGame(
-
+                    return minigame.reactionGame(
                         interaction
-
                     );
-
-
-                break;
-
 
 
 
@@ -454,18 +289,9 @@ module.exports = async function buttonHandler(interaction){
 
                 case "hangman":
 
-
-
-                    await minigame.hangmanGame(
-
+                    return minigame.hangmanGame(
                         interaction
-
                     );
-
-
-                break;
-
-
 
 
 
@@ -474,30 +300,19 @@ module.exports = async function buttonHandler(interaction){
                 default:
 
 
-
-                    await interaction.followUp({
-
+                    return interaction.followUp({
 
                         content:
 
                         "❌ Minigame non trovato.",
 
-
                         ephemeral:true
-
 
                     });
 
 
 
             }
-
-
-
-
-
-            return;
-
 
 
         }
@@ -510,9 +325,9 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-// ===============================
-// UNKNOWN BUTTON
-// ===============================
+        // ===============================
+        // UNKNOWN BUTTON
+        // ===============================
 
 
         console.log(
@@ -525,6 +340,30 @@ module.exports = async function buttonHandler(interaction){
 
 
 
+        if(
+            !interaction.replied
+            &&
+            !interaction.deferred
+        ){
+
+
+            await interaction.reply({
+
+                content:
+
+                "⚠️ Questo bottone non è configurato.",
+
+                ephemeral:true
+
+            }).catch(()=>{});
+
+
+        }
+
+
+
+
+
 
 
     } catch(error){
@@ -533,7 +372,7 @@ module.exports = async function buttonHandler(interaction){
 
         console.error(
 
-            "❌ Errore buttonHandler:",
+            "❌ Errore ButtonHandler:",
 
             error
 
@@ -544,28 +383,21 @@ module.exports = async function buttonHandler(interaction){
 
 
         if(
-
-            !interaction.replied &&
-
+            !interaction.replied
+            &&
             !interaction.deferred
-
         ){
-
 
 
             await interaction.reply({
 
-
                 content:
 
-                "❌ Errore durante il bottone.",
-
+                "❌ Errore durante il pulsante.",
 
                 ephemeral:true
 
-
             }).catch(()=>{});
-
 
 
         }

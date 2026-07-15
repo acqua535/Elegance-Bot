@@ -7,7 +7,7 @@ const {
 } = require("discord.js");
 
 
-const stories = require("../horrorStories");
+const stories = require("./horrorStories");
 
 
 

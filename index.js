@@ -4,7 +4,9 @@ const {
     Collection
 } = require("discord.js");
 
+
 require("dotenv").config();
+
 
 
 // ==========================
@@ -57,6 +59,7 @@ require("./verify");
 
 
 
+
 // ==========================
 // COMMAND LOADER
 // ==========================
@@ -73,6 +76,7 @@ console.log(
 client.commands.size
 
 );
+
 
 
 
@@ -101,6 +105,8 @@ error
 });
 
 
+
+
 process.on(
 
 "uncaughtException",
@@ -118,6 +124,9 @@ error
 
 
 });
+
+
+
 
 
 
@@ -160,6 +169,12 @@ type:3
 
 );
 
+
+
+
+
+
+
 // ==========================
 // INTERACTION ROUTER
 // ==========================
@@ -172,260 +187,279 @@ client.on(
 async interaction => {
 
 
+
 try {
 
 
 
-    // ==========================
-    // SLASH COMMANDS
-    // ==========================
 
 
-    if(
-        interaction.isChatInputCommand()
-    ){
+// ==========================
+// SLASH COMMANDS
+// ==========================
 
 
+if(
 
-        const command =
+interaction.isChatInputCommand()
 
-        client.commands.get(
-
-            interaction.commandName
-
-        );
+){
 
 
 
-        if(!command){
+const command =
 
+client.commands.get(
 
-            console.log(
+interaction.commandName
 
-                "❌ Comando non trovato:",
-
-                interaction.commandName
-
-            );
-
-
-            return;
-
-        }
+);
 
 
 
+if(!command){
 
-        try {
 
-    await command.execute(
-        interaction
-    );
+console.log(
 
-} catch(error) {
+"❌ Comando non trovato:",
 
-    console.error(
-        "❌ Errore comando:",
-        error
-    );
+interaction.commandName
 
-    if(
-        !interaction.replied &&
-        !interaction.deferred
-    ){
+);
 
-        await interaction.reply({
-
-            content:
-            "❌ Errore durante il comando.",
-
-            ephemeral:true
-
-        }).catch(()=>{});
-
-    }
-
-}
 
 return;
 
-        return;
+}
 
 
-    }
 
 
 
+try {
 
 
-    // ==========================
-    // BUTTONS
-    // ==========================
+await command.execute(
 
+interaction
 
-    if(
-        interaction.isButton()
-    ){
+);
 
 
 
-        await buttonHandler(
+} catch(error){
 
-            interaction
 
-        );
 
+console.error(
 
+"❌ Errore comando:",
 
-        return;
+error
 
+);
 
-    }
 
 
+if(
 
+!interaction.replied &&
 
+!interaction.deferred
 
+){
 
-    // ==========================
-    // SELECT MENUS
-    // ==========================
 
 
-    if(
-        interaction.isStringSelectMenu()
-    ){
+await interaction.reply({
 
+content:
 
+"❌ Errore durante il comando.",
 
-        /*
-        ======================
-        APERTURA TICKET
-        ======================
-        */
+ephemeral:true
 
+}).catch(()=>{});
 
-        if(
-            interaction.customId === "ticket_category"
-        ){
 
 
-            await ticket.categoryHandler(
+}
 
-                interaction
 
-            );
 
+}
 
-            return;
 
 
-        }
+return;
 
 
+}
 
 
-        /*
-        ======================
-        GESTIONE TICKET
-        ======================
-        */
 
 
-        if(
 
-            interaction.customId === "ticket_manage"
 
-        ){
 
 
-            await ticket.router(
 
-                interaction
+// ==========================
+// BUTTONS
+// ==========================
 
-            );
 
+if(
 
-            return;
+interaction.isButton()
 
+){
 
-        }
 
 
+await buttonHandler(
 
+interaction
 
-        /*
-        ======================
-        PRIORITÀ TICKET
-        ======================
-        */
+);
 
 
-        if(
 
-            interaction.customId === "ticket_priority"
+return;
 
-        ){
 
+}
 
-            await ticket.router(
 
-                interaction
 
-            );
 
 
-            return;
 
 
-        }
 
 
+// ==========================
+// SELECT MENUS
+// ==========================
 
-    }
 
+if(
 
+interaction.isStringSelectMenu()
 
+){
 
 
 
+// ==========================
+// APERTURA TICKET
+// ==========================
 
-    // ==========================
-    // MODALS
-    // ==========================
 
+if(
 
-    if(
+interaction.customId === "ticket_category"
 
-        interaction.isModalSubmit()
+){
 
-    ){
 
 
+await ticket.categoryHandler(
 
-        if(
+interaction
 
-            interaction.customId === "verify_modal"
+);
 
-        ){
 
 
+return;
 
-            await verify.modalHandler(
 
-                interaction
+}
 
-            );
 
 
 
-            return;
 
 
-        }
+// ==========================
+// ALTRI SELECT
+// ==========================
 
 
-    }
+if(
+
+interaction.customId === "ticket_priority"
+
+){
+
+
+
+await ticket.router(
+
+interaction
+
+);
+
+
+
+return;
+
+
+}
+
+
+
+}
+
+
+
+
+
+
+
+
+
+// ==========================
+// MODALS
+// ==========================
+
+
+if(
+
+interaction.isModalSubmit()
+
+){
+
+
+
+if(
+
+interaction.customId === "verify_modal"
+
+){
+
+
+
+await verify.modalHandler(
+
+interaction
+
+);
+
+
+
+return;
+
+
+}
+
+
+
+}
+
+
 
 
 
@@ -444,6 +478,8 @@ console.error(
 error
 
 );
+
+
 
 
 
@@ -483,6 +519,10 @@ ephemeral:true
 
 
 
+
+
+
+
 // ==========================
 // TOKEN CHECK
 // ==========================
@@ -503,6 +543,8 @@ process.env.TOKEN
 "NO"
 
 );
+
+
 
 
 

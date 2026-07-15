@@ -51,7 +51,6 @@ module.exports = async function buttonHandler(interaction){
         // VERIFY
         // ===============================
 
-
         if(
             interaction.isButton()
             &&
@@ -70,29 +69,31 @@ module.exports = async function buttonHandler(interaction){
 
 
         // ===============================
-        // HORROR SYSTEM
+        // HORROR START STORY
         // ===============================
 
-
-        // Avvio storia
         if(
             interaction.isButton()
             &&
             id.startsWith("horror_start_")
         ){
 
-            const storyId =
-            Number(
+            const storyId = Number(
+
                 id.replace(
                     "horror_start_",
                     ""
                 )
+
             );
 
 
             return horrorEngine.startStory(
+
                 interaction,
+
                 storyId
+
             );
 
         }
@@ -101,7 +102,11 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-        // Gestione storia
+
+        // ===============================
+        // HORROR GAME BUTTONS
+        // ===============================
+
         if(
             interaction.isButton()
             &&
@@ -115,7 +120,9 @@ module.exports = async function buttonHandler(interaction){
         ){
 
             return horrorEngine.buttonHandler(
+
                 interaction
+
             );
 
         }
@@ -126,9 +133,8 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
         // ===============================
-        // TICKET MANAGEMENT MENU
+        // TICKET SELECT MENU
         // ===============================
 
 
@@ -143,7 +149,6 @@ module.exports = async function buttonHandler(interaction){
             );
 
         }
-
 
 
 
@@ -177,22 +182,17 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
         // ===============================
-        // WORD DIFFICULTY
+        // WORD GAME DIFFICULTY
         // ===============================
 
 
         if(
-            interaction.isButton()
-            &&
-            (
-                id === "word_easy"
-                ||
-                id === "word_medium"
-                ||
-                id === "word_hard"
-            )
+            id === "word_easy"
+            ||
+            id === "word_medium"
+            ||
+            id === "word_hard"
         ){
 
 
@@ -220,8 +220,6 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
-
             await interaction.update({
 
                 content:
@@ -237,7 +235,6 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
             return minigame.startWordGame(
 
                 interaction,
@@ -245,6 +242,7 @@ module.exports = async function buttonHandler(interaction){
                 difficulty
 
             );
+
 
         }
 
@@ -270,6 +268,7 @@ module.exports = async function buttonHandler(interaction){
 
 
             const game =
+
             id.replace(
                 "game_",
                 ""
@@ -280,7 +279,6 @@ module.exports = async function buttonHandler(interaction){
 
 
             await interaction.update({
-
 
                 embeds:[
 
@@ -296,9 +294,7 @@ module.exports = async function buttonHandler(interaction){
 
                 ],
 
-
                 components:[]
-
 
             });
 
@@ -311,13 +307,11 @@ module.exports = async function buttonHandler(interaction){
             switch(game){
 
 
-
                 case "quiz":
 
                     return minigame.quizGame(
                         interaction
                     );
-
 
 
                 case "memory":
@@ -327,13 +321,11 @@ module.exports = async function buttonHandler(interaction){
                     );
 
 
-
                 case "word":
 
                     return minigame.wordGame(
                         interaction
                     );
-
 
 
                 case "reaction":
@@ -343,7 +335,6 @@ module.exports = async function buttonHandler(interaction){
                     );
 
 
-
                 case "hangman":
 
                     return minigame.hangmanGame(
@@ -351,20 +342,16 @@ module.exports = async function buttonHandler(interaction){
                     );
 
 
-
                 default:
-
 
                     return interaction.followUp({
 
                         content:
-
                         "❌ Minigame non trovato.",
 
                         ephemeral:true
 
                     });
-
 
 
             }
@@ -379,20 +366,15 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
         // ===============================
-        // UNKNOWN BUTTON
+        // UNKNOWN
         // ===============================
 
 
         console.log(
-
             "⚠️ Bottone non gestito:",
-
             id
-
         );
-
 
 
 
@@ -402,20 +384,16 @@ module.exports = async function buttonHandler(interaction){
             !interaction.deferred
         ){
 
-
             await interaction.reply({
 
                 content:
-
                 "⚠️ Questo bottone non è configurato.",
 
                 ephemeral:true
 
             }).catch(()=>{});
 
-
         }
-
 
 
 
@@ -437,31 +415,25 @@ module.exports = async function buttonHandler(interaction){
 
 
 
-
         if(
             !interaction.replied
             &&
             !interaction.deferred
         ){
 
-
             await interaction.reply({
 
                 content:
-
                 "❌ Errore durante il pulsante.",
 
                 ephemeral:true
 
             }).catch(()=>{});
 
-
         }
 
 
-
     }
-
 
 
 };

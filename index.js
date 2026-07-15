@@ -7,10 +7,14 @@ const {
 require("dotenv").config();
 
 
+// ==========================
+// CLIENT
+// ==========================
+
 
 const client = new Client({
 
-    intents: [
+    intents:[
 
         GatewayIntentBits.Guilds,
 
@@ -31,29 +35,20 @@ client.commands = new Collection();
 
 
 // ==========================
-// COMMAND HANDLER
-// ==========================
-
-require("./commandHandler")(client);
-
-console.log(
-    "📦 Comandi caricati:",
-    client.commands.size
-);
-
-
-
-// ==========================
 // HANDLERS
 // ==========================
 
-const buttonHandler =
-require("./buttonHandler");
 
+const loadCommands =
+require("./commandHandler");
 
 
 const ticket =
 require("./ticket");
+
+
+const buttonHandler =
+require("./buttonHandler");
 
 
 const verify =
@@ -62,38 +57,67 @@ require("./verify");
 
 
 
-
 // ==========================
-// ERROR HANDLING
+// COMMAND LOADER
 // ==========================
 
 
-process.on(
-    "unhandledRejection",
-    error => {
+loadCommands(client);
 
-        console.error(
-            "❌ Unhandled Rejection:",
-            error
-        );
 
-    }
+
+console.log(
+
+"📦 Comandi caricati:",
+
+client.commands.size
+
 );
 
 
 
+
+// ==========================
+// ERROR SYSTEM
+// ==========================
+
+
 process.on(
-    "uncaughtException",
-    error => {
 
-        console.error(
-            "❌ Uncaught Exception:",
-            error
-        );
+"unhandledRejection",
 
-    }
+error=>{
+
+
+console.error(
+
+"❌ Unhandled Promise:",
+
+error
+
 );
 
+
+});
+
+
+process.on(
+
+"uncaughtException",
+
+error=>{
+
+
+console.error(
+
+"❌ Uncaught Exception:",
+
+error
+
+);
+
+
+});
 
 
 
@@ -104,41 +128,40 @@ process.on(
 
 
 client.once(
+
 "ready",
-() => {
+
+()=>{
 
 
-    console.log(
+console.log(
 
-        `⚜️ Elegance-Bot online come ${client.user.tag}`
+`⚜️ Elegance-Bot online come ${client.user.tag}`
 
-    );
-
-
-
-    client.user.setActivity(
-
-        "Elegance Community",
-
-        {
-
-            type:3
-
-        }
-
-    );
-
-
-});
+);
 
 
 
+client.user.setActivity(
+
+"Elegance Community",
+
+{
+
+type:3
+
+}
+
+);
 
 
 
+}
+
+);
 
 // ==========================
-// INTERACTIONS
+// INTERACTION ROUTER
 // ==========================
 
 
@@ -153,11 +176,9 @@ try {
 
 
 
-    /*
-    =====================
-    SLASH COMMANDS
-    =====================
-    */
+    // ==========================
+    // SLASH COMMANDS
+    // ==========================
 
 
     if(
@@ -167,8 +188,11 @@ try {
 
 
         const command =
+
         client.commands.get(
+
             interaction.commandName
+
         );
 
 
@@ -179,6 +203,7 @@ try {
             console.log(
 
                 "❌ Comando non trovato:",
+
                 interaction.commandName
 
             );
@@ -191,74 +216,10 @@ try {
 
 
 
-        try {
+        await command.execute(
 
-
-            await command.execute(
-                interaction
-            );
-
-
-        } catch(error){
-
-
-            console.error(
-
-                "❌ Errore comando:",
-                interaction.commandName,
-                error
-
-            );
-
-
-
-            if(
-                !interaction.replied &&
-                !interaction.deferred
-            ){
-
-
-                await interaction.reply({
-
-                    content:
-                    "❌ Errore durante il comando.",
-
-                    ephemeral:true
-
-                }).catch(()=>{});
-
-
-            }
-
-
-        }
-
-
-
-        return;
-
-
-    }
-
-
-
-
-
-
-    /*
-    =====================
-    BUTTONS
-    =====================
-    */
-
-
-    if(
-        interaction.isButton()
-    ){
-
-
-        await buttonHandler(
             interaction
+
         );
 
 
@@ -271,14 +232,38 @@ try {
 
 
 
+    // ==========================
+    // BUTTONS
+    // ==========================
+
+
+    if(
+        interaction.isButton()
+    ){
 
 
 
-    /*
-    =====================
-    SELECT MENU
-    =====================
-    */
+        await buttonHandler(
+
+            interaction
+
+        );
+
+
+
+        return;
+
+
+    }
+
+
+
+
+
+
+    // ==========================
+    // SELECT MENUS
+    // ==========================
 
 
     if(
@@ -287,51 +272,135 @@ try {
 
 
 
-        await ticket.categoryHandler(
-            interaction
-        );
-
-
-        return;
-
-
-    }
-
-
-
-
-
-
-    /*
-    =====================
-    MODALS
-    =====================
-    */
-
-
-    if(
-        interaction.isModalSubmit()
-    ){
-
+        /*
+        ======================
+        APERTURA TICKET
+        ======================
+        */
 
 
         if(
-            interaction.customId === "verify_modal"
+            interaction.customId === "ticket_category"
         ){
 
 
-            await verify.modalHandler(
+            await ticket.categoryHandler(
+
                 interaction
+
             );
 
 
             return;
+
+
+        }
+
+
+
+
+        /*
+        ======================
+        GESTIONE TICKET
+        ======================
+        */
+
+
+        if(
+
+            interaction.customId === "ticket_management"
+
+        ){
+
+
+            await ticket.router(
+
+                interaction
+
+            );
+
+
+            return;
+
+
+        }
+
+
+
+
+        /*
+        ======================
+        PRIORITÀ TICKET
+        ======================
+        */
+
+
+        if(
+
+            interaction.customId === "ticket_priority"
+
+        ){
+
+
+            await ticket.router(
+
+                interaction
+
+            );
+
+
+            return;
+
 
         }
 
 
 
     }
+
+
+
+
+
+
+
+    // ==========================
+    // MODALS
+    // ==========================
+
+
+    if(
+
+        interaction.isModalSubmit()
+
+    ){
+
+
+
+        if(
+
+            interaction.customId === "verify_modal"
+
+        ){
+
+
+
+            await verify.modalHandler(
+
+                interaction
+
+            );
+
+
+
+            return;
+
+
+        }
+
+
+    }
+
 
 
 
@@ -345,6 +414,7 @@ catch(error){
 console.error(
 
 "❌ Errore interaction:",
+
 error
 
 );
@@ -352,19 +422,25 @@ error
 
 
 if(
+
 !interaction.replied &&
+
 !interaction.deferred
+
 ){
+
 
 
 await interaction.reply({
 
 content:
-"❌ Errore durante l'esecuzione.",
+
+"❌ Si è verificato un errore.",
 
 ephemeral:true
 
 }).catch(()=>{});
+
 
 
 }
@@ -381,10 +457,8 @@ ephemeral:true
 
 
 
-
-
 // ==========================
-// TOKEN
+// TOKEN CHECK
 // ==========================
 
 
@@ -393,9 +467,13 @@ console.log(
 "TOKEN PRESENTE:",
 
 process.env.TOKEN
+
 ?
+
 "SI"
+
 :
+
 "NO"
 
 );
@@ -403,6 +481,14 @@ process.env.TOKEN
 
 
 
+
+// ==========================
+// LOGIN
+// ==========================
+
+
 client.login(
-    process.env.TOKEN
+
+process.env.TOKEN
+
 );

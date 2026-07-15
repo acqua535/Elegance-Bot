@@ -11,7 +11,7 @@ const file = "./ticketsData.json";
 
 
 // =====================================
-// LOAD
+// LOAD DATABASE
 // =====================================
 
 function loadData(){
@@ -24,7 +24,9 @@ function loadData(){
 
             file,
 
-            "{}"
+            "{}",
+
+            "utf8"
 
         );
 
@@ -53,13 +55,15 @@ function loadData(){
 
 
         console.error(
-            "❌ Errore database ticket:",
+
+            "❌ Errore lettura ticketsData.json:",
+
             error
+
         );
 
 
         return {};
-
 
     }
 
@@ -72,10 +76,11 @@ function loadData(){
 
 
 // =====================================
-// SAVE
+// SAVE DATABASE
 // =====================================
 
 function saveData(data){
+
 
 
     fs.writeFileSync(
@@ -90,7 +95,9 @@ function saveData(data){
 
             4
 
-        )
+        ),
+
+        "utf8"
 
     );
 
@@ -103,7 +110,7 @@ function saveData(data){
 
 
 // =====================================
-// CREATE / SAVE TICKET
+// CREATE TICKET
 // =====================================
 
 function createTicket(userId, ticket){
@@ -116,13 +123,16 @@ function createTicket(userId, ticket){
     data[userId] = {
 
 
-        ...ticket,
-
-
         userId,
 
 
-        createdAt: Date.now()
+        ...ticket,
+
+
+        createdAt:
+
+        ticket.createdAt || Date.now()
+
 
 
     };
@@ -132,7 +142,12 @@ function createTicket(userId, ticket){
     saveData(data);
 
 
+
+    return true;
+
+
 }
+
 
 
 
@@ -154,6 +169,7 @@ function getTicket(userId){
 
 
 }
+
 
 
 
@@ -189,8 +205,9 @@ function getTicketByChannel(channelId){
 
 
 
+
 // =====================================
-// UPDATE
+// UPDATE TICKET
 // =====================================
 
 function updateTicket(userId, newData){
@@ -201,7 +218,10 @@ function updateTicket(userId, newData){
 
 
     if(!data[userId])
+
         return false;
+
+
 
 
 
@@ -212,6 +232,7 @@ function updateTicket(userId, newData){
 
 
         ...newData
+
 
 
     };
@@ -234,10 +255,11 @@ function updateTicket(userId, newData){
 
 
 // =====================================
-// DELETE
+// DELETE TICKET
 // =====================================
 
 function deleteTicket(userId){
+
 
 
     const data = loadData();
@@ -245,7 +267,10 @@ function deleteTicket(userId){
 
 
     if(!data[userId])
+
         return false;
+
+
 
 
 
@@ -267,8 +292,9 @@ function deleteTicket(userId){
 
 
 
+
 // =====================================
-// CHECK OPEN
+// OPEN CHECK
 // =====================================
 
 function hasOpenTicket(userId){
@@ -288,11 +314,13 @@ function hasOpenTicket(userId){
 
 
 
+
 // =====================================
-// STAFF PING COOLDOWN
+// STAFF PING SYSTEM
 // =====================================
 
 function canPingStaff(userId){
+
 
 
     const ticket = getTicket(userId);
@@ -300,29 +328,40 @@ function canPingStaff(userId){
 
 
     if(!ticket)
+
         return false;
 
 
 
+
+
     if(!ticket.staffPing)
+
         return true;
 
 
 
-    if(ticket.staffPing.used === false)
-        return true;
+
+
+    const cooldown =
+
+    24 * 60 * 60 * 1000;
 
 
 
 
-    const cooldown = 24 * 60 * 60 * 1000;
 
+    return (
 
+        Date.now() -
 
-    return Date.now() - ticket.staffPing.time >= cooldown;
+        ticket.staffPing.time
+
+    ) >= cooldown;
 
 
 }
+
 
 
 
@@ -332,12 +371,16 @@ function canPingStaff(userId){
 function useStaffPing(userId){
 
 
+
     const ticket = getTicket(userId);
 
 
 
     if(!ticket)
+
         return false;
+
+
 
 
 
@@ -347,13 +390,12 @@ function useStaffPing(userId){
         used:true,
 
 
-        time:Date.now(),
-
-
-        staffReplied:false
+        time:Date.now()
 
 
     };
+
+
 
 
 
@@ -373,11 +415,9 @@ function useStaffPing(userId){
 
 
 
-// =====================================
-// STAFF REPLY RESET
-// =====================================
 
 function resetStaffPing(userId){
+
 
 
     const ticket = getTicket(userId);
@@ -385,7 +425,10 @@ function resetStaffPing(userId){
 
 
     if(!ticket)
+
         return false;
+
+
 
 
 
@@ -395,13 +438,12 @@ function resetStaffPing(userId){
         used:false,
 
 
-        time:null,
-
-
-        staffReplied:true
+        time:null
 
 
     };
+
+
 
 
 
@@ -421,8 +463,9 @@ function resetStaffPing(userId){
 
 
 
+
 // =====================================
-// ALL
+// ALL TICKETS
 // =====================================
 
 function getAllTickets(){
@@ -437,6 +480,11 @@ function getAllTickets(){
 
 
 
+
+
+// =====================================
+// EXPORT
+// =====================================
 
 module.exports = {
 
@@ -472,3 +520,4 @@ module.exports = {
 
 
 };
+

@@ -2,15 +2,10 @@ const {
     SlashCommandBuilder,
     ActionRowBuilder,
     StringSelectMenuBuilder,
-    ButtonBuilder,
-    ButtonStyle,
     ChannelType,
     EmbedBuilder,
     PermissionFlagsBits
 } = require("discord.js");
-
-
-const fs = require("fs");
 
 
 // =====================================
@@ -18,8 +13,6 @@ const fs = require("fs");
 // =====================================
 
 const transcriptManager = require("./transcript");
-
-
 
 
 // =====================================
@@ -40,81 +33,13 @@ const TICKET_STAFF_ROLES = [
 ];
 
 
-
-
 // =====================================
-// TICKETS DATABASE
+// STORAGE
 // =====================================
 
-const TICKETS_FILE = "./ticketsData.json";
+const ticketData = new Map();
 
-
-
-function loadTickets(){
-
-
-    if(!fs.existsSync(TICKETS_FILE)){
-
-
-        fs.writeFileSync(
-
-            TICKETS_FILE,
-
-            "{}"
-
-        );
-
-
-    }
-
-
-
-    return JSON.parse(
-
-        fs.readFileSync(
-
-            TICKETS_FILE,
-
-            "utf8"
-
-        )
-
-    );
-
-
-}
-
-
-
-
-
-function saveTickets(data){
-
-
-    fs.writeFileSync(
-
-        TICKETS_FILE,
-
-
-        JSON.stringify(
-
-            data,
-
-            null,
-
-            4
-
-        )
-
-
-    );
-
-
-}
-
-
-
-
+const openTickets = new Map();
 
 
 // =====================================
@@ -125,23 +50,18 @@ function isStaff(member){
 
 
     if(!member)
-
         return false;
 
 
 
     return TICKET_STAFF_ROLES.some(
 
-        role =>
-
-        member.roles.cache.has(role)
+        roleId => member.roles.cache.has(roleId)
 
     );
 
 
 }
-
-
 
 
 
@@ -154,19 +74,19 @@ module.exports = {
 
 
 
-data:
+// =====================================
+// SLASH COMMAND
+// =====================================
 
+data:
 
 new SlashCommandBuilder()
 
 .setName("ticket")
 
 .setDescription(
-
     "Apri un ticket di supporto"
-
 ),
-
 
 
 
@@ -185,17 +105,13 @@ async execute(interaction){
 
 
     .setCustomId(
-
         "ticket_category"
-
     )
 
 
 
     .setPlaceholder(
-
         "Seleziona il tipo di richiesta"
-
     )
 
 
@@ -207,20 +123,13 @@ async execute(interaction){
         {
 
             label:
-
             "Supporto Partner",
 
             description:
-
             "Richieste partnership e collaborazioni",
 
             value:
-
-            "partner",
-
-            emoji:
-
-            "🤝"
+            "partner"
 
         },
 
@@ -229,20 +138,13 @@ async execute(interaction){
         {
 
             label:
-
             "Bando Staff",
 
             description:
-
             "Candidature staff",
 
             value:
-
-            "staff",
-
-            emoji:
-
-            "🛡️"
+            "staff"
 
         },
 
@@ -251,20 +153,13 @@ async execute(interaction){
         {
 
             label:
-
-            "Segnalazioni e/o Bug",
+            "Segnalazioni / Bug",
 
             description:
-
             "Segnala problemi o bug",
 
             value:
-
-            "bug",
-
-            emoji:
-
-            "🐞"
+            "bug"
 
         },
 
@@ -273,25 +168,20 @@ async execute(interaction){
         {
 
             label:
-
             "Idee / Suggerimenti",
 
             description:
-
             "Invia una proposta",
 
             value:
-
-            "idea",
-
-            emoji:
-
-            "💡"
+            "idea"
 
         }
 
 
+
     ]);
+
 
 
 
@@ -308,14 +198,13 @@ async execute(interaction){
 
 
 
-
     const embed = new EmbedBuilder()
 
 
 
     .setTitle(
 
-        "🎫 Supporto"
+        "🎫 Elegance Support"
 
     )
 
@@ -323,7 +212,7 @@ async execute(interaction){
 
     .setDescription(
 
-        "Seleziona la categoria del tuo ticket dal menu."
+        "Seleziona la categoria del tuo ticket dal menu qui sotto."
 
     )
 
@@ -335,25 +224,37 @@ async execute(interaction){
 
 
 
-
     await interaction.reply({
 
-        embeds:[embed],
 
-        components:[row]
+
+        embeds:[
+
+            embed
+
+        ],
+
+
+
+        components:[
+
+            row
+
+        ]
+
+
 
     });
+
 
 
 },
 
     // =====================================
-// CATEGORY HANDLER
+// CREATE TICKET
 // =====================================
 
-
 async categoryHandler(interaction){
-
 
 
     await interaction.deferReply({
@@ -364,6 +265,21 @@ async categoryHandler(interaction){
 
 
 
+    if(openTickets.has(interaction.user.id)){
+
+
+        return interaction.editReply({
+
+
+            content:
+
+            "❌ Hai già un ticket aperto. Chiudi quello precedente prima di crearne un altro."
+
+        });
+
+
+    }
+
 
 
 
@@ -371,35 +287,23 @@ async categoryHandler(interaction){
 
 
 
-
-
-
     const names = {
 
 
-
         partner:
-
         "supporto-partner",
 
 
-
         staff:
-
         "bando-staff",
 
 
-
         bug:
-
         "segnalazione-bug",
 
 
-
         idea:
-
         "idee-suggerimenti"
-
 
 
     };
@@ -408,57 +312,11 @@ async categoryHandler(interaction){
 
 
 
-
-
-    // =====================================
-    // CONTROLLO TICKET ESISTENTE
-    // =====================================
-
-
-    const tickets = loadTickets();
-
-
-
-
-    if(tickets[interaction.user.id]){
-
-
-
-        return interaction.editReply({
-
-
-
-            content:
-
-            "❌ Hai già un ticket aperto. Chiudi quello precedente prima di crearne un altro."
-
-
-
-        });
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    // =====================================
-    // CREAZIONE CANALE
-    // =====================================
-
-
     const channel = await interaction.guild.channels.create({
 
 
 
         name:
-
 
         `🎫・┆${names[type]}-${interaction.user.username}`,
 
@@ -477,7 +335,6 @@ async categoryHandler(interaction){
 
 
         permissionOverwrites:[
-
 
 
 
@@ -500,8 +357,6 @@ async categoryHandler(interaction){
 
 
 
-
-
             {
 
 
@@ -513,7 +368,6 @@ async categoryHandler(interaction){
                 allow:[
 
 
-
                     PermissionFlagsBits.ViewChannel,
 
 
@@ -523,14 +377,10 @@ async categoryHandler(interaction){
                     PermissionFlagsBits.ReadMessageHistory
 
 
-
                 ]
 
 
             },
-
-
-
 
 
 
@@ -547,7 +397,6 @@ async categoryHandler(interaction){
                 allow:[
 
 
-
                     PermissionFlagsBits.ViewChannel,
 
 
@@ -557,14 +406,11 @@ async categoryHandler(interaction){
                     PermissionFlagsBits.ReadMessageHistory
 
 
-
                 ]
 
 
 
             }))
-
-
 
 
 
@@ -580,47 +426,45 @@ async categoryHandler(interaction){
 
 
 
+    openTickets.set(
 
-    // =====================================
-    // SALVATAGGIO DATABASE
-    // =====================================
+        interaction.user.id,
 
+        channel.id
 
-
-    tickets[interaction.user.id] = {
-
+    );
 
 
-        channelId:
+
+
+
+    ticketData.set(
 
         channel.id,
 
+        {
 
 
-        type:
+            owner:
 
-        type,
-
-
-
-        claimedBy:
-
-        null,
+            interaction.user.id,
 
 
+            type:
 
-        createdAt:
-
-        Date.now()
-
+            type,
 
 
-    };
+            claimedBy:
+
+            null
 
 
 
+        }
 
-    saveTickets(tickets);
+
+    );
 
 
 
@@ -628,88 +472,210 @@ async categoryHandler(interaction){
 
 
 
+// =====================================
+// TICKET MANAGEMENT MENU
+// =====================================
 
 
-    // =====================================
-    // BUTTONS
-    // =====================================
-
-
-
-    const buttons = new ActionRowBuilder()
-
-    .addComponents([
+const manageMenu = new StringSelectMenuBuilder()
 
 
 
+.setCustomId(
+
+    "ticket_manage"
+
+)
 
 
-        new ButtonBuilder()
 
-        .setCustomId(
+.setPlaceholder(
 
-            "claim_ticket"
+    "⚙️ Gestione Ticket"
+
+)
+
+
+
+.addOptions([
+
+
+
+    {
+
+
+        label:
+
+        "Reclama Ticket",
+
+
+        description:
+
+        "Prendi in carico il ticket",
+
+
+        value:
+
+        "claim_ticket"
+
+
+    },
+
+
+
+    {
+
+
+        label:
+
+        "Informazioni Ticket",
+
+
+        description:
+
+        "Visualizza i dati del ticket",
+
+
+        value:
+
+        "ticket_info"
+
+
+    },
+
+
+
+    {
+
+
+        label:
+
+        "Chiudi Ticket",
+
+
+        description:
+
+        "Crea transcript e chiude il ticket",
+
+
+        value:
+
+        "close_ticket"
+
+
+    }
+
+
+
+]);
+
+
+
+
+
+
+const manageRow = new ActionRowBuilder()
+
+.addComponents(
+
+    manageMenu
+
+);
+
+
+
+
+
+
+await channel.send({
+
+
+
+    content:
+
+    `<@${interaction.user.id}>`,
+
+
+
+
+    embeds:[
+
+
+
+        new EmbedBuilder()
+
+
+
+        .setTitle(
+
+            "🎫 Ticket Aperto"
 
         )
 
-        .setLabel(
-
-            "Reclama"
-
-        )
-
-        .setStyle(
-
-            ButtonStyle.Primary
-
-        ),
 
 
+        .setDescription(
 
+`
+Benvenuto nel tuo ticket.
 
+📂 **Categoria**
+${type}
 
+Lo Staff risponderà appena possibile.
 
-        new ButtonBuilder()
-
-        .setCustomId(
-
-            "close_ticket"
-
-        )
-
-        .setLabel(
-
-            "Chiudi"
-
-        )
-
-        .setStyle(
-
-            ButtonStyle.Danger
+Usa il menu qui sotto per gestire il ticket.
+`
 
         )
 
 
 
-
-
-    ]);
-
+        .setTimestamp()
 
 
 
+    ],
 
 
 
 
-    await channel.send({
+    components:[
 
 
 
-        content:
+        manageRow
 
-        `<@${interaction.user.id}>`,
 
+
+    ]
+
+
+
+});
+
+
+
+
+
+
+
+
+const logs = interaction.guild.channels.cache.get(
+
+    LOG_CHANNEL_ID
+
+);
+
+
+
+
+
+if(logs){
+
+
+
+    await logs.send({
 
 
 
@@ -723,7 +689,7 @@ async categoryHandler(interaction){
 
             .setTitle(
 
-                "Ticket Aperto"
+                "🎫 Ticket Creato"
 
             )
 
@@ -731,8 +697,21 @@ async categoryHandler(interaction){
 
             .setDescription(
 
+`
+👤 **Utente**
 
-                "Lo Staff risponderà appena possibile.\n\nUsa i bottoni qui sotto per gestire il ticket."
+${interaction.user}
+
+
+📌 **Canale**
+
+${channel}
+
+
+📂 **Categoria**
+
+${type}
+`
 
             )
 
@@ -742,19 +721,183 @@ async categoryHandler(interaction){
 
 
 
-        ],
-
-
-
-
-
-        components:[buttons]
+        ]
 
 
 
     });
 
-        
+
+
+}
+
+
+
+
+
+
+
+await interaction.editReply({
+
+
+
+    content:
+
+    `✅ Ticket creato: ${channel}`
+
+
+
+});
+
+
+
+},
+
+    // =====================================
+// TICKET MANAGEMENT ROUTER
+// =====================================
+
+async router(interaction){
+
+
+    const option = interaction.values[0];
+
+
+
+    if(option === "claim_ticket"){
+
+
+        return module.exports.buttonHandler(interaction);
+
+
+    }
+
+
+
+
+    if(option === "close_ticket"){
+
+
+        return module.exports.buttonHandler(interaction);
+
+
+    }
+
+
+
+
+
+    if(option === "ticket_info"){
+
+
+
+        const data = ticketData.get(
+
+            interaction.channel.id
+
+        );
+
+
+
+        if(!data){
+
+
+            return interaction.reply({
+
+
+                content:
+
+                "❌ Dati ticket non trovati.",
+
+
+                ephemeral:true
+
+
+            });
+
+
+        }
+
+
+
+
+
+
+        return interaction.reply({
+
+
+
+            embeds:[
+
+
+
+                new EmbedBuilder()
+
+
+
+                .setTitle(
+
+                    "📋 Informazioni Ticket"
+
+                )
+
+
+
+                .setDescription(
+
+`
+👤 **Proprietario**
+
+<@${data.owner}>
+
+
+📂 **Categoria**
+
+${data.type}
+
+
+🙋 **Staff assegnato**
+
+${data.claimedBy ? `<@${data.claimedBy}>` : "Nessuno"}
+`
+
+                )
+
+
+
+                .setTimestamp()
+
+
+
+            ],
+
+
+
+            ephemeral:true
+
+
+
+        });
+
+
+
+    }
+
+
+
+},
+
+
+
+
+
+
+
+// =====================================
+// BUTTON / MANAGEMENT HANDLER
+// =====================================
+
+async buttonHandler(interaction){
 
 
 
@@ -763,6 +906,126 @@ async categoryHandler(interaction){
         LOG_CHANNEL_ID
 
     );
+
+
+
+
+    const data = ticketData.get(
+
+        interaction.channel.id
+
+    );
+
+
+
+
+    if(!data){
+
+
+        return interaction.reply({
+
+
+            content:
+
+            "❌ Ticket non trovato.",
+
+
+            ephemeral:true
+
+
+        });
+
+
+    }
+
+
+
+
+
+// =====================================
+// CLAIM
+// =====================================
+
+
+if(interaction.customId === "claim_ticket"){
+
+
+
+    if(!isStaff(interaction.member)){
+
+
+
+        return interaction.reply({
+
+
+            content:
+
+            "❌ Solo lo Staff può reclamare ticket.",
+
+
+            ephemeral:true
+
+
+        });
+
+
+    }
+
+
+
+
+
+    if(data.claimedBy){
+
+
+
+        return interaction.reply({
+
+
+            content:
+
+            `❌ Ticket già reclamato da <@${data.claimedBy}>.`,
+
+
+            ephemeral:true
+
+
+        });
+
+
+    }
+
+
+
+
+
+    data.claimedBy = interaction.user.id;
+
+
+
+    ticketData.set(
+
+        interaction.channel.id,
+
+        data
+
+    );
+
+
+
+
+
+    await interaction.reply({
+
+
+
+        content:
+
+        `🙋 Ticket reclamato da ${interaction.user}.`
+
+
+
+    });
 
 
 
@@ -787,7 +1050,7 @@ async categoryHandler(interaction){
 
                 .setTitle(
 
-                    "🎫 Ticket Creato"
+                    "🙋 Ticket Reclamato"
 
                 )
 
@@ -795,9 +1058,16 @@ async categoryHandler(interaction){
 
                 .setDescription(
 
+`
+👤 Staff
 
-                    `👤 Utente\n${interaction.user}\n\n📌 Canale\n${channel}`
+${interaction.user}
 
+
+📌 Canale
+
+${interaction.channel}
+`
 
                 )
 
@@ -819,19 +1089,85 @@ async categoryHandler(interaction){
 
 
 
+    return;
+
+
+
+}
 
 
 
 
 
 
-    await interaction.editReply({
+
+
+// =====================================
+// CLOSE
+// =====================================
+
+
+if(interaction.customId === "close_ticket"){
+
+
+
+
+
+    const canClose =
+
+
+        interaction.user.id === data.owner
+
+        ||
+
+        isStaff(interaction.member);
+
+
+
+
+
+
+    if(!canClose){
+
+
+
+        return interaction.reply({
+
+
+
+            content:
+
+            "❌ Non hai il permesso di chiudere questo ticket.",
+
+
+
+            ephemeral:true
+
+
+
+        });
+
+
+
+    }
+
+
+
+
+
+
+
+    await interaction.reply({
 
 
 
         content:
 
-        `✅ Ticket creato: ${channel}`
+        "🔒 Ticket in chiusura. Creazione transcript HTML...",
+
+
+
+        ephemeral:false
 
 
 
@@ -839,7 +1175,62 @@ async categoryHandler(interaction){
 
 
 
-},
+
+
+
+
+
+    let transcriptFile;
+
+
+
+
+
+    try {
+
+
+
+        transcriptFile = await transcriptManager.createTranscript(
+
+            interaction.channel
+
+        );
+
+
+
+    } catch(error) {
+
+
+
+        console.error(
+
+            "Errore transcript:",
+
+            error
+
+        );
+
+
+
+        return interaction.followUp({
+
+
+
+            content:
+
+            "❌ Errore nella creazione del transcript.",
+
+
+
+            ephemeral:true
+
+
+
+        });
+
+
+
+    }
 
 
 
@@ -847,456 +1238,122 @@ async categoryHandler(interaction){
 
 
 
-// =====================================
-// BUTTON HANDLER
-// =====================================
 
-
-async buttonHandler(interaction){
+    if(logs){
 
 
 
-    const logs = interaction.guild.channels.cache.get(
+        await logs.send({
 
-        LOG_CHANNEL_ID
+
+
+            embeds:[
+
+
+
+                new EmbedBuilder()
+
+
+
+                .setTitle(
+
+                    "🔒 Ticket Chiuso"
+
+                )
+
+
+
+                .setDescription(
+
+`
+👤 **Chiuso da**
+
+${interaction.user}
+
+
+📌 **Canale**
+
+${interaction.channel}
+
+
+📝 Transcript generato.
+`
+
+                )
+
+
+
+                .setTimestamp()
+
+
+
+            ],
+
+
+
+            files:[
+
+                transcriptFile
+
+            ]
+
+
+
+        });
+
+
+
+    }
+
+
+
+
+
+
+
+    openTickets.delete(
+
+        data.owner
 
     );
 
 
 
 
-    const tickets = loadTickets();
 
+    ticketData.delete(
 
+        interaction.channel.id
 
+    );
 
-    const ticket = tickets[interaction.user.id];
 
 
 
 
 
 
+    setTimeout(()=>{
 
-    // =====================================
-    // CLAIM TICKET
-    // =====================================
 
 
-    if(interaction.customId === "claim_ticket"){
+        interaction.channel.delete()
 
+        .catch(()=>{});
 
 
 
+    },3000);
 
-        if(!isStaff(interaction.member)){
 
 
 
-            return interaction.reply({
 
+    return;
 
 
-                content:
 
-                "❌ Solo lo Staff può reclamare i ticket.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-        await interaction.reply({
-
-
-
-            content:
-
-            `🙋 Ticket reclamato da ${interaction.user}.`,
-
-
-
-            ephemeral:false
-
-
-
-        });
-
-
-
-
-
-
-
-
-        if(logs){
-
-
-
-            await logs.send({
-
-
-
-                embeds:[
-
-
-
-                    new EmbedBuilder()
-
-
-
-                    .setTitle(
-
-                        "🙋 Ticket Reclamato"
-
-                    )
-
-
-
-                    .setDescription(
-
-
-                        `👤 Staff\n${interaction.user}\n\n📌 Canale\n${interaction.channel}`
-
-
-                    )
-
-
-
-                    .setTimestamp()
-
-
-
-                ]
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-        return;
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-
-    // =====================================
-    // CLOSE TICKET
-    // =====================================
-
-
-    if(interaction.customId === "close_ticket"){
-
-
-
-
-
-        const owner = Object.keys(tickets).find(
-
-
-            userId =>
-
-            tickets[userId].channelId === interaction.channel.id
-
-
-        );
-
-
-
-
-
-
-        if(!owner && !isStaff(interaction.member)){
-
-
-
-            return interaction.reply({
-
-
-
-                content:
-
-                "❌ Questo ticket non è riconosciuto.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-        if(
-
-            interaction.user.id !== owner &&
-
-            !isStaff(interaction.member)
-
-        ){
-
-
-
-            return interaction.reply({
-
-
-
-                content:
-
-                "❌ Non hai il permesso di chiudere questo ticket.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-        await interaction.reply({
-
-
-
-            content:
-
-            "🔒 Ticket chiuso. Creazione transcript HTML...",
-
-
-
-            ephemeral:false
-
-
-
-        });
-
-
-
-
-
-
-
-        let transcriptFile;
-
-
-
-
-
-
-
-        try {
-
-
-
-            transcriptFile = await transcriptManager.createTranscript(
-
-
-                interaction.channel
-
-
-            );
-
-
-
-        } catch(error){
-
-
-
-            console.error(
-
-                "Errore transcript:",
-
-                error
-
-            );
-
-
-
-            return interaction.followUp({
-
-
-
-                content:
-
-                "❌ Errore nella creazione del transcript.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-
-        if(logs){
-
-
-
-            await logs.send({
-
-
-
-                embeds:[
-
-
-
-                    new EmbedBuilder()
-
-
-
-                    .setTitle(
-
-                        "🔒 Ticket Chiuso"
-
-                    )
-
-
-
-                    .setDescription(
-
-
-                        `👤 Chiuso da\n${interaction.user}\n\n📌 Canale\n${interaction.channel}`
-
-
-                    )
-
-
-
-                    .setTimestamp()
-
-
-
-                ],
-
-
-
-
-                files:[
-
-                    transcriptFile
-
-                ]
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-
-
-        // RIMOZIONE DAL DATABASE
-
-
-        if(owner){
-
-
-
-            delete tickets[owner];
-
-
-            saveTickets(tickets);
-
-
-
-        }
-
-
-
-
-
-
-
-
-
-        setTimeout(()=>{
-
-
-
-            interaction.channel.delete()
-
-            .catch(()=>{});
-
-
-
-        },3000);
-
-
-
-
-
-
-
-        return;
-
-
-
-    }
+}
 
 
 

@@ -281,6 +281,18 @@ client.on(
 
                 }
 
+                if(
+interaction.customId === "ticket_manage"
+){
+
+await ticket.router(
+interaction
+);
+
+return;
+
+                }
+
 
 
 

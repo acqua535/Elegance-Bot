@@ -78,11 +78,24 @@ interaction.options.getString("descrizione");
 
 
 
-const testo =
+const primoMessaggio =
 
 `━━━━━━━⚜️━━━━━━━
 
 ⭐ **NUOVA SPONSORIZZAZIONE**
+
+📝 **Descrizione**
+${descrizione}
+
+━━━━━━━⚜️━━━━━━━`;
+
+
+
+
+
+const secondoMessaggio =
+
+`━━━━━━━⚜️━━━━━━━
 
 👤 **Autore**
 ${interaction.user}
@@ -93,10 +106,9 @@ ${richiesta}
 🏷️ **Categoria**
 ${categoria}
 
-📝 **Descrizione**
-${descrizione}
-
 ━━━━━━━⚜️━━━━━━━`;
+
+
 
 
 
@@ -119,7 +131,10 @@ ephemeral:true
 
 
 
-await channel.send(testo);
+await channel.send(primoMessaggio);
+
+
+await channel.send(secondoMessaggio);
 
 
 

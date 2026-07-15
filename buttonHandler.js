@@ -2,6 +2,8 @@ const {
     EmbedBuilder
 } = require("discord.js");
 
+const ticket = require("./ticket");
+
 
 const minigame = require("./minigame");
 
@@ -26,6 +28,19 @@ module.exports = async function buttonHandler(interaction) {
 
 
     const id = interaction.customId;
+
+    // ===============================
+// TICKET BUTTONS
+// ===============================
+
+if (
+    id === "claim_ticket" ||
+    id === "close_ticket"
+) {
+
+    return ticket.buttonHandler(interaction);
+
+}
 
 
 

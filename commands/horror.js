@@ -9,12 +9,11 @@ const {
 
 const horrorEngine = require("../horrorEngine");
 
-const horrorSystem = require("../horrorSystem");
+const stories = require("../horrorStories");
 
 
 
 module.exports = {
-
 
 
 data:
@@ -35,18 +34,19 @@ async execute(interaction){
 
 
 
-    const stories = horrorEngine.getStories();
+    const rows = [];
+
+    let row = new ActionRowBuilder();
+
+    let count = 0;
 
 
 
-    const buttons = new ActionRowBuilder();
+    for(const story of stories){
 
 
 
-    stories.forEach(story => {
-
-
-        buttons.addComponents(
+        row.addComponents(
 
             new ButtonBuilder()
 
@@ -65,50 +65,69 @@ async execute(interaction){
         );
 
 
-    });
+
+        count++;
+
+
+
+        if(count === 5){
+
+            rows.push(row);
+
+            row = new ActionRowBuilder();
+
+            count = 0;
+
+        }
+
+
+
+    }
+
+
+
+    if(count > 0){
+
+        rows.push(row);
+
+    }
 
 
 
 
 
-    const inventoryButton =
 
-    new ButtonBuilder()
+    rows.push(
 
-    .setCustomId(
-        "horror_inventory"
-    )
+        new ActionRowBuilder()
 
-    .setLabel(
-        "🎒 Inventario"
-    )
+        .addComponents(
 
-    .setStyle(
-        ButtonStyle.Secondary
+            new ButtonBuilder()
+
+            .setCustomId(
+                "horror_inventory"
+            )
+
+            .setLabel(
+                "🎒 Inventario"
+            )
+
+            .setStyle(
+                ButtonStyle.Secondary
+            )
+
+        )
+
     );
 
 
 
 
 
-    const row2 =
-
-    new ActionRowBuilder()
-
-    .addComponents(
-
-        inventoryButton
-
-    );
 
 
-
-
-
-
-    const embed =
-
-    new EmbedBuilder()
+    const embed = new EmbedBuilder()
 
     .setTitle(
         "👻 Horror Adventure"
@@ -119,12 +138,9 @@ async execute(interaction){
 `
 Benvenuto in **Horror Adventure**.
 
-Scegli una storia.
+Scegli una delle storie disponibili.
 
-Ogni scelta può cambiare il tuo destino...
-
-☠️ Attenzione:
-alcuni percorsi possono portare alla morte.
+⚠️ Ogni scelta può cambiare il finale.
 `
 
     )
@@ -136,21 +152,12 @@ alcuni percorsi possono portare alla morte.
 
 
 
+
     await interaction.reply({
 
-        embeds:[
+        embeds:[embed],
 
-            embed
-
-        ],
-
-        components:[
-
-            buttons,
-
-            row2
-
-        ]
+        components:rows
 
     });
 

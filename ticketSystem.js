@@ -9,8 +9,9 @@ const file = "./ticketsData.json";
 
 
 
+
 // =====================================
-// LOAD DATABASE
+// LOAD
 // =====================================
 
 function loadData(){
@@ -52,7 +53,7 @@ function loadData(){
 
 
         console.error(
-            "❌ Errore lettura ticketsData.json:",
+            "❌ Errore database ticket:",
             error
         );
 
@@ -71,7 +72,7 @@ function loadData(){
 
 
 // =====================================
-// SAVE DATABASE
+// SAVE
 // =====================================
 
 function saveData(data){
@@ -102,17 +103,29 @@ function saveData(data){
 
 
 // =====================================
-// SAVE TICKET
+// CREATE / SAVE TICKET
 // =====================================
 
-function saveTicket(userId, ticket){
+function createTicket(userId, ticket){
 
 
     const data = loadData();
 
 
 
-    data[userId] = ticket;
+    data[userId] = {
+
+
+        ...ticket,
+
+
+        userId,
+
+
+        createdAt: Date.now()
+
+
+    };
 
 
 
@@ -127,7 +140,7 @@ function saveTicket(userId, ticket){
 
 
 // =====================================
-// GET TICKET
+// GET USER TICKET
 // =====================================
 
 function getTicket(userId){
@@ -148,10 +161,39 @@ function getTicket(userId){
 
 
 // =====================================
-// UPDATE TICKET
+// GET BY CHANNEL
 // =====================================
 
-function updateTicket(userId, ticket){
+function getTicketByChannel(channelId){
+
+
+    const data = loadData();
+
+
+
+    return Object.values(data).find(
+
+
+        ticket =>
+
+        ticket.channelId === channelId
+
+
+    ) || null;
+
+
+}
+
+
+
+
+
+
+// =====================================
+// UPDATE
+// =====================================
+
+function updateTicket(userId, newData){
 
 
     const data = loadData();
@@ -163,8 +205,16 @@ function updateTicket(userId, ticket){
 
 
 
+    data[userId] = {
 
-    data[userId] = ticket;
+
+        ...data[userId],
+
+
+        ...newData
+
+
+    };
 
 
 
@@ -184,7 +234,7 @@ function updateTicket(userId, ticket){
 
 
 // =====================================
-// DELETE TICKET
+// DELETE
 // =====================================
 
 function deleteTicket(userId){
@@ -194,23 +244,20 @@ function deleteTicket(userId){
 
 
 
-    if(data[userId]){
-
-
-        delete data[userId];
-
-
-        saveData(data);
-
-
-        return true;
-
-
-    }
+    if(!data[userId])
+        return false;
 
 
 
-    return false;
+    delete data[userId];
+
+
+
+    saveData(data);
+
+
+
+    return true;
 
 
 }
@@ -220,21 +267,16 @@ function deleteTicket(userId){
 
 
 
-
 // =====================================
-// CHECK OPEN TICKET
+// CHECK OPEN
 // =====================================
 
 function hasOpenTicket(userId){
 
 
-    const data = loadData();
-
-
-
     return Boolean(
 
-        data[userId]
+        getTicket(userId)
 
     );
 
@@ -247,7 +289,140 @@ function hasOpenTicket(userId){
 
 
 // =====================================
-// GET ALL TICKETS
+// STAFF PING COOLDOWN
+// =====================================
+
+function canPingStaff(userId){
+
+
+    const ticket = getTicket(userId);
+
+
+
+    if(!ticket)
+        return false;
+
+
+
+    if(!ticket.staffPing)
+        return true;
+
+
+
+    if(ticket.staffPing.used === false)
+        return true;
+
+
+
+
+    const cooldown = 24 * 60 * 60 * 1000;
+
+
+
+    return Date.now() - ticket.staffPing.time >= cooldown;
+
+
+}
+
+
+
+
+
+
+function useStaffPing(userId){
+
+
+    const ticket = getTicket(userId);
+
+
+
+    if(!ticket)
+        return false;
+
+
+
+    ticket.staffPing = {
+
+
+        used:true,
+
+
+        time:Date.now(),
+
+
+        staffReplied:false
+
+
+    };
+
+
+
+    return updateTicket(
+
+        userId,
+
+        ticket
+
+    );
+
+
+}
+
+
+
+
+
+
+// =====================================
+// STAFF REPLY RESET
+// =====================================
+
+function resetStaffPing(userId){
+
+
+    const ticket = getTicket(userId);
+
+
+
+    if(!ticket)
+        return false;
+
+
+
+    ticket.staffPing = {
+
+
+        used:false,
+
+
+        time:null,
+
+
+        staffReplied:true
+
+
+    };
+
+
+
+    return updateTicket(
+
+        userId,
+
+        ticket
+
+    );
+
+
+}
+
+
+
+
+
+
+// =====================================
+// ALL
 // =====================================
 
 function getAllTickets(){
@@ -263,17 +438,16 @@ function getAllTickets(){
 
 
 
-// =====================================
-// EXPORT
-// =====================================
-
 module.exports = {
 
 
-    saveTicket,
+    createTicket,
 
 
     getTicket,
+
+
+    getTicketByChannel,
 
 
     updateTicket,
@@ -283,6 +457,15 @@ module.exports = {
 
 
     hasOpenTicket,
+
+
+    canPingStaff,
+
+
+    useStaffPing,
+
+
+    resetStaffPing,
 
 
     getAllTickets

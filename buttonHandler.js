@@ -1,894 +1,257 @@
 const {
-    SlashCommandBuilder,
-    ActionRowBuilder,
-    StringSelectMenuBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ChannelType,
-    EmbedBuilder,
-    PermissionFlagsBits
+    EmbedBuilder
 } = require("discord.js");
 
 
-// =====================================
-// TRANSCRIPT MANAGER
-// =====================================
+const ticket = require("./ticket");
 
-const transcriptManager = require("./transcript");
+const minigame = require("./minigame");
 
 
 
-// =====================================
-// CONFIG
-// =====================================
 
-const LOG_CHANNEL_ID = "1505261606483923105";
+// ===============================
+// GLOBAL INTERACTION HANDLER
+// ===============================
 
-const TICKET_CATEGORY_ID = "1525919850764177408";
 
+module.exports = async function interactionHandler(interaction){
 
-const TICKET_STAFF_ROLES = [
 
-    "1505192718068879430",
 
-    "1505192964769714287"
+    if(
+        !interaction.isButton() &&
+        !interaction.isStringSelectMenu()
+    ) return;
 
-];
 
 
 
 
-// =====================================
-// TICKET STORAGE
-// =====================================
+    if(
+        interaction.replied ||
+        interaction.deferred
+    ) return;
 
-const openTickets = new Map();
 
-const ticketData = new Map();
 
 
 
+    const id = interaction.customId;
 
 
-// =====================================
-// STAFF CHECK
-// =====================================
 
-function isStaff(member) {
 
 
-    if(!member)
-        return false;
+    try {
 
 
 
-    return TICKET_STAFF_ROLES.some(
 
-        role => member.roles.cache.has(role)
+// ===============================
+// TICKET MANAGEMENT MENU
+// ===============================
 
-    );
 
+        if(
+            interaction.isStringSelectMenu() &&
+            id === "ticket_manage"
+        ){
 
-}
-
-
-
-
-
-// =====================================
-// MODULE EXPORT
-// =====================================
-
-module.exports = {
-
-
-
-data:
-
-new SlashCommandBuilder()
-
-.setName("ticket")
-
-.setDescription(
-
-    "Apri un ticket di supporto"
-
-),
-
-
-
-
-
-// =====================================
-// OPEN TICKET PANEL
-// =====================================
-
-async execute(interaction) {
-
-
-
-    const menu = new StringSelectMenuBuilder()
-
-
-
-    .setCustomId(
-
-        "ticket_category"
-
-    )
-
-
-
-    .setPlaceholder(
-
-        "Seleziona il tipo di richiesta"
-
-    )
-
-
-
-    .addOptions([
-
-
-
-        {
-
-            label:
-
-            "Supporto Partner",
-
-            description:
-
-            "Richieste partnership e collaborazioni",
-
-            value:
-
-            "partner",
-
-            emoji:
-
-            "🤝"
-
-        },
-
-
-
-        {
-
-            label:
-
-            "Bando Staff",
-
-            description:
-
-            "Candidature staff",
-
-            value:
-
-            "staff",
-
-            emoji:
-
-            "🛡️"
-
-        },
-
-
-
-        {
-
-            label:
-
-            "Segnalazioni e/o Bug",
-
-            description:
-
-            "Segnala problemi o bug",
-
-            value:
-
-            "bug",
-
-            emoji:
-
-            "🐞"
-
-        },
-
-
-
-        {
-
-            label:
-
-            "Idee / Suggerimenti",
-
-            description:
-
-            "Invia una proposta",
-
-            value:
-
-            "idea",
-
-            emoji:
-
-            "💡"
+            return ticket.router(interaction);
 
         }
 
 
-    ]);
 
 
 
 
+// ===============================
+// OLD TICKET BUTTONS
+// ===============================
 
-    const row = new ActionRowBuilder()
 
-    .addComponents(
+        if(
+            interaction.isButton() &&
+            (
+                id === "claim_ticket" ||
+                id === "close_ticket"
+            )
+        ){
 
-        menu
-
-    );
-
-
-
-
-
-    const embed = new EmbedBuilder()
-
-
-
-    .setTitle(
-
-        "🎫 Supporto"
-
-    )
-
-
-
-    .setDescription(
-
-        "Seleziona la categoria del tuo ticket dal menu."
-
-    )
-
-
-
-    .setTimestamp();
-
-
-
-
-
-    await interaction.reply({
-
-
-        embeds:[embed],
-
-
-        components:[row]
-
-
-    });
-
-
-
-},
-
-    // =====================================
-// CATEGORY HANDLER
-// =====================================
-
-
-async categoryHandler(interaction) {
-
-
-
-    await interaction.deferReply({
-
-        ephemeral:true
-
-    });
-
-
-
-
-
-    const type = interaction.values[0];
-
-
-
-
-
-    const names = {
-
-
-        partner:
-
-        "supporto-partner",
-
-
-        staff:
-
-        "bando-staff",
-
-
-        bug:
-
-        "segnalazione-bug",
-
-
-        idea:
-
-        "idee-suggerimenti"
-
-
-    };
-
-
-
-
-
-    // =====================================
-    // ANTI DOPPIO TICKET
-    // =====================================
-
-
-    if(openTickets.has(interaction.user.id)){
-
-
-
-        return interaction.editReply({
-
-
-
-            content:
-
-            "❌ Hai già un ticket aperto. Chiudi quello precedente prima di crearne un altro."
-
-
-
-        });
-
-
-
-    }
-
-
-
-
-
-    const channel = await interaction.guild.channels.create({
-
-
-
-        name:
-
-        `🎫・┆${names[type]}-${interaction.user.username}`,
-
-
-
-        type:
-
-        ChannelType.GuildText,
-
-
-
-        parent:
-
-        TICKET_CATEGORY_ID,
-
-
-
-        permissionOverwrites:[
-
-
-
-            {
-
-
-
-                id:
-
-                interaction.guild.id,
-
-
-
-                deny:[
-
-                    PermissionFlagsBits.ViewChannel
-
-                ]
-
-
-
-            },
-
-
-
-
-
-            {
-
-
-
-                id:
-
-                interaction.user.id,
-
-
-
-                allow:[
-
-
-
-                    PermissionFlagsBits.ViewChannel,
-
-                    PermissionFlagsBits.SendMessages,
-
-                    PermissionFlagsBits.ReadMessageHistory
-
-
-
-                ]
-
-
-
-            },
-
-
-
-
-
-            ...TICKET_STAFF_ROLES.map(roleId => ({
-
-
-
-                id:
-
-                roleId,
-
-
-
-                allow:[
-
-
-
-                    PermissionFlagsBits.ViewChannel,
-
-                    PermissionFlagsBits.SendMessages,
-
-                    PermissionFlagsBits.ReadMessageHistory
-
-
-
-                ]
-
-
-
-            }))
-
-
-
-        ]
-
-
-
-    });
-
-
-
-
-
-    openTickets.set(
-
-        interaction.user.id,
-
-        channel.id
-
-    );
-
-
-
-
-
-    ticketData.set(
-
-        channel.id,
-
-        {
-
-            owner:
-
-            interaction.user.id,
-
-
-            type:
-
-            type,
-
-
-            claimedBy:
-
-            null
-
+            return ticket.buttonHandler(interaction);
 
         }
 
-    );
 
 
 
 
 
-    const buttons = new ActionRowBuilder()
 
-    .addComponents(
+// ===============================
+// WORD GAME DIFFICULTY
+// ===============================
 
 
 
+        if(id === "word_easy"){
 
 
-        new ButtonBuilder()
 
-        .setCustomId(
-
-            "claim_ticket"
-
-        )
-
-        .setLabel(
-
-            "Reclama"
-
-        )
-
-        .setStyle(
-
-            ButtonStyle.Primary
-
-        ),
-
-
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-
-            "close_ticket"
-
-        )
-
-        .setLabel(
-
-            "Chiudi"
-
-        )
-
-        .setStyle(
-
-            ButtonStyle.Danger
-
-        )
-
-
-
-    );
-
-
-
-
-
-    await channel.send({
-
-
-
-        content:
-
-        `<@${interaction.user.id}>`,
-
-
-
-
-
-        embeds:[
-
-
-
-            new EmbedBuilder()
-
-
-
-            .setTitle(
-
-                "Ticket Aperto"
-
-            )
-
-
-
-            .setDescription(
-
-
-
-                "Lo Staff risponderà appena possibile.\n\nUsa i bottoni qui sotto per gestire il ticket."
-
-
-
-            )
-
-
-
-            .setTimestamp()
-
-
-
-        ],
-
-
-
-
-
-        components:[buttons]
-
-
-
-    });
-
-
-
-
-
-    const logs = interaction.guild.channels.cache.get(
-
-        LOG_CHANNEL_ID
-
-    );
-
-
-
-
-
-    if(logs){
-
-
-
-        await logs.send({
-
-
-
-            embeds:[
-
-
-
-                new EmbedBuilder()
-
-
-
-                .setTitle(
-
-                    "Ticket Creato"
-
-                )
-
-
-
-                .setDescription(
-
-
-
-                    `Utente\n${interaction.user}\n\nCanale\n${channel}`
-
-
-
-                )
-
-
-
-                .setTimestamp()
-
-
-
-            ]
-
-
-
-        });
-
-
-
-    }
-
-
-
-
-
-    await interaction.editReply({
-
-
-
-        content:
-
-        `✅ Ticket creato: ${channel}`
-
-
-
-    });
-
-
-
-},
-
-    // =====================================
-// BUTTON HANDLER
-// =====================================
-
-
-async buttonHandler(interaction) {
-
-
-
-    const logs = interaction.guild.channels.cache.get(
-
-        LOG_CHANNEL_ID
-
-    );
-
-
-
-
-
-    const data = ticketData.get(
-
-        interaction.channel.id
-
-    );
-
-
-
-
-
-    if(!data){
-
-
-
-        return interaction.reply({
-
-
-
-            content:
-
-            "❌ Questo non sembra essere un ticket valido.",
-
-
-
-            ephemeral:true
-
-
-
-        });
-
-
-
-    }
-
-
-
-
-
-
-
-    // =====================================
-    // CLAIM TICKET
-    // =====================================
-
-
-    if(interaction.customId === "claim_ticket"){
-
-
-
-        if(!isStaff(interaction.member)){
-
-
-
-            return interaction.reply({
-
+            await interaction.update({
 
 
                 content:
 
-                "❌ Solo lo Staff può reclamare i ticket.",
+                "🔤 Modalità Facile selezionata!",
 
 
+                embeds:[],
 
-                ephemeral:true
 
+                components:[]
 
 
             });
 
 
 
+            await minigame.startWordGame(
+
+                interaction,
+
+                "facile"
+
+            );
+
+
+
+            return;
+
+
         }
 
 
 
 
 
-        if(data.claimedBy){
+
+
+        if(id === "word_medium"){
 
 
 
-            return interaction.reply({
-
+            await interaction.update({
 
 
                 content:
 
-                `❌ Questo ticket è già stato reclamato da <@${data.claimedBy}>.`,
+                "🔤 Modalità Media selezionata!",
 
 
+                embeds:[],
 
-                ephemeral:true
 
+                components:[]
 
 
             });
 
 
 
+            await minigame.startWordGame(
+
+                interaction,
+
+                "medio"
+
+            );
+
+
+
+            return;
+
+
         }
 
 
 
 
 
-        data.claimedBy = interaction.user.id;
 
 
 
-        ticketData.set(
-
-            interaction.channel.id,
-
-            data
-
-        );
+        if(id === "word_hard"){
 
 
 
+            await interaction.update({
 
 
-        await interaction.reply({
+                content:
+
+                "🔤 Modalità Difficile selezionata!",
 
 
-
-            content:
-
-            `🙋 Ticket reclamato da ${interaction.user}.`,
+                embeds:[],
 
 
-
-            ephemeral:false
-
+                components:[]
 
 
-        });
-
+            });
 
 
 
+            await minigame.startWordGame(
+
+                interaction,
+
+                "difficile"
+
+            );
 
 
-        if(logs){
+
+            return;
+
+
+        }
 
 
 
-            await logs.send({
+
+
+
+
+
+// ===============================
+// MINIGAME HUB
+// ===============================
+
+
+        if(
+            interaction.isButton() &&
+            id.startsWith("game_")
+        ){
+
+
+
+            const game = id.replace(
+
+                "game_",
+
+                ""
+
+            );
+
+
+
+
+
+            await interaction.update({
 
 
 
@@ -902,7 +265,7 @@ async buttonHandler(interaction) {
 
                     .setTitle(
 
-                        "Ticket Reclamato"
+                        "🎮 Minigame avviato"
 
                     )
 
@@ -910,236 +273,17 @@ async buttonHandler(interaction) {
 
                     .setDescription(
 
-
-
-                        `Staff\n${interaction.user}\n\nCanale\n${interaction.channel}`
-
-
+                        "La partita sta iniziando..."
 
                     )
 
 
 
-                    .setTimestamp()
+                    .setColor(
 
-
-
-                ]
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-        return;
-
-
-
-    }
-
-
-
-
-
-
-
-
-
-    // =====================================
-    // CLOSE TICKET
-    // =====================================
-
-
-    if(interaction.customId === "close_ticket"){
-
-
-
-
-
-        const canClose =
-
-
-
-            interaction.user.id === data.owner
-
-            ||
-
-            isStaff(interaction.member);
-
-
-
-
-
-
-
-        if(!canClose){
-
-
-
-            return interaction.reply({
-
-
-
-                content:
-
-                "❌ Non hai il permesso di chiudere questo ticket.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-        await interaction.reply({
-
-
-
-            content:
-
-            "🔒 Ticket chiuso. Creazione transcript HTML...",
-
-
-
-            ephemeral:false
-
-
-
-        });
-
-
-
-
-
-
-
-
-        let transcriptFile;
-
-
-
-
-
-
-        try {
-
-
-
-            transcriptFile = await transcriptManager.createTranscript(
-
-
-
-                interaction.channel
-
-
-
-            );
-
-
-
-
-
-        } catch(error) {
-
-
-
-            console.error(
-
-
-
-                "Errore transcript:",
-
-                error
-
-            );
-
-
-
-
-
-            return interaction.followUp({
-
-
-
-                content:
-
-                "❌ Errore durante la creazione del transcript.",
-
-
-
-                ephemeral:true
-
-
-
-            });
-
-
-
-        }
-
-
-
-
-
-
-
-
-
-        if(logs){
-
-
-
-            await logs.send({
-
-
-
-                embeds:[
-
-
-
-                    new EmbedBuilder()
-
-
-
-                    .setTitle(
-
-                        "Ticket Chiuso"
+                        "Green"
 
                     )
-
-
-
-                    .setDescription(
-
-
-
-                        `Chiuso da\n${interaction.user}\n\nCanale\n${interaction.channel}`
-
-
-
-                    )
-
-
-
-                    .setTimestamp()
 
 
 
@@ -1147,21 +291,131 @@ async buttonHandler(interaction) {
 
 
 
-
-                files:[
-
-
-
-                    transcriptFile
-
-
-
-                ]
+                components:[]
 
 
 
             });
 
+
+
+
+
+
+
+
+            switch(game){
+
+
+
+                case "quiz":
+
+
+
+                    await minigame.quizGame(
+
+                        interaction
+
+                    );
+
+
+                break;
+
+
+
+
+
+                case "memory":
+
+
+
+                    await minigame.memoryGame(
+
+                        interaction
+
+                    );
+
+
+                break;
+
+
+
+
+
+                case "word":
+
+
+
+                    await minigame.wordGame(
+
+                        interaction
+
+                    );
+
+
+                break;
+
+
+
+
+
+                case "reaction":
+
+
+
+                    await minigame.reactionGame(
+
+                        interaction
+
+                    );
+
+
+                break;
+
+
+
+
+
+                case "hangman":
+
+
+
+                    await minigame.hangmanGame(
+
+                        interaction
+
+                    );
+
+
+                break;
+
+
+
+
+
+                default:
+
+
+
+                    await interaction.followUp({
+
+
+                        content:
+
+                        "❌ Minigame non trovato.",
+
+
+                        ephemeral:true
+
+
+                    });
+
+
+            }
+
+
+
+            return;
 
 
         }
@@ -1171,21 +425,16 @@ async buttonHandler(interaction) {
 
 
 
+// ===============================
+// UNKNOWN
+// ===============================
 
 
-        openTickets.delete(
+        console.log(
 
-            data.owner
+            "Interazione non gestita:",
 
-        );
-
-
-
-
-
-        ticketData.delete(
-
-            interaction.channel.id
+            id
 
         );
 
@@ -1193,35 +442,49 @@ async buttonHandler(interaction) {
 
 
 
+    } catch(error){
 
 
 
-        setTimeout(()=>{
+        console.error(
 
+            "❌ Errore Interaction Handler:",
 
+            error
 
-            interaction.channel.delete()
-
-            .catch(()=>{});
-
-
-
-        },3000);
-
+        );
 
 
 
 
 
-        return;
+        if(
+            !interaction.replied &&
+            !interaction.deferred
+        ){
+
+
+
+            await interaction.reply({
+
+
+                content:
+
+                "❌ Errore durante l'esecuzione.",
+
+
+                ephemeral:true
+
+
+            }).catch(()=>{});
+
+
+
+        }
 
 
 
     }
-
-
-
-}
 
 
 

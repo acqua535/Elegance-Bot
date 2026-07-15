@@ -429,7 +429,7 @@ async categoryHandler(interaction){
 
 
 
-    ticketSystem.CreateTicket(
+    ticketSystem.createTicket(
 
         interaction.user.id,
 

@@ -48,6 +48,7 @@ module.exports = async function interactionHandler(interaction){
 
 
 
+
 // ===============================
 // TICKET MANAGEMENT MENU
 // ===============================
@@ -67,8 +68,10 @@ module.exports = async function interactionHandler(interaction){
 
 
 
+
+
 // ===============================
-// OLD TICKET BUTTONS
+// TICKET BUTTONS
 // ===============================
 
 
@@ -76,7 +79,8 @@ module.exports = async function interactionHandler(interaction){
             interaction.isButton() &&
             (
                 id === "claim_ticket" ||
-                id === "close_ticket"
+                id === "close_ticket" ||
+                id === "ping_staff"
             )
         ){
 
@@ -90,10 +94,10 @@ module.exports = async function interactionHandler(interaction){
 
 
 
+
 // ===============================
 // WORD GAME DIFFICULTY
 // ===============================
-
 
 
         if(id === "word_easy"){
@@ -138,7 +142,6 @@ module.exports = async function interactionHandler(interaction){
 
 
 
-
         if(id === "word_medium"){
 
 
@@ -175,7 +178,6 @@ module.exports = async function interactionHandler(interaction){
 
 
         }
-
 
 
 
@@ -419,6 +421,7 @@ module.exports = async function interactionHandler(interaction){
 
 
         }
+
 
 
 

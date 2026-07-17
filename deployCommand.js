@@ -3,166 +3,59 @@ const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
-
 module.exports = async function deployCommands() {
-
+    console.log("-----------------------------------------");
+    console.log("🔄 Preparazione dei comandi per il deploy su Discord...");
+    console.log("-----------------------------------------");
 
     const commands = [];
-    const loaded = new Set();
+    const commandsPath = path.join(process.cwd(), "commands");
 
-
-    const locations = [
-
-        path.join(__dirname, "commands"),
-        __dirname
-
-    ];
-
-
-
-    for (const location of locations) {
-
-
-        if (!fs.existsSync(location)) continue;
-
-
-
-        const files = fs.readdirSync(location)
-
-            .filter(file => file.endsWith(".js"))
-
-            .filter(file => file !== "index.js")
-
-            .filter(file => file !== "deployCommand.js")
-
-            .filter(file => file !== "commandHandler.js");
-
-
-
-        for (const file of files) {
-
-
-            try {
-
-
-                const command = require(
-                    path.join(location, file)
-                );
-
-
-                if (!command.data) continue;
-
-
-                if (loaded.has(command.data.name)) continue;
-
-
-                loaded.add(command.data.name);
-
-
-                commands.push(
-                    command.data.toJSON()
-                );
-
-
-                console.log(
-                    `📌 Deploy comando: ${command.data.name}`
-                );
-
-
-
-            } catch(error) {
-
-
-                console.error(
-                    `❌ Errore deploy ${file}:`,
-                    error
-                );
-
-
-            }
-
-
-        }
-
-
+    if (!fs.existsSync(commandsPath)) {
+        console.log("⚠️ Impossibile eseguire il deploy: cartella 'commands' non trovata.");
+        return;
     }
 
+    const files = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
 
+    for (const file of files) {
+        try {
+            const command = require(path.join(commandsPath, file));
+            
+            if (command.data) {
+                commands.push(command.data.toJSON());
+                console.log(`📌 Pronto per il server: /${command.data.name}`);
+            }
+        } catch (error) {
+            console.error(`❌ Errore nella lettura di ${file} per il deploy API:`, error);
+        }
+    }
 
-    const rest = new REST({ version: "10" })
+    if (commands.length === 0) {
+        console.log("⚠️ Nessun comando valido trovato. Invio annullato.");
+        return;
+    }
 
-        .setToken(process.env.TOKEN);
-
-
+    // Inizializziamo la connessione REST con Discord usando la v10 delle API
+    const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
     try {
+        console.log(`🚀 Invio di ${commands.length} comandi al server Discord...`);
 
-
-    console.log(
-        "🧹 Pulizia vecchi comandi globali..."
-    );
-
-
-    await rest.put(
-
-        Routes.applicationCommands(
-            "1526656748667146331"
-        ),
-
-        {
-            body: []
-        }
-
-    );
-
-
-    console.log(
-        "✅ Global command eliminati"
-    );
-
-
-
-    console.log(
-        "🔄 Aggiornamento slash command..."
-    );
-
-
+        // Registrazione immediata tramite Guild ID (Server ID)
         await rest.put(
-
             Routes.applicationGuildCommands(
-
-                "1526656748667146331",
-
-                "1505173045269233736"
-
+                "1527327515511881739", // Il tuo CLIENT_ID aggiornato
+                "1505173045269233736"  // Il tuo GUILD_ID del server
             ),
-
-            {
-
-                body: commands
-
-            }
-
+            { body: commands }
         );
 
+        console.log("-----------------------------------------");
+        console.log(`✅ Sincronizzazione completata! ${commands.length} comandi inseriti nel server.`);
+        console.log("-----------------------------------------");
 
-
-        console.log(
-            `✅ ${commands.length} slash command aggiornati!`
-        );
-
-
-
-    } catch(error) {
-
-
-        console.error(
-            "❌ Errore registrazione slash:",
-            error
-        );
-
-
+    } catch (error) {
+        console.error("❌ Errore critico durante la registrazione dei comandi su Discord API:", error);
     }
-
-
 };

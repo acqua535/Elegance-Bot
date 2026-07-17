@@ -26,19 +26,25 @@ client.commands = new Collection();
 // HANDLERS
 // ==========================
 const loadCommands = require("./commandHandler");
+const deployCommands = require("./deployCommand"); // Importiamo il deployer di ieri
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
 const verify = require("./verify");
 
 // ==========================
-// LOAD COMMANDS
+// AVVIO GENERALE DEI COMANDI
 // ==========================
-loadCommands(client);
-
-console.log(
-    "📦 Comandi caricati in memoria:",
-    client.commands.size
-);
+// Eseguiamo il deploy sul server e poi carichiamo in memoria locale
+(async () => {
+    try {
+        await deployCommands(); // Invia i comandi a Discord (tramite il file separato)
+        loadCommands(client);   // Carica i comandi nella Collection locale del bot
+        
+        console.log("📦 Comandi caricati in memoria locale:", client.commands.size);
+    } catch (error) {
+        console.error("❌ Errore durante l'inizializzazione dei comandi:", error);
+    }
+})();
 
 // ==========================
 // ERROR SYSTEM
@@ -58,50 +64,18 @@ process.on(
 );
 
 // ==========================
-// READY & SYNC COMMANDS
+// READY SYSTEM (CORRETTO)
 // ==========================
-// Usiamo 'clientReady' come consigliato da Discord v14/v15
+// L'evento corretto in discord.js è "ready"
 client.once(
-    "clientReady",
+    "ready",
     async (readyClient) => {
         console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
 
         readyClient.user.setActivity(
             "Elegance Community",
-            { type: 3 }
+            { type: 3 } // Type 3 corrisponde a "Watching"
         );
-
-        // --- INIZIO LOGICA DI SINCRONIZZAZIONE DISCORD ---
-        try {
-            console.log("🔄 Avvio sincronizzazione dei comandi Slash con Discord...");
-            
-            // Estrae i dati JSON da tutti i 18 comandi caricati
-            const commandsData = [];
-            readyClient.commands.forEach(cmd => {
-                if (cmd.data) {
-                    commandsData.push(cmd.data.toJSON());
-                } else if (cmd.toJSON) {
-                    commandsData.push(cmd.toJSON());
-                }
-            });
-
-            if (commandsData.length > 0) {
-                const rest = new REST({ version: '10' }).setToken(process.env.TOKEN);
-
-                // Registra i comandi globalmente su Discord usando l'ID del bot dinamico
-                await rest.put(
-                    Routes.applicationCommands(readyClient.user.id),
-                    { body: commandsData }
-                );
-
-                console.log(`✅ Successo! ${commandsData.length} comandi Slash sincronizzati globalmente con Discord!`);
-            } else {
-                console.log("⚠️ Nessun dato comando valido trovato per la sincronizzazione.");
-            }
-        } catch (error) {
-            console.error("❌ Errore durante la registrazione dei comandi su Discord:", error);
-        }
-        // --- FINE LOGICA DI SINCRONIZZAZIONE ---
     }
 );
 
@@ -130,7 +104,7 @@ client.on(
 
                     if(!interaction.replied && !interaction.deferred){
                         await interaction.reply({
-                            content: "❌ Errore durante il comando.",
+                            content: "❌ Errore durante l'esecuzione del comando.",
                             ephemeral: true
                         }).catch(()=>{});
                     }
@@ -201,4 +175,3 @@ console.log(
 // LOGIN
 // ==========================
 client.login(process.env.TOKEN);
-                    

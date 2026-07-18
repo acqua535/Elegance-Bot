@@ -6,8 +6,8 @@ module.exports = function loadCommands(client) {
     console.log("📂 Avvio caricamento locale dei comandi...");
     console.log("-----------------------------------------");
 
-    // Puntiamo dritti alla cartella /commands nella root del bot
-    const commandsPath = path.join(process.cwd(), "commands");
+    // FIX SICURO: Usiamo __dirname per puntare alla cartella reale del bot
+    const commandsPath = path.join(__dirname, "commands");
 
     if (!fs.existsSync(commandsPath)) {
         console.log(`⚠️ Errore critico: La cartella 'commands' non esiste in: ${commandsPath}`);
@@ -23,9 +23,9 @@ module.exports = function loadCommands(client) {
 
     for (const file of files) {
         try {
+            // FIX: require corretto usando il path assoluto
             const command = require(path.join(commandsPath, file));
 
-            // Controllo rigoroso sulla struttura del comando
             if (!command.data || !command.execute) {
                 console.log(`⚠️ Il file '${file}' è stato saltato perché manca di 'data' o della funzione 'execute'.`);
                 continue;
@@ -36,7 +36,6 @@ module.exports = function loadCommands(client) {
                 continue;
             }
 
-            // Salviamo il comando nella Collection del client
             client.commands.set(command.data.name, command);
             console.log(`✅ [LOCALE] Comando caricato in memoria: /${command.data.name}`);
 

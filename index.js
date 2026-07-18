@@ -1,12 +1,21 @@
 const {
     Client,
     GatewayIntentBits,
-    Collection,
-    REST,
-    Routes
+    Collection
 } = require("discord.js");
+const fs = require("fs");
+const path = require("path");
 
 require("dotenv").config();
+
+// ==========================================
+// FIX DISCLOUD: CREAZIONE AUTOMATICA CARTELLA
+// ==========================================
+const commandsPath = path.join(__dirname, "commands");
+if (!fs.existsSync(commandsPath)) {
+    console.log("📂 [FIX] Cartella 'commands' non trovata su Discloud. Creazione in corso...");
+    fs.mkdirSync(commandsPath);
+}
 
 // ==========================
 // CLIENT
@@ -26,7 +35,7 @@ client.commands = new Collection();
 // HANDLERS
 // ==========================
 const loadCommands = require("./commandHandler");
-const deployCommands = require("./deployCommand"); // Importiamo il deployer di ieri
+const deployCommands = require("./deployCommand"); 
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
 const verify = require("./verify");
@@ -34,11 +43,10 @@ const verify = require("./verify");
 // ==========================
 // AVVIO GENERALE DEI COMANDI
 // ==========================
-// Eseguiamo il deploy sul server e poi carichiamo in memoria locale
 (async () => {
     try {
-        await deployCommands(); // Invia i comandi a Discord (tramite il file separato)
-        loadCommands(client);   // Carica i comandi nella Collection locale del bot
+        await deployCommands(); 
+        loadCommands(client);   
         
         console.log("📦 Comandi caricati in memoria locale:", client.commands.size);
     } catch (error) {
@@ -64,11 +72,11 @@ process.on(
 );
 
 // ==========================
-// READY SYSTEM (CORRETTO)
+// READY SYSTEM (AGGIORNATO)
 // ==========================
-// L'evento corretto in discord.js è "ready"
+// Sostituito 'ready' con 'clientReady' per rimuovere il deprecation warning
 client.once(
-    "ready",
+    "clientReady",
     async (readyClient) => {
         console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
 

@@ -9,7 +9,8 @@ module.exports = async function deployCommands() {
     console.log("-----------------------------------------");
 
     const commands = [];
-    const commandsPath = path.join(process.cwd(), "commands");
+    // FIX SICURO: Usiamo __dirname anche qui
+    const commandsPath = path.join(__dirname, "commands");
 
     if (!fs.existsSync(commandsPath)) {
         console.log("⚠️ Impossibile eseguire il deploy: cartella 'commands' non trovata.");
@@ -36,17 +37,15 @@ module.exports = async function deployCommands() {
         return;
     }
 
-    // Inizializziamo la connessione REST con Discord usando la v10 delle API
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
     try {
         console.log(`🚀 Invio di ${commands.length} comandi al server Discord...`);
 
-        // Registrazione immediata tramite Guild ID (Server ID)
         await rest.put(
             Routes.applicationGuildCommands(
-                "1527327515511881739", // Il tuo CLIENT_ID aggiornato
-                "1505173045269233736"  // Il tuo GUILD_ID del server
+                "1527327515511881739", 
+                "1505173045269233736"  
             ),
             { body: commands }
         );

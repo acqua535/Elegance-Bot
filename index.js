@@ -1,25 +1,17 @@
-const {
-    Client,
-    GatewayIntentBits,
-    Collection
-} = require("discord.js");
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
 require("dotenv").config();
 
-// Usa process.cwd() che garantisce la cartella di esecuzione principale su Linux/Discloud
 const commandsPath = path.join(process.cwd(), "commands");
 if (!fs.existsSync(commandsPath)) {
     console.log("📂 [FIX] Cartella 'commands' non trovata. Creazione in corso...");
     fs.mkdirSync(commandsPath);
 }
 
-// ==========================
-// CLIENT
-// ==========================
 const client = new Client({
-    intents:[
+    intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
@@ -30,7 +22,7 @@ const client = new Client({
 client.commands = new Collection();
 
 // ==========================
-// HANDLERS
+// HANDLERS & CARICAMENTO
 // ==========================
 const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand"); 
@@ -38,36 +30,23 @@ const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
 const ticketSystem = require("./ticketSystem");
 
-// ==========================
-// AVVIO GENERALE DEI COMANDI
-// ==========================
 (async () => {
     try {
         await deployCommands(); 
         loadCommands(client);   
         
+        // Caricamento manuale di verify dalla root
+        const verify = require("./verify");
+        client.commands.set(verify.data.name, verify);
+        
         console.log("📦 Comandi caricati in memoria locale:", client.commands.size);
     } catch (error) {
-        console.error("❌ Errore durante l'inizializzazione dei comandi:", error);
+        console.error("❌ Errore durante l'inizializzazione:", error);
     }
 })();
 
 // ==========================
-// ERROR SYSTEM
-// ==========================
-process.on("unhandledRejection", error => console.error("❌ Unhandled Promise:", error));
-process.on("uncaughtException", error => console.error("❌ Uncaught Exception:", error));
-
-// ==========================
-// READY SYSTEM
-// ==========================
-client.once("ready", async (readyClient) => {
-    console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
-    readyClient.user.setActivity("Elegance Community", { type: 3 });
-});
-
-// ==========================
-// ASSISTENZA IA (LOGICA DOMANDE)
+// LOGICA ASSISTENZA IA
 // ==========================
 const DOMANDE = {
     bug: ["Qual è il bug riscontrato?", "Da quanto tempo persiste?", "Quali sono i passaggi per riprodurlo?"],
@@ -79,13 +58,11 @@ const DOMANDE = {
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     
-    // Controlla se il messaggio è in un canale ticket
     const ticketData = ticketSystem.getTicketByChannel(message.channel.id);
-    if (!ticketData || ticketData.step === 0 || ticketData.step >= 3) return;
+    if (!ticketData || ticketData.step >= 3) return;
 
-    // Incrementa lo step
     ticketData.step++;
-    ticketSystem.updateTicket(ticketData.userId, ticketData);
+    ticketSystem.updateTicket(ticketData.owner, ticketData);
 
     if (ticketData.step < 3) {
         await message.channel.send(`✅ Ricevuto. **DOMANDA ${ticketData.step + 1}/3:** ${DOMANDE[ticketData.type][ticketData.step]}`);
@@ -99,39 +76,43 @@ client.on('messageCreate', async (message) => {
 // ==========================
 client.on("interactionCreate", async interaction => {
     try {
-        if(interaction.isChatInputCommand()){
+        if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
-            if(!command) return;
+            if (!command) return;
             await command.execute(interaction);
-            return;
         }
 
-        if(interaction.isButton()){
+        else if (interaction.isButton()) {
             await buttonHandler(interaction);
-            return;
         }
 
-        if(interaction.isStringSelectMenu()){
-            if(interaction.customId === "ticket_category"){
-                await ticket.categoryHandler(interaction);
-                return;
-            }
-            if(interaction.customId === "ticket_manage"){
-                await ticket.router(interaction);
-                return;
-            }
+        else if (interaction.isStringSelectMenu()) {
+            if (interaction.customId === "ticket_category") await ticket.categoryHandler(interaction);
+            else if (interaction.customId === "ticket_manage") await ticket.router(interaction);
         }
 
-        if(interaction.isModalSubmit()){
-            if(interaction.customId === "verify_modal"){
-                const verifyDynamic = require("./commands/verify.js");
-                await verifyDynamic.modalHandler(interaction);
-                return;
+        else if (interaction.isModalSubmit()) {
+            // Gestione Verify
+            if (interaction.customId === "verify_modal") {
+                const verify = require("./verify");
+                await verify.modalHandler(interaction);
+            }
+            // Gestione Aggiungi/Rimuovi Utenti nel Ticket
+            else if (interaction.customId === "modal_add_user" || interaction.customId === "modal_remove_user") {
+                const userId = interaction.fields.getTextInputValue("user_id");
+                const isAdd = interaction.customId === "modal_add_user";
+                await interaction.channel.permissionOverwrites.edit(userId, { ViewChannel: isAdd });
+                await interaction.reply({ content: `✅ Utente <@${userId}> ${isAdd ? "aggiunto" : "rimosso"} con successo.`, ephemeral: true });
             }
         }
-    } catch(error){
+    } catch (error) {
         console.error("❌ Errore interaction:", error);
     }
+});
+
+client.on("clientReady", (c) => {
+    console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);
+    c.user.setActivity("Elegance Community", { type: 3 });
 });
 
 client.login(process.env.TOKEN);

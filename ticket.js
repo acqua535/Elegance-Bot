@@ -1,7 +1,6 @@
 const { 
     SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, 
-    ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, PermissionFlagsBits,
-    ModalBuilder, TextInputBuilder, TextInputStyle 
+    ChannelType, EmbedBuilder, PermissionFlagsBits 
 } = require("discord.js");
 
 const ticketSystem = require("./ticketSystem");
@@ -12,6 +11,14 @@ const TICKET_CATEGORY_ID = "1528582447443345560";
 const TICKET_STAFF_ROLES = ["1528576030783176835"];
 const EMBED_COLOR = "#2b2d31";
 const PREFIX = "︲🎫〞﹒";
+
+// Database domande avanzate (Fake AI)
+const QUESTIONS = {
+    partner: ["Come si chiama il tuo progetto?", "Quanti membri avete?", "Qual è l'obiettivo della partnership?"],
+    staff: ["Da quanto tempo sei nella community?", "Qual è la tua età?", "Perché vorresti entrare nello staff?"],
+    bug: ["Descrivi brevemente il bug.", "Dove si è verificato?", "Hai degli screenshot da allegare?"],
+    report: ["Chi è l'utente da segnalare?", "Quale regola ha infranto?", "Hai delle prove (screenshot/link)?"]
+};
 
 module.exports = {
     data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket di assistenza"),
@@ -24,24 +31,21 @@ module.exports = {
                 { label: "Supporto Partner", value: "partner", emoji: "🤝" },
                 { label: "Bando Staff", value: "staff", emoji: "🛡️" },
                 { label: "Segnalazione Bug", value: "bug", emoji: "🐞" },
-                { label: "Idee / Suggerimenti", value: "idea", emoji: "💡" }
+                { label: "Report Utente", value: "report", emoji: "🚫" }
             ]);
 
         const embed = new EmbedBuilder()
             .setColor(EMBED_COLOR)
-            .setTitle(`${PREFIX}ELEGANCE | CENTRO SUPPORTO`)
-            .setDescription("Seleziona una categoria per iniziare una nuova pratica.\n\nIl nostro staff ti risponderà nel minor tempo possibile.")
-            .setThumbnail(interaction.guild.iconURL())
-            .setFooter({ text: "Elegance Community Support" });
+            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
+            .setDescription("Seleziona una categoria per iniziare.");
 
         await interaction.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)], ephemeral: false });
     },
 
     async categoryHandler(interaction) {
         await interaction.deferReply({ ephemeral: true });
-        if (ticketSystem.hasOpenTicket(interaction.user.id)) return interaction.editReply({ content: "❌ Hai già un ticket aperto." });
-
         const type = interaction.values[0];
+        
         const channel = await interaction.guild.channels.create({
             name: `${PREFIX}${type}-${interaction.user.username}`,
             type: ChannelType.GuildText,
@@ -58,38 +62,19 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setColor(EMBED_COLOR)
             .setTitle(`${PREFIX}Ticket | ${type.toUpperCase()}`)
-            .setDescription(`Benvenuto ${interaction.user}, lo staff è stato notificato.\n\nRispondi alle domande dell'assistente IA per velocizzare la risoluzione.`)
-            .addFields(
-                { name: "👤 Utente", value: `${interaction.user.tag}`, inline: true },
-                { name: "📋 Categoria", value: `${type.toUpperCase()}`, inline: true },
-                { name: "🕒 Aperto il", value: `<t:${Math.floor(Date.now()/1000)}:f>`, inline: true }
-            )
-            .setThumbnail(interaction.user.displayAvatarURL());
+            .setDescription(`Benvenuto ${interaction.user}. Rispondi alla prima domanda per procedere:`)
+            .addFields({ name: "Domanda 1", value: QUESTIONS[type][0] });
 
         const manageMenu = new StringSelectMenuBuilder()
             .setCustomId("ticket_manage")
-            .setPlaceholder("⚙️ Gestione Ticket")
+            .setPlaceholder("⚙️ Pannello Gestione")
             .addOptions([
                 { label: "Prendi in carico (Claim)", value: "claim_ticket", emoji: "✅" },
-                { label: "Aggiungi Utente", value: "add_user", emoji: "➕" },
                 { label: "Ping Staff (Countdown)", value: "ping_staff", emoji: "🔔" },
                 { label: "Chiudi Ticket", value: "close_ticket", emoji: "🔒" }
             ]);
 
         await channel.send({ content: `🔔 <@&${TICKET_STAFF_ROLES[0]}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(manageMenu)] });
-        
-        const log = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-        if (log) {
-            log.send({ embeds: [new EmbedBuilder()
-                .setColor("#00ff00")
-                .setTitle("📂 NUOVO TICKET APERTO")
-                .addFields(
-                    { name: "Utente", value: `${interaction.user.tag}`, inline: true },
-                    { name: "Canale", value: `${channel.name}`, inline: true },
-                    { name: "Categoria", value: `${type.toUpperCase()}`, inline: true }
-                )]});
-        }
-
         await interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
     },
 
@@ -100,46 +85,38 @@ module.exports = {
 
         if (id === "ping_staff") {
             let countdown = 5;
-            const msg = await interaction.reply({ content: `🔔 Notifica staff in invio tra ${countdown} secondi...`, fetchReply: true });
+            const msg = await interaction.reply({ content: `🔔 Notifica staff tra ${countdown}s...`, fetchReply: true });
             const interval = setInterval(async () => {
                 countdown--;
-                if (countdown > 0) {
-                    await msg.edit(`🔔 Notifica staff in invio tra ${countdown} secondi...`);
-                } else {
+                if (countdown > 0) await msg.edit(`🔔 Notifica staff tra ${countdown}s...`);
+                else {
                     clearInterval(interval);
-                    await msg.delete().catch(() => {});
-                    await interaction.channel.send(`🔔 <@&${TICKET_STAFF_ROLES[0]}> **Attenzione!** Richiesta assistenza immediata in questo ticket.`);
+                    msg.delete();
+                    interaction.channel.send(`🔔 <@&${TICKET_STAFF_ROLES[0]}> Richiesta assistenza immediata!`);
                 }
             }, 1000);
             return;
         }
 
-        if (id === "add_user") {
-            const modal = new ModalBuilder().setCustomId("modal_add_user").setTitle("Gestione Partecipanti");
-            modal.addComponents(new ActionRowBuilder().addComponents(
-                new TextInputBuilder().setCustomId("user_id").setLabel("ID dell'utente").setStyle(TextInputStyle.Short).setRequired(true)
-            ));
-            return await interaction.showModal(modal);
-        }
-
         if (id === "claim_ticket") {
-            if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ Solo staff.", ephemeral: true });
-            return interaction.reply({ content: `✅ Ticket preso in carico da ${interaction.user}`, ephemeral: false });
+            if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ Accesso negato.", ephemeral: true });
+            interaction.reply({ content: "✅ Ticket preso in carico." });
+            interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send({ embeds: [new EmbedBuilder().setTitle("✅ TICKET PRESO IN CARICO").setDescription(`Staff: ${interaction.user.tag}\nTicket: ${interaction.channel.name}`).setColor("Green")] });
+            return;
         }
 
         if (id === "close_ticket") {
-            if (interaction.user.id !== ticketData.owner && !TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ No.", ephemeral: true });
-            await interaction.reply("🔒 Chiusura in corso...");
+            interaction.reply("🔒 Chiusura e salvataggio...");
             const file = await transcriptManager.createTranscript(interaction.channel);
-            await interaction.guild.members.cache.get(ticketData.owner)?.send({ content: "Ecco il transcript del tuo ticket:", files: [file] }).catch(() => {});
+            interaction.guild.members.cache.get(ticketData.owner)?.send({ content: "Ecco il transcript del tuo ticket:", files: [file] }).catch(() => {});
+            interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send({ content: `📁 **Transcript per:** ${interaction.channel.name}`, files: [file] });
             ticketSystem.deleteTicket(ticketData.owner);
             setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
         }
     },
 
-    async router(interaction) { 
-        interaction.customId = interaction.values[0]; 
-        return this.buttonHandler(interaction); 
+    async router(interaction) {
+        interaction.customId = interaction.values[0];
+        return this.buttonHandler(interaction);
     }
 };
-                                      

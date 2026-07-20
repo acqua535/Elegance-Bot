@@ -5,36 +5,49 @@ require("dotenv").config();
 
 module.exports = async function deployCommands() {
     console.log("-----------------------------------------");
-    console.log("🔄 Preparazione dei comandi per il deploy su Discord...");
+    console.log("🔄 Preparazione dei comandi per il deploy API...");
     console.log("-----------------------------------------");
 
     const commands = [];
-    
-    // FIX UNIVERSALE: process.cwd() punta sempre alla cartella principale del bot
-    const commandsPath = path.join(process.cwd(), "commands");
+    const rootPath = process.cwd();
+    const commandsPath = path.join(rootPath, "commands");
 
-    if (!fs.existsSync(commandsPath)) {
-        console.log(`⚠️ Impossibile eseguire il deploy: cartella 'commands' non trovata in: ${commandsPath}`);
-        return;
+    const targetCommands = [
+        "collab.js", "daily-reward.js", "embed.js", "horror.js", 
+        "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
+        "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"
+    ];
+
+    const filesToDeploy = new Map();
+
+    // Controlla in 'commands'
+    if (fs.existsSync(commandsPath)) {
+        fs.readdirSync(commandsPath).forEach(file => {
+            if (targetCommands.includes(file)) filesToDeploy.set(file, path.join(commandsPath, file));
+        });
     }
 
-    const files = fs.readdirSync(commandsPath).filter(file => file.endsWith(".js"));
+    // Controlla in root
+    fs.readdirSync(rootPath).forEach(file => {
+        if (targetCommands.includes(file) && !filesToDeploy.has(file)) {
+            filesToDeploy.set(file, path.join(rootPath, file));
+        }
+    });
 
-    for (const file of files) {
+    for (const [file, filePath] of filesToDeploy.entries()) {
         try {
-            const command = require(path.join(commandsPath, file));
-            
+            const command = require(filePath);
             if (command.data) {
                 commands.push(command.data.toJSON());
-                console.log(`📌 Pronto per il server: /${command.data.name}`);
+                console.log(`📌 Pronto per Discord API: /${command.data.name}`);
             }
         } catch (error) {
-            console.error(`❌ Errore nella lettura di ${file} per il deploy API:`, error);
+            console.error(`❌ Errore lettura ${file} per API:`, error);
         }
     }
 
     if (commands.length === 0) {
-        console.log("⚠️ Nessun comando valido trovato. Invio annullato.");
+        console.log("⚠️ Nessun comando trovato nelle posizioni specificate. Deploy annullato.");
         return;
     }
 
@@ -43,20 +56,19 @@ module.exports = async function deployCommands() {
     try {
         console.log(`🚀 Invio di ${commands.length} comandi al server Discord...`);
 
-        // Invio dei comandi dell'applicazione tramite ID dell'app e ID del server
         await rest.put(
             Routes.applicationGuildCommands(
-                "1527327515511881739", // ID del tuo Bot
-                "1505173045269233736"  // ID del tuo Server Elegance
+                "1527327515511881739", 
+                "1505173045269233736"  
             ),
             { body: commands }
         );
 
         console.log("-----------------------------------------");
-        console.log(`✅ Sincronizzazione completata! ${commands.length} comandi inseriti nel server.`);
+        console.log(`✅ Sincronizzazione completata! ${commands.length} comandi inseriti.`);
         console.log("-----------------------------------------");
 
     } catch (error) {
-        console.error("❌ Errore critico durante la registrazione dei comandi su Discord API:", error);
+        console.error("❌ Errore critico durante il deploy su Discord API:", error);
     }
 };

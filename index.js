@@ -4,12 +4,6 @@ const path = require("path");
 
 require("dotenv").config();
 
-const commandsPath = path.join(process.cwd(), "commands");
-if (!fs.existsSync(commandsPath)) {
-    console.log("📂 [FIX] Cartella 'commands' non trovata. Creazione in corso...");
-    fs.mkdirSync(commandsPath);
-}
-
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -20,6 +14,16 @@ const client = new Client({
 });
 
 client.commands = new Collection();
+
+// ==========================
+// CONFIGURAZIONE DOMANDE (Fake IA)
+// ==========================
+const DOMANDE = {
+    bug: ["Qual è il bug riscontrato?", "Da quanto tempo persiste?", "Quali sono i passaggi per riprodurlo?"],
+    partner: ["Che server rappresenti?", "Qual è la tua proposta?", "Quanti membri ha il tuo server?"],
+    staff: ["Età?", "Esperienza precedente?", "Perché dovremmo prenderti?"],
+    report: ["Chi è l'utente da segnalare?", "Quale regola ha infranto?", "Hai delle prove (screenshot/link)?"]
+};
 
 // ==========================
 // HANDLERS & CARICAMENTO
@@ -35,7 +39,6 @@ const ticketSystem = require("./ticketSystem");
         await deployCommands(); 
         loadCommands(client);   
         
-        // Caricamento manuale di verify dalla root
         const verify = require("./verify");
         client.commands.set(verify.data.name, verify);
         
@@ -46,28 +49,29 @@ const ticketSystem = require("./ticketSystem");
 })();
 
 // ==========================
-// LOGICA ASSISTENZA IA
+// LOGICA ASSISTENZA (Fake IA)
 // ==========================
-const DOMANDE = {
-    bug: ["Qual è il bug riscontrato?", "Da quanto tempo persiste?", "Quali sono i passaggi per riprodurlo?"],
-    partner: ["Che server rappresenti?", "Qual è la tua proposta?", "Quanti membri ha il tuo server?"],
-    staff: ["Età?", "Esperienza precedente?", "Perché dovremmo prenderti?"],
-    idea: ["Qual è la tua idea?", "Come aiuterebbe il server?", "C'è altro da aggiungere?"]
-};
-
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     
     const ticketData = ticketSystem.getTicketByChannel(message.channel.id);
-    if (!ticketData || ticketData.step >= 3) return;
+    if (!ticketData) return;
 
-    ticketData.step++;
-    ticketSystem.updateTicket(ticketData.owner, ticketData);
-
+    // Se siamo ancora nei limiti delle 3 domande
     if (ticketData.step < 3) {
-        await message.channel.send(`✅ Ricevuto. **DOMANDA ${ticketData.step + 1}/3:** ${DOMANDE[ticketData.type][ticketData.step]}`);
-    } else {
-        await message.channel.send("✅ Abbiamo ricevuto tutte le info. Uno staffer arriverà a breve.");
+        ticketData.step++;
+        ticketSystem.updateTicket(ticketData.owner, ticketData);
+
+        if (ticketData.step <= 3) {
+            const index = ticketData.step - 1;
+            const domanda = DOMANDE[ticketData.type] ? DOMANDE[ticketData.type][index] : null;
+            
+            if (domanda) {
+                await message.channel.send(`🤖 **Assistente Elegance [Step ${ticketData.step}/3]:**\n${domanda}`);
+            } else if (ticketData.step === 3) {
+                await message.channel.send("✅ Abbiamo ricevuto tutte le informazioni necessarie. Uno staffer arriverà a breve.");
+            }
+        }
     }
 });
 
@@ -92,12 +96,10 @@ client.on("interactionCreate", async interaction => {
         }
 
         else if (interaction.isModalSubmit()) {
-            // Gestione Verify
             if (interaction.customId === "verify_modal") {
                 const verify = require("./verify");
                 await verify.modalHandler(interaction);
             }
-            // Gestione Aggiungi/Rimuovi Utenti nel Ticket
             else if (interaction.customId === "modal_add_user" || interaction.customId === "modal_remove_user") {
                 const userId = interaction.fields.getTextInputValue("user_id");
                 const isAdd = interaction.customId === "modal_add_user";
@@ -110,7 +112,7 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-client.on("clientReady", (c) => {
+client.once("ready", (c) => {
     console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);
     c.user.setActivity("Elegance Community", { type: 3 });
 });

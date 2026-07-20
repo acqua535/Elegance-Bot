@@ -167,6 +167,10 @@ module.exports = async function buttonHandler(interaction){
                 id === "claim_ticket"
                 ||
                 id === "close_ticket"
+                ||
+                id.startsWith("rate_")
+                ||
+                id.startsWith("ticket_rate")
             )
         ){
 
@@ -437,3 +441,4 @@ module.exports = async function buttonHandler(interaction){
 
 
 };
+            

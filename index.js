@@ -1,110 +1,74 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
-const fs = require("fs");
-require("dotenv").config();
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
+const fs = require('fs');
 
-const client = new Client({
-    intents: [
-        GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
-        GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent
-    ]
-});
+const DATA_PATH = './ticketsData.json';
+const STAFF_ROLE_ID = "1528576030783176835";
+const CATEGORY_ID = "1528582447443345560";
 
-client.commands = new Collection();
+const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
+const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
-// Import moduli
-const loadCommands = require("./commandHandler");
-const deployCommands = require("./deployCommand");
-const buttonHandler = require("./buttonHandler"); 
+module.exports = {
+    data: new SlashCommandBuilder().setName("ticket").setDescription("🎫 Apri un ticket"),
 
-// ==========================
-// INIZIALIZZAZIONE
-// ==========================
-(async () => {
-    try {
-        await deployCommands();
-        loadCommands(client);
-        console.log("📦 Bot inizializzato correttamente.");
-    } catch (error) {
-        console.error("❌ Errore durante l'inizializzazione:", error);
-    }
-})();
+    async execute(interaction) {
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("ticket_category")
+            .setPlaceholder("🎫 Seleziona categoria...")
+            .addOptions([
+                { label: "Partner", value: "partner", emoji: "🤝" },
+                { label: "Staff", value: "staff", emoji: "🛡️" },
+                { label: "Bug", value: "bug", emoji: "🐞" },
+                { label: "Report", value: "report", emoji: "🚫" }
+            ]);
+        await interaction.reply({ embeds: [new EmbedBuilder().setTitle("Supporto Elegance").setDescription("Seleziona:")], components: [new ActionRowBuilder().addComponents(menu)] });
+    },
 
-// ==========================
-// CICLO DI PULIZIA AUTOMATICA (Check inattività ogni minuto)
-// ==========================
-setInterval(() => {
-    if (!fs.existsSync('./ticketsData.json')) return;
-    const data = JSON.parse(fs.readFileSync('./ticketsData.json', 'utf8') || '{}');
-    const now = Date.now();
+    async categoryHandler(interaction) {
+        await interaction.deferUpdate(); // Evita il crash
+        const channel = await interaction.guild.channels.create({
+            name: `🎫-${interaction.values[0]}-${interaction.user.username}`,
+            type: ChannelType.GuildText,
+            parent: CATEGORY_ID,
+            permissionOverwrites: [
+                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
+                { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
+            ]
+        });
 
-    for (const channelId in data) {
-        const ticket = data[channelId];
-        if (ticket.status !== 'open') continue;
+        const data = getData();
+        data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type: interaction.values[0] };
+        saveData(data);
 
-        const inactiveTime = now - (ticket.lastMessage || Date.now());
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("ping_staff").setLabel("📢 Ping Staff").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("close_ticket").setLabel("🔒 Chiudi").setStyle(ButtonStyle.Danger)
+        );
+        await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, components: [row] });
+    },
 
-        // Se inattivo da 23 ore (avviso)
-        if (inactiveTime > 82800000 && !ticket.warned) {
-            const channel = client.channels.cache.get(channelId);
-            if (channel) {
-                channel.send("⚠️ **AVVISO:** Il ticket verrà chiuso automaticamente tra 1 ora per inattività.");
-                ticket.warned = true;
-                fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
+    async buttonHandler(interaction) {
+        if (interaction.customId === 'ping_staff') {
+            const data = getData();
+            const ticket = data[interaction.channel.id];
+            if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
+                return interaction.reply({ content: "⏳ Aspetta 24h per pingare.", ephemeral: true });
             }
+            ticket.lastPing = Date.now();
+            saveData(data);
+            await interaction.reply({ content: `<@&${STAFF_ROLE_ID}>` });
+        } else if (interaction.customId === 'close_ticket') {
+            await interaction.reply("🔒 Chiusura...");
+            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
         }
+    },
 
-        // Se inattivo da 24 ore (chiusura)
-        if (inactiveTime > 86400000) {
-            const channel = client.channels.cache.get(channelId);
-            if (channel) channel.delete().catch(() => {});
-            delete data[channelId];
-            fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
+    async handleMessage(message) {
+        const data = getData();
+        if (data[message.channel.id]) {
+            data[message.channel.id].lastMessage = Date.now();
+            saveData(data);
         }
     }
-}, 60000); 
-
-// ==========================
-// INTERACTION ROUTER
-// ==========================
-client.on("interactionCreate", async interaction => {
-    try {
-        // Gestione Menu Categorie Ticket
-        if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category') {
-            await client.commands.get('ticket').categoryHandler(interaction);
-        }
-        // Gestione Bottoni (Ping & Close)
-        else if (interaction.isButton() && ['ping_staff', 'close_ticket'].includes(interaction.customId)) {
-            await client.commands.get('ticket').buttonHandler(interaction);
-        }
-        // Gestione Comandi Slash
-        else if (interaction.isChatInputCommand()) {
-            const command = client.commands.get(interaction.commandName);
-            if (command) await command.execute(interaction);
-        }
-        // Gestione Modali
-        else if (interaction.isModalSubmit()) {
-            if (interaction.customId === "verify_modal") await require("./verify").modalHandler(interaction);
-        }
-    } catch (error) {
-        console.error("❌ Errore interazione:", error);
-    }
-});
-
-// ==========================
-// MESSAGE ROUTER (Aggiorna lastMessage)
-// ==========================
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-    // Aggiorna l'attività del ticket
-    const ticketCmd = client.commands.get('ticket');
-    if (ticketCmd) await ticketCmd.handleMessage(message);
-});
-
-client.once("ready", (c) => {
-    console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);
-    c.user.setActivity("Elegance Community", { type: 3 });
-});
-
-client.login(process.env.TOKEN);
+};

@@ -147,8 +147,8 @@ client.on(
             // ==========================
             if(interaction.isModalSubmit()){
                 if(interaction.customId === "verify_modal"){
-                    // FIXATO: Ora punta a "./verify" perché il file è nella ROOT!
-                    const verifyDynamic = require("./verify");
+                    // Richiamo dinamico sicuro: cerca il file dentro commands dopo l'avvio completo
+                    const verifyDynamic = require("./commands/verify.js");
                     await verifyDynamic.modalHandler(interaction);
                     return;
                 }

@@ -36,7 +36,7 @@ const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand"); 
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
-const verify = require("./verify");
+const verify = require("./commands/verify"); // FIX percorso moduli: spostato sotto la cartella commands
 
 // ==========================
 // AVVIO GENERALE DEI COMANDI
@@ -145,7 +145,7 @@ client.on(
             }
 
             // ==========================
-            // MODALS
+            // MODALS (VERIFY & OTHERS)
             // ==========================
             if(interaction.isModalSubmit()){
                 if(interaction.customId === "verify_modal"){
@@ -179,3 +179,4 @@ console.log(
 // LOGIN
 // ==========================
 client.login(process.env.TOKEN);
+ 

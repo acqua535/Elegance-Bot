@@ -88,9 +88,10 @@ In caso di assistenza tecnica, richieste o problemi, apri un ticket:
 
         const answer = interaction.fields.getTextInputValue("captcha_input");
 
-        if (answer !== data.code) {
+        // Convertiamo in maiuscolo per evitare problemi di case-sensitive (es. 'a' invece di 'A')
+        if (answer.toUpperCase().trim() !== data.code.toUpperCase()) {
             return interaction.reply({
-                content: "❌ Codice errato.",
+                content: "❌ Codice errato. Clicca di nuovo sul pulsante per rigenerarne uno nuovo.",
                 ephemeral: true
             });
         }
@@ -118,10 +119,10 @@ In caso di assistenza tecnica, richieste o problemi, apri un ticket:
         } catch (error) {
             console.error(error);
             await interaction.reply({
-                content: "❌ Errore durante l'assegnazione dei ruoli. Contatta lo staff.",
+                content: "❌ Errore durante l'assegnazione dei ruoli. Assicurati che il ruolo del bot sia PIÙ IN ALTO dei ruoli da assegnare nelle impostazioni del server.",
                 ephemeral: true
             });
         }
     }
 };
-    
+            

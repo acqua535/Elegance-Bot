@@ -1,6 +1,6 @@
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const ticketSystem = require("./ticketSystem");
-const transcriptManager = require("./transcriptManager");
+const transcriptManager = require("./transcript");
 
 const LOG_CHANNEL_ID = "1528576197741772902";
 const STAFF_ROLE_ID = "1528576030783176835";

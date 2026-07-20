@@ -1,36 +1,51 @@
-const fs = require("fs");
-const path = require("path");
+const ticketSystem = require("./ticketSystem");
+const transcriptManager = require("./transcript");
+const { EmbedBuilder } = require("discord.js");
 
-// Carichiamo dinamicamente tutte le azioni da una cartella dedicata
-// Così ogni volta che aggiungi un nuovo bottone, basta aggiungere un file
-const actions = new Map();
-
-// Carichiamo i file (facoltativo, ma pulitissimo)
-// Per ora, teniamo la logica dentro un oggetto per semplicità
-const actionRegistry = {
-    "claim_ticket": require("./actions/ticketActions").claim,
-    "close_ticket": require("./actions/ticketActions").close,
-    "verify_button": require("./actions/verifyActions").verify,
-    // Aggiungi qui qualsiasi nuovo ID bottone senza toccare altro codice
-};
+const LOG_CHANNEL_ID = "1528576197741772902";
+const TICKET_STAFF_ROLES = ["1528576030783176835"];
 
 module.exports = async (interaction) => {
-    // Risposta immediata per evitare il timeout di Discord
+    // 1. Risposta immediata per evitare l'errore "Interazione non riuscita"
     await interaction.deferReply({ ephemeral: true });
 
-    const actionId = interaction.isStringSelectMenu() ? interaction.values[0] : interaction.customId;
-    
-    // Cerchiamo l'azione nel registro
-    const handler = actionRegistry[actionId];
+    const action = interaction.values ? interaction.values[0] : interaction.customId;
+    const ticketData = ticketSystem.getTicketByChannel(interaction.channel.id);
 
-    if (!handler) {
-        return interaction.editReply({ content: "❌ Nessuna funzione trovata per questo pulsante." });
+    // Se non è un ticket, gestisci altri bottoni qui (es: verifica)
+    if (!ticketData && action !== "verify_button") {
+        return interaction.editReply({ content: "❌ Dati ticket non trovati o azione non valida." });
     }
 
     try {
-        await handler(interaction);
+        switch (action) {
+            case "claim_ticket":
+                await interaction.editReply({ content: `✅ Ticket preso in carico da ${interaction.user}.` });
+                break;
+
+            case "ping_staff":
+                if (!ticketSystem.canPingStaff(ticketData.owner)) {
+                    return interaction.editReply({ content: "❌ Hai già pingato lo staff nelle ultime 24 ore." });
+                }
+                ticketSystem.useStaffPing(ticketData.owner);
+                await interaction.editReply({ content: `🔔 Ping inviato allo staff! <@&${TICKET_STAFF_ROLES[0]}>` });
+                break;
+
+            case "close_ticket":
+                await interaction.editReply({ content: "🔒 Chiusura in corso..." });
+                const file = await transcriptManager.createTranscript(interaction.channel);
+                const user = interaction.guild.members.cache.get(ticketData.owner);
+                if (user) user.send({ content: "📁 Il tuo transcript:", files: [file] }).catch(() => {});
+                ticketSystem.deleteTicket(ticketData.owner);
+                setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
+                break;
+
+            default:
+                await interaction.editReply({ content: "❓ Azione non definita." });
+                break;
+        }
     } catch (error) {
-        console.error(`❌ Errore esecuzione ${actionId}:`, error);
-        interaction.editReply({ content: "❌ Si è verificato un errore critico." }).catch(() => {});
+        console.error("❌ Errore:", error);
+        interaction.editReply({ content: "❌ Errore durante l'esecuzione." }).catch(() => {});
     }
 };

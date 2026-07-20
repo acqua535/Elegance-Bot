@@ -9,8 +9,8 @@ const {
 
 const ticket = require("./ticket");
 const minigame = require("./minigame");
-const verify = require("./commands/verify");
 const horrorEngine = require("./horrorEngine");
+// RIMOSSO il require statico di verify da qui per evitare il crash all'avvio dell'hosting
 
 
 
@@ -57,6 +57,12 @@ module.exports = async function buttonHandler(interaction){
             id === "verify_button"
         ){
 
+            // CARICAMENTO DINAMICO: Carica il file della verifica (dalla root o da commands) 
+            // solo quando l'utente clicca effettivamente il bottone.
+            // Se lo hai spostato in commands usa: require("./commands/verify")
+            // Se è rimasto nella root usa: require("./verify")
+            const verify = require("./verify");
+            
             return verify.buttonHandler(
                 interaction
             );
@@ -219,7 +225,7 @@ module.exports = async function buttonHandler(interaction){
 
             :
 
-            "difficile";
+            id === "difficile";
 
 
 
@@ -441,4 +447,3 @@ module.exports = async function buttonHandler(interaction){
 
 
 };
-            

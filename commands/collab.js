@@ -1,6 +1,6 @@
 const { SlashCommandBuilder } = require("discord.js");
 
-// CONFIG ID AGGIORNATI (Elegance Sponsoring)
+// CONFIG ID REALI (Elegance Sponsoring)
 const CHANNEL_ID = "1528576197741772902"; // Canale dove inviare la collaborazione
 const LOG_ID = "1528576197741772902";     // Canale Log Privato
 
@@ -38,7 +38,7 @@ module.exports = {
         const categoria = interaction.options.getString("categoria");
         const descrizione = interaction.options.getString("descrizione");
 
-        // Messaggio iniziale totalmente pulito, mostra direttamente la descrizione inserita
+        // Messaggio iniziale totalmente pulito, senza testi ripetitivi o scritte fisse
         const primoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n${descrizione}\n\n━━━━━━━⚜️━━━━━━━`;
 
         const secondoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n👤 **Autore**\n${interaction.user}\n\n📌 **Richiesta da**\n${richiesta}\n\n🏷️ **Categoria**\n${categoria}\n\n━━━━━━━⚜️━━━━━━━`;

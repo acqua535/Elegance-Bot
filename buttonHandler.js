@@ -9,7 +9,7 @@ const {
 
 const ticket = require("./ticket");
 const minigame = require("./minigame");
-const verify = require("./verify");
+const verify = require("./commands/verify");
 const horrorEngine = require("./horrorEngine");
 
 

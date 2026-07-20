@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const ticketSystem = require("./ticketSystem");
 const transcriptManager = require("./transcript");
 
@@ -14,7 +14,31 @@ const QUESTIONS = {
 };
 
 module.exports = {
-    // 1. CREAZIONE TICKET E AVVISO
+    // --- PARTE 1: Comando Slash ---
+    data: new SlashCommandBuilder()
+        .setName("ticket")
+        .setDescription("Apri un ticket di assistenza"),
+
+    async execute(interaction) {
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("ticket_category")
+            .setPlaceholder("🎫 Seleziona categoria...")
+            .addOptions([
+                { label: "Supporto Partner", value: "partner", emoji: "🤝" },
+                { label: "Bando Staff", value: "staff", emoji: "🛡️" },
+                { label: "Segnalazione Bug", value: "bug", emoji: "🐞" },
+                { label: "Report Utente", value: "report", emoji: "🚫" }
+            ]);
+
+        const embed = new EmbedBuilder()
+            .setColor(0x2B2D31)
+            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
+            .setDescription("Seleziona una categoria per iniziare.");
+
+        await interaction.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)], ephemeral: true });
+    },
+
+    // --- PARTE 2: Creazione Ticket (chiamata dal registry) ---
     async categoryHandler(interaction) {
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
@@ -28,7 +52,6 @@ module.exports = {
             ]
         });
 
-        // Step -1 = Attesa del "ok" iniziale
         ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: -1 });
 
         const embed = new EmbedBuilder()
@@ -37,15 +60,14 @@ module.exports = {
             .setDescription(`Benvenuto ${interaction.user}.\nStai per aprire un ticket per **${type.toUpperCase()}**.\n\nTi verranno poste **3 domande**. Scrivi **'ok'** o **'okay'** per iniziare.`);
 
         await channel.send({ content: `${interaction.user}`, embeds: [embed] });
-        await interaction.editReply({ content: `✅ Ticket creato: ${channel}`, ephemeral: true });
+        await interaction.update({ content: `✅ Ticket creato: ${channel}`, components: [], ephemeral: true });
     },
 
-    // 2. LOGICA MESSAGGI (STEP DOMANDE)
+    // --- PARTE 3: Logica Domande (chiamata dall'index) ---
     async handleTicketMessage(message) {
         const data = ticketSystem.getTicketByChannel(message.channel.id);
         if (!data || message.author.bot) return;
 
-        // FASE: Attesa "ok"
         if (data.step === -1) {
             const conferme = ["ok", "okay", "si", "certo", "ok!", "d'accordo"];
             if (conferme.includes(message.content.toLowerCase().trim())) {
@@ -53,9 +75,7 @@ module.exports = {
                 ticketSystem.updateTicket(data.owner, data);
                 return message.channel.send(`🤖 **Domanda 1:** ${QUESTIONS[data.type][0]}`);
             }
-        } 
-        // FASE: Domande 1-3
-        else if (data.step < 3) {
+        } else if (data.step < 3) {
             data.step++;
             ticketSystem.updateTicket(data.owner, data);
             
@@ -71,7 +91,7 @@ module.exports = {
         }
     },
 
-    // 3. BOTTONI E RATING
+    // --- PARTE 4: Bottoni e Rating ---
     async buttonHandler(interaction) {
         const data = ticketSystem.getTicketByChannel(interaction.channel.id);
         if (interaction.customId === "claim_ticket") {
@@ -103,4 +123,4 @@ module.exports = {
         interaction.client.channels.cache.get(LOG_CHANNEL_ID)?.send(`📊 **Voto:** ${ratingMap[interaction.customId]} da ${interaction.user.tag}`);
     }
 };
-                                                                         
+                                          

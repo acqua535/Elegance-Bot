@@ -1,27 +1,26 @@
 const registry = require("./registry");
 
 module.exports = async (interaction) => {
-    // 1. Risposta di sicurezza
+    // Risposta immediata per evitare il timeout di Discord
     if (!interaction.deferred && !interaction.replied) {
         await interaction.deferReply({ ephemeral: true });
     }
 
-    // 2. Prendi l'ID o il primo valore selezionato
     const id = interaction.customId;
     const value = interaction.values ? interaction.values[0] : null;
-
-    // 3. Cerca nel registry prima l'ID, poi il valore
+    
+    // Controlla nel registro se esiste l'azione (sia per ID che per Value)
     const action = registry[id] || registry[value];
 
     if (action) {
         try {
             await action(interaction);
         } catch (error) {
-            console.error(`❌ Errore esecuzione ${id || value}:`, error);
-            await interaction.editReply({ content: "❌ Errore critico." }).catch(() => {});
+            console.error(`❌ Errore in ${id || value}:`, error);
+            await interaction.editReply({ content: "❌ Errore critico nel gioco/ticket." }).catch(() => {});
         }
     } else {
-        console.warn(`⚠️ Azione non trovata per ID: ${id} o Valore: ${value}`);
-        await interaction.editReply({ content: "⚠️ Azione non riconosciuta." });
+        console.warn(`⚠️ Azione non trovata: ${id || value}`);
+        await interaction.editReply({ content: "⚠️ Funzione non ancora implementata." });
     }
 };

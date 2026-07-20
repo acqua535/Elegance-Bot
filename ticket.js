@@ -37,14 +37,14 @@ module.exports = {
             ]);
 
         await interaction.reply({
-            embeds: [new EmbedBuilder().setColor(EMBED_BLACK).setTitle("🎫 CENTRO SUPPORTO").setDescription("Seleziona una categoria.")],
+            embeds: [new EmbedBuilder().setColor(EMBED_BLACK).setTitle("🎫 CENTRO SUPPORTO").setDescription("Seleziona una categoria per procedere.")],
             components: [new ActionRowBuilder().addComponents(menu)]
         });
     },
 
     async categoryHandler(interaction) {
         await interaction.deferReply({ ephemeral: true });
-        if (ticketSystem.hasOpenTicket(interaction.user.id)) return interaction.editReply({ content: "❌ Hai già un ticket." });
+        if (ticketSystem.hasOpenTicket(interaction.user.id)) return interaction.editReply({ content: "❌ Hai già un ticket aperto." });
 
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
@@ -53,32 +53,23 @@ module.exports = {
             parent: TICKET_CATEGORY_ID,
             permissionOverwrites: [
                 { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                ...TICKET_STAFF_ROLES.map(r => ({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }))
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+                ...TICKET_STAFF_ROLES.map(r => ({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }))
             ]
         });
 
-        // Inizializzazione dati ticket con supporto IA
-        ticketSystem.createTicket(interaction.user.id, { 
-            owner: interaction.user.id, 
-            channelId: channel.id, 
-            type: type, 
-            step: 0, 
-            lastPing: 0 
-        });
+        ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: 0, lastPing: 0 });
 
         const manageMenu = new StringSelectMenuBuilder()
             .setCustomId("ticket_manage")
             .setPlaceholder("⚙️ Strumenti Gestione")
             .addOptions([
-                { label: "Aggiungi Utente", value: "add_user", emoji: "➕" },
-                { label: "Rimuovi Utente", value: "remove_user", emoji: "➖" },
                 { label: "Ping Staff", value: "ping_staff", emoji: "🔔" },
                 { label: "Chiudi Ticket", value: "close_ticket", emoji: "🔒" }
             ]);
 
         await channel.send({
-            content: `🔔 <@&${TICKET_STAFF_ROLES[0]}>\n\n**🤖 ASSISTENTE IA:**\nCiao! Sono un bot. Leggerò UNA risposta alla volta, sii dettagliato. Tra 3 secondi inizierò con la prima domanda.`
+            content: `🔔 <@&${TICKET_STAFF_ROLES[0]}>\n\n**🤖 ASSISTENTE IA:**\nCiao! Rispondi a queste 3 domande una alla volta per aiutarci a capire meglio. Tra 3 secondi inizierò.`
         });
 
         setTimeout(async () => {
@@ -96,7 +87,6 @@ module.exports = {
         const ticketData = ticketSystem.getAllTickets().find(t => t.channelId === interaction.channel.id);
         if (!ticketData) return;
 
-        // PING STAFF 24H
         if (interaction.customId === "ping_staff") {
             const now = Date.now();
             if (ticketData.lastPing && (now - ticketData.lastPing < 86400000)) 
@@ -104,21 +94,18 @@ module.exports = {
             
             ticketData.lastPing = now;
             ticketSystem.updateTicket(ticketData.owner, ticketData);
-            return interaction.reply(`🔔 <@&${TICKET_STAFF_ROLES[0]}> - Richiesta attenzione urgente!`);
+            return interaction.reply(`🔔 <@&${TICKET_STAFF_ROLES[0]}> - Richiesta attenzione da ${interaction.user}!`);
         }
 
-        // AGGIUNGI/RIMUOVI
-        if (interaction.customId === "add_user" || interaction.customId === "remove_user") {
-            const member = interaction.member; // In un sistema reale useresti un modal per l'ID utente
-            return interaction.reply({ content: "Funzione attivata: Inserisci ID utente tramite comando staff dedicato.", ephemeral: true });
-        }
-
-        // CHIUSURA
         if (interaction.customId === "close_ticket") {
-            await interaction.reply("🔒 Chiusura...");
+            if (interaction.user.id !== ticketData.owner && !isStaff(interaction.member)) return interaction.reply({ content: "❌ No.", ephemeral: true });
+            
+            await interaction.reply("🔒 Chiusura in corso...");
             const file = await transcriptManager.createTranscript(interaction.channel);
+            
             const target = await interaction.guild.members.fetch(ticketData.owner).catch(() => null);
-            if (target) target.send({ content: "Transcript:", files: [file], components: [new ActionRowBuilder().addComponents(new ButtonBuilder().setCustomId("apri_recensione").setLabel("⭐ Recensisci").setStyle(ButtonStyle.Secondary))] }).catch(() => {});
+            if (target) await target.send({ content: "Ecco la trascrizione del tuo ticket:", files: [file] }).catch(() => {});
+
             ticketSystem.deleteTicket(ticketData.owner);
             setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
         }
@@ -129,3 +116,4 @@ module.exports = {
         return this.buttonHandler(interaction);
     }
 };
+                 

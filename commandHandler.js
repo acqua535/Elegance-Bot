@@ -3,66 +3,49 @@ const path = require("path");
 
 module.exports = function loadCommands(client) {
     console.log("-----------------------------------------");
-    console.log("📂 Avvio caricamento locale dei comandi...");
+    console.log("📂 AVVIO ISPEZIONE ROOT DISCLOUD...");
     console.log("-----------------------------------------");
 
-    // Usa process.cwd() per puntare SEMPRE alla cartella principale del bot su Discloud
-    const commandsPath = path.join(process.cwd(), "commands");
+    try {
+        // Ispezioniamo la cartella principale del server per capire dove sono finiti i file
+        const rootFiles = fs.readdirSync("/home/node");
+        console.log("🔎 [DISCLOUD ROOT] Ecco cosa c'è davvero dentro /home/node:", rootFiles);
+    } catch (err) {
+        console.log("❌ Impossibile leggere /home/node:", err.message);
+    }
 
-    console.log(`🔎 [DEBUG] Il bot sta cercando i comandi in: ${commandsPath}`);
+    // Proviamo a forzare il percorso usando il path relativo pulito
+    const commandsPath = path.join(__dirname, "commands");
+    console.log(`🔎 [DEBUG] Provo a cercare 'commands' in: ${commandsPath}`);
 
     if (!fs.existsSync(commandsPath)) {
-        console.log(`⚠️ Errore critico: La cartella 'commands' non esiste in: ${commandsPath}`);
-        // Proviamo il fallback su __dirname se process.cwd fallisse per qualche motivo strano
-        const fallbackPath = path.join(__dirname, "commands");
-        console.log(`🔄 Tento il fallback su percorso interno: ${fallbackPath}`);
-        if (fs.existsSync(fallbackPath)) {
-            commandsPath = fallbackPath;
-        } else {
-            return;
+        console.log("⚠️ La cartella non esiste in __dirname. Tento con il percorso relativo di root...");
+        const alternativo = path.resolve("./commands");
+        console.log(`🔎 [DEBUG] Provo percorso alternativo: ${alternativo}`);
+        if (fs.existsSync(alternativo)) {
+            console.log("✅ Trovata con percorso alternativo!");
         }
     }
 
-    // 🔍 SPIONE DI FILE: Ci dice ESATTAMENTE cosa vede Node dentro la cartella
-    const allItems = fs.readdirSync(commandsPath);
-    console.log("🔎 [DEBUG] Tutti i file grezzi trovati in 'commands':", allItems);
-
-    const files = allItems.filter(file => file.endsWith(".js"));
-
-    if (files.length === 0) {
-        console.log("⚠️ Attenzione: La cartella 'commands' è vuota o nessun file finisce per .js.");
-        console.log("-----------------------------------------");
-        console.log(`📦 Caricamento completato! Comandi pronti in memoria: ${client.commands.size}`);
-        console.log("-----------------------------------------");
-        return;
-    }
-
-    for (const file of files) {
-        try {
-            const filePath = path.join(commandsPath, file);
-            const command = require(filePath);
-
-            // Controllo rigoroso sulla struttura del comando
-            if (!command.data || !command.execute) {
-                console.log(`⚠️ Il file '${file}' è stato saltato perché manca di 'data' o della funzione 'execute'.`);
-                continue;
+    try {
+        if (fs.existsSync(commandsPath)) {
+            const allItems = fs.readdirSync(commandsPath);
+            console.log("🔎 [DEBUG] File trovati nella cartella:", allItems);
+            
+            const files = allItems.filter(file => file.endsWith(".js"));
+            for (const file of files) {
+                const command = require(path.join(commandsPath, file));
+                if (command.data && command.execute) {
+                    client.commands.set(command.data.name, command);
+                    console.log(`✅ Caricato: /${command.data.name}`);
+                }
             }
-
-            if (client.commands.has(command.data.name)) {
-                console.log(`⚠️ Comando duplicato ignorato: ${command.data.name}`);
-                continue;
-            }
-
-            // Salviamo il comando nella Collection del client
-            client.commands.set(command.data.name, command);
-            console.log(`✅ [LOCALE] Comando caricato in memoria: /${command.data.name}`);
-
-        } catch (error) {
-            console.error(`❌ Errore durante il caricamento del file ${file}:`, error);
         }
+    } catch (error) {
+        console.error("❌ Errore lettura comandi:", error);
     }
 
     console.log("-----------------------------------------");
-    console.log(`📦 Caricamento completato! Comandi pronti in memoria: ${client.commands.size}`);
+    console.log(`📦 Comandi caricati: ${client.commands.size}`);
     console.log("-----------------------------------------");
 };

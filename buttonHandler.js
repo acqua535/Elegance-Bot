@@ -15,9 +15,8 @@ module.exports = async function buttonHandler(interaction) {
             return await verify.buttonHandler(interaction);
         }
 
-        // 2. TICKET (Gestione bottoni e router)
-        // Ora gestisce ping_staff, close_ticket, ecc.
-        if (id === "ping_staff" || id === "close_ticket") {
+        // 2. TICKET (Gestione completa: Claim, Ping, Close, Add/Remove User)
+        if (["claim_ticket", "ping_staff", "close_ticket", "add_user", "remove_user"].includes(id)) {
             return await ticket.buttonHandler(interaction);
         }
 

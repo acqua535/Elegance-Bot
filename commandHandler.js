@@ -3,49 +3,59 @@ const path = require("path");
 
 module.exports = function loadCommands(client) {
     console.log("-----------------------------------------");
-    console.log("📂 AVVIO ISPEZIONE ROOT DISCLOUD...");
+    console.log("📂 Avvio caricamento comandi (Handler Ibrido)...");
     console.log("-----------------------------------------");
 
-    try {
-        // Ispezioniamo la cartella principale del server per capire dove sono finiti i file
-        const rootFiles = fs.readdirSync("/home/node");
-        console.log("🔎 [DISCLOUD ROOT] Ecco cosa c'è davvero dentro /home/node:", rootFiles);
-    } catch (err) {
-        console.log("❌ Impossibile leggere /home/node:", err.message);
-    }
+    const rootPath = process.cwd();
+    const commandsPath = path.join(rootPath, "commands");
+    
+    // Lista completa di tutti i file dei tuoi comandi
+    const targetCommands = [
+        "collab.js", "daily-reward.js", "embed.js", "horror.js", 
+        "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
+        "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"
+    ];
 
-    // Proviamo a forzare il percorso usando il path relativo pulito
-    const commandsPath = path.join(__dirname, "commands");
-    console.log(`🔎 [DEBUG] Provo a cercare 'commands' in: ${commandsPath}`);
+    // Mappa per tenere traccia dei percorsi assoluti dei file trovati
+    const filesToLoad = new Map(); // nomeFile -> percorsoAssoluto
 
-    if (!fs.existsSync(commandsPath)) {
-        console.log("⚠️ La cartella non esiste in __dirname. Tento con il percorso relativo di root...");
-        const alternativo = path.resolve("./commands");
-        console.log(`🔎 [DEBUG] Provo percorso alternativo: ${alternativo}`);
-        if (fs.existsSync(alternativo)) {
-            console.log("✅ Trovata con percorso alternativo!");
-        }
-    }
-
-    try {
-        if (fs.existsSync(commandsPath)) {
-            const allItems = fs.readdirSync(commandsPath);
-            console.log("🔎 [DEBUG] File trovati nella cartella:", allItems);
-            
-            const files = allItems.filter(file => file.endsWith(".js"));
-            for (const file of files) {
-                const command = require(path.join(commandsPath, file));
-                if (command.data && command.execute) {
-                    client.commands.set(command.data.name, command);
-                    console.log(`✅ Caricato: /${command.data.name}`);
-                }
+    // 1. Cerca prima dentro la cartella 'commands' (se esiste)
+    if (fs.existsSync(commandsPath)) {
+        const internalItems = fs.readdirSync(commandsPath);
+        internalItems.forEach(file => {
+            if (targetCommands.includes(file)) {
+                filesToLoad.set(file, path.join(commandsPath, file));
             }
+        });
+    }
+
+    // 2. Cerca anche nella root (per i file rimasti fuori dallo zip)
+    const rootItems = fs.readdirSync(rootPath);
+    rootItems.forEach(file => {
+        if (targetCommands.includes(file) && !filesToLoad.has(file)) {
+            filesToLoad.set(file, path.join(rootPath, file));
         }
-    } catch (error) {
-        console.error("❌ Errore lettura comandi:", error);
+    });
+
+    console.log(`🔎 [DEBUG] Trovati ${filesToLoad.size} comandi totali distribuiti tra root e cartella.`);
+
+    // 3. Carica i comandi unici in memoria
+    for (const [file, filePath] of filesToLoad.entries()) {
+        try {
+            const command = require(filePath);
+
+            if (command.data && command.execute) {
+                client.commands.set(command.data.name, command);
+                console.log(`✅ [IBRIDO] Caricato: /${command.data.name} (da: ${file})`);
+            } else {
+                console.log(`⚠️ Struttura non valida per il file: ${file}`);
+            }
+        } catch (error) {
+            console.error(`❌ Errore caricamento file ${file}:`, error);
+        }
     }
 
     console.log("-----------------------------------------");
-    console.log(`📦 Comandi caricati: ${client.commands.size}`);
+    console.log(`📦 Caricamento completato! Comandi in memoria: ${client.commands.size}`);
     console.log("-----------------------------------------");
 };

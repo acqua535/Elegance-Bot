@@ -1,55 +1,49 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
+const fs = require('fs');
 
-// Assicurati che questi file esistano nella stessa cartella!
-const ticketSystem = require("./ticketSystem");
-const transcriptManager = require("./transcript");
-
-const LOG_CHANNEL_ID = "1528576197741772902";
+const DATA_PATH = './ticketsData.json';
 const STAFF_ROLE_ID = "1528576030783176835";
-const TICKET_CATEGORY_ID = "1528582447443345560";
+const CATEGORY_ID = "1528582447443345560";
 
-const QUESTIONS = {
-    partner: ["Nome progetto?", "Membri totali?", "Obiettivo?"],
-    staff: ["Età?", "Esperienza?", "Perché dovresti essere scelto?"],
-    bug: ["Cos'è successo?", "Dove si è verificato?", "Hai prove/screenshot?"],
-    report: ["Chi è l'utente?", "Cosa ha fatto?", "Hai le prove?"]
-};
+const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
+const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("ticket")
-        .setDescription("Apri un ticket di assistenza"),
+        .setDescription("🎫 Apri un ticket di supporto rapido"),
 
     async execute(interaction) {
-        try {
-            const menu = new StringSelectMenuBuilder()
-                .setCustomId("ticket_category")
-                .setPlaceholder("🎫 Seleziona categoria...")
-                .addOptions([
-                    { label: "Supporto Partner", value: "partner", emoji: "🤝" },
-                    { label: "Bando Staff", value: "staff", emoji: "🛡️" },
-                    { label: "Segnalazione Bug", value: "bug", emoji: "🐞" },
-                    { label: "Report Utente", value: "report", emoji: "🚫" }
-                ]);
+        // Rimosso ephemeral: true per renderlo visibile a tutti
+        const embed = new EmbedBuilder()
+            .setColor(0x5865F2)
+            .setTitle("🎫 CENTRO ASSISTENZA ELEGANCE")
+            .setDescription("Benvenuto nel portale di supporto ufficiale.\n\nSeleziona una categoria dal menù sottostante per aprire una conversazione privata con il nostro staff.")
+            .setFooter({ text: "Il sistema è attivo e pronto ad aiutarti.", iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
 
-            const embed = new EmbedBuilder()
-                .setColor(0x2B2D31)
-                .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
-                .setDescription("Seleziona una categoria per iniziare.");
+        const menu = new StringSelectMenuBuilder()
+            .setCustomId("ticket_category")
+            .setPlaceholder("👉 Seleziona l'area di interesse...")
+            .addOptions([
+                { label: "🤝 Supporto Partner", value: "partner", description: "Per richieste di partnership" },
+                { label: "🛡️ Bando Staff", value: "staff", description: "Per candidarsi come moderatore" },
+                { label: "🐞 Segnalazione Bug", value: "bug", description: "Per errori riscontrati" },
+                { label: "🚫 Report Utente", value: "report", description: "Per segnalare comportamenti scorretti" }
+            ]);
 
-            await interaction.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)], ephemeral: true });
-        } catch (error) {
-            console.error("Errore nel comando ticket:", error);
-        }
+        await interaction.reply({ 
+            embeds: [embed], 
+            components: [new ActionRowBuilder().addComponents(menu)] 
+        });
     },
 
     async categoryHandler(interaction) {
-        // ... (tutto il resto del tuo codice rimane invariato)
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
-            name: `ticket-${type}-${interaction.user.username}`,
+            name: `🎫-${type}-${interaction.user.username}`,
             type: ChannelType.GuildText,
-            parent: TICKET_CATEGORY_ID,
+            parent: CATEGORY_ID,
             permissionOverwrites: [
                 { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
                 { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
@@ -57,43 +51,43 @@ module.exports = {
             ]
         });
 
-        ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: -1 });
+        const data = getData();
+        data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type };
+        saveData(data);
 
         const embed = new EmbedBuilder()
-            .setColor(0x2B2D31)
-            .setTitle("🔔 AVVISO DI APERTURA")
-            .setDescription(`Benvenuto ${interaction.user}.\nStai per aprire un ticket per **${type.toUpperCase()}**.\n\nTi verranno poste **3 domande**. Scrivi **'ok'** o **'okay'** per iniziare.`);
+            .setColor(0x00FF9D)
+            .setTitle(`Supporto: ${type.toUpperCase()}`)
+            .setDescription(`Ciao ${interaction.user}, lo staff è stato informato della tua richiesta.\n\nPuoi usare i bottoni qui sotto per gestire questa conversazione.`)
+            .setTimestamp();
 
-        await channel.send({ content: `${interaction.user}`, embeds: [embed] });
-        await interaction.update({ content: `✅ Ticket creato: ${channel}`, components: [], ephemeral: true });
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId("ping_staff").setLabel("📢 Richiedi Staff").setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId("close_ticket").setLabel("🔒 Chiudi Ticket").setStyle(ButtonStyle.Danger)
+        );
+
+        await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, embeds: [embed], components: [row] });
+        await interaction.update({ content: `✅ Ticket creato con successo: ${channel}`, components: [], ephemeral: true });
     },
 
-    async handleTicketMessage(message) {
-        const data = ticketSystem.getTicketByChannel(message.channel.id);
-        if (!data || message.author.bot) return;
-        // ... (resto della logica domande invariata)
-        if (data.step === -1) {
-            const conferme = ["ok", "okay", "si", "certo", "ok!", "d'accordo"];
-            if (conferme.includes(message.content.toLowerCase().trim())) {
-                data.step = 0;
-                ticketSystem.updateTicket(data.owner, data);
-                return message.channel.send(`🤖 **Domanda 1:** ${QUESTIONS[data.type][0]}`);
+    async buttonHandler(interaction) {
+        const data = getData();
+        const ticket = data[interaction.channel.id];
+
+        if (interaction.customId === 'ping_staff') {
+            if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
+                return interaction.reply({ content: "⏳ Il ping è limitato a una volta ogni 24 ore.", ephemeral: true });
             }
-        } else if (data.step < 3) {
-            data.step++;
-            ticketSystem.updateTicket(data.owner, data);
-            if (data.step < 3) {
-                return message.channel.send(`🤖 **Domanda ${data.step + 1}:** ${QUESTIONS[data.type][data.step]}`);
-            } else {
-                const row = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId("claim_ticket").setLabel("Prendi in carico").setStyle(ButtonStyle.Primary),
-                    new ButtonBuilder().setCustomId("close_ticket").setLabel("Chiudi Ticket").setStyle(ButtonStyle.Danger)
-                );
-                return message.channel.send({ content: "✅ **Ricevuto!** Uno staffer arriverà a breve per assisterti.", components: [row] });
-            }
+            ticket.lastPing = Date.now();
+            saveData(data);
+            await interaction.reply({ content: `📢 **${interaction.user.username}** ha richiesto l'intervento dello staff!` });
         }
-    },
-    // ... (buttonHandler e ratingHandler invariati)
-    async buttonHandler(interaction) { /* ... */ },
-    async ratingHandler(interaction) { /* ... */ }
+
+        if (interaction.customId === 'close_ticket') {
+            await interaction.reply("🔒 Il ticket verrà chiuso tra 5 secondi...");
+            ticket.status = 'closed';
+            saveData(data);
+            setTimeout(() => interaction.channel.delete(), 5000);
+        }
+    }
 };

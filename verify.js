@@ -8,78 +8,36 @@ const {
     TextInputStyle
 } = require("discord.js");
 
-
-const VERIFY_ROLE_ID = "1522332009773404211";
-const UNVERIFIED_ROLE_ID = "1505196345009635459";
-
+// CONFIG ID RUOLI REALI (Elegance Sponsoring)
+const VERIFY_ROLE_ID = "1528576026421231726";      // Ruolo che viene AGGIUNTO (Verificato)
+const UNVERIFIED_ROLE_ID = "1528576023032102972";  // Ruolo che viene RIMOSSO (Non Verificato)
 
 const captchaCache = new Map();
 
-
-
 function generateCaptcha() {
-
-    const chars =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
     let code = "";
-
     for (let i = 0; i < 5; i++) {
-
-        code += chars[
-            Math.floor(Math.random() * chars.length)
-        ];
-
+        code += chars[Math.floor(Math.random() * chars.length)];
     }
-
     return code;
-
 }
 
-
-
 module.exports = {
-
-
     data: new SlashCommandBuilder()
-
         .setName("verify")
-
-        .setDescription(
-            "Verifica il tuo account"
-        ),
-
-
+        .setDescription("Verifica il tuo account"),
 
     async execute(interaction) {
-
-
-        const button =
-            new ActionRowBuilder()
-                .addComponents(
-
-                    new ButtonBuilder()
-
-                        .setCustomId(
-                            "verify_button"
-                        )
-
-                        .setLabel(
-                            "🔓 Verifica"
-                        )
-
-                        .setStyle(
-                            ButtonStyle.Success
-                        )
-
-                );
-
-
+        const button = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("verify_button")
+                .setLabel("🔓 Verifica")
+                .setStyle(ButtonStyle.Success)
+        );
 
         await interaction.reply({
-
-            content:
-
+            content: 
 `🔓 **Verifica Elegance**
 
 Benvenuto nella verifica di ***Elegance Sponsoring***.
@@ -88,253 +46,82 @@ Per completare la verifica, esegui la procedura richiesta dal nostro bot.
 
 In caso di assistenza tecnica, richieste o problemi, apri un ticket:
 
-<#1505186342496374795>`,
-
-            components: [
-                button
-            ]
-
+<#1528576197741772902>`, // Allineato al canale principale/log del server
+            components: [button]
         });
-
-
     },
-
-
-
 
     async buttonHandler(interaction) {
+        const captcha = generateCaptcha();
 
+        captchaCache.set(interaction.user.id, {
+            code: captcha,
+            expires: Date.now() + 60000
+        });
 
-        const captcha =
-            generateCaptcha();
+        const modal = new ModalBuilder()
+            .setCustomId("verify_modal")
+            .setTitle("Verifica Elegance");
 
+        const input = new TextInputBuilder()
+            .setCustomId("captcha_input")
+            .setLabel(`Scrivi il codice: ${captcha}`)
+            .setStyle(TextInputStyle.Short)
+            .setRequired(true);
 
+        const row = new ActionRowBuilder().addComponents(input);
+        modal.addComponents(row);
 
-        captchaCache.set(
-
-            interaction.user.id,
-
-            {
-
-                code: captcha,
-
-                expires:
-                    Date.now() + 60000
-
-            }
-
-        );
-
-
-
-        const modal =
-            new ModalBuilder()
-
-                .setCustomId(
-                    "verify_modal"
-                )
-
-                .setTitle(
-                    "Verifica Elegance"
-                );
-
-
-
-        const input =
-            new TextInputBuilder()
-
-                .setCustomId(
-                    "captcha_input"
-                )
-
-                .setLabel(
-                    `Scrivi il codice: ${captcha}`
-                )
-
-                .setStyle(
-                    TextInputStyle.Short
-                )
-
-                .setRequired(
-                    true
-                );
-
-
-
-        const row =
-            new ActionRowBuilder()
-
-                .addComponents(
-                    input
-                );
-
-
-
-        modal.addComponents(
-            row
-        );
-
-
-
-        await interaction.showModal(
-            modal
-        );
-
-
+        await interaction.showModal(modal);
     },
 
-
-
-
     async modalHandler(interaction) {
+        const data = captchaCache.get(interaction.user.id);
 
-
-
-        const data =
-            captchaCache.get(
-                interaction.user.id
-            );
-
-
-
-        if (
-            !data ||
-            Date.now() > data.expires
-        ) {
-
-
-            captchaCache.delete(
-                interaction.user.id
-            );
-
-
+        if (!data || Date.now() > data.expires) {
+            captchaCache.delete(interaction.user.id);
             return interaction.reply({
-
-                content:
-                    "❌ CAPTCHA scaduto. Riprova.",
-
+                content: "❌ CAPTCHA scaduto. Riprova.",
                 ephemeral: true
-
             });
-
-
         }
 
+        const answer = interaction.fields.getTextInputValue("captcha_input");
 
-
-
-        const answer =
-            interaction.fields.getTextInputValue(
-                "captcha_input"
-            );
-
-
-
-        if (
-            answer !== data.code
-        ) {
-
-
+        if (answer !== data.code) {
             return interaction.reply({
-
-                content:
-                    "❌ Codice errato.",
-
+                content: "❌ Codice errato.",
                 ephemeral: true
-
             });
-
-
         }
 
-
-
-
-        const member =
-            interaction.member;
-
-
-
-        const verifiedRole =
-            interaction.guild.roles.cache.get(
-                VERIFY_ROLE_ID
-            );
-
-
-        const unverifiedRole =
-            interaction.guild.roles.cache.get(
-                UNVERIFIED_ROLE_ID
-            );
-
-
-
+        const member = interaction.member;
+        const verifiedRole = interaction.guild.roles.cache.get(VERIFY_ROLE_ID);
+        const unverifiedRole = interaction.guild.roles.cache.get(UNVERIFIED_ROLE_ID);
 
         try {
-
-
-            if (unverifiedRole) {
-
-
-                await member.roles.remove(
-                    unverifiedRole
-                );
-
-
+            if (unverifiedRole && member.roles.cache.has(UNVERIFIED_ROLE_ID)) {
+                await member.roles.remove(unverifiedRole);
             }
-
-
 
             if (verifiedRole) {
-
-
-                await member.roles.add(
-                    verifiedRole
-                );
-
-
+                await member.roles.add(verifiedRole);
             }
 
-
-
-            captchaCache.delete(
-                interaction.user.id
-            );
-
-
+            captchaCache.delete(interaction.user.id);
 
             await interaction.reply({
-
-                content:
-                    "✅ Verifica completata! Benvenuto in Elegance Sponsoring.",
-
+                content: "✅ Verifica completata! Benvenuto in Elegance Sponsoring.",
                 ephemeral: true
-
             });
 
-
-
-        } catch(error) {
-
-
-            console.error(
-                error
-            );
-
-
+        } catch (error) {
+            console.error(error);
             await interaction.reply({
-
-                content:
-                    "❌ Errore durante la verifica. Contatta lo staff.",
-
+                content: "❌ Errore durante l'assegnazione dei ruoli. Contatta lo staff.",
                 ephemeral: true
-
             });
-
-
         }
-
-
     }
-
-
 };
+    

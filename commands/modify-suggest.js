@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 // ID Ruolo Staff / Amministrazione Aggiornato
-const STAFF_ROLE_ID = "1528576030783176835";
+const STAFF_ROLE_ID = "1528576026421231726";
 
 module.exports = {
     data: new SlashCommandBuilder()

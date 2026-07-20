@@ -95,7 +95,7 @@ module.exports = {
 
         // Creazione canale nella nuova categoria aperti: 1528582447443345560
         const channel = await interaction.guild.channels.create({
-            name: `🎫┃${names[type]}-${interaction.user.username}`,
+            name: `︲🎫〞﹒${names[type]}-${interaction.user.username}`,
             type: ChannelType.GuildText,
             parent: TICKET_CATEGORY_ID,
             permissionOverwrites: [

@@ -1,14 +1,23 @@
 const ticket = require("./ticket");
+const games = require("./minigame");
 
 module.exports = {
-    // Gestione del menu di apertura (Categorie)
-    "ticket_category": ticket.categoryHandler,
-    
-    // Gestione del menu di gestione ticket (dentro il canale)
+    // Ticket System
     "ticket_manage": ticket.buttonHandler,
-    
-    // Gestione dei valori (se il bottone/menu passa il value invece dell'ID)
     "claim_ticket": ticket.buttonHandler,
     "close_ticket": ticket.buttonHandler,
     "ping_staff": ticket.buttonHandler,
+    "ticket_category": ticket.categoryHandler,
+
+    // Minigame Hub & Games
+    "game_quiz": (i) => games.quizGame(i),
+    "game_memory": (i) => games.memoryGame(i),
+    "game_word": (i) => games.wordGame(i),
+    "game_reaction": (i) => games.reactionGame(i),
+    "game_hangman": (i) => games.hangmanGame(i),
+
+    // Difficoltà Parola Misteriosa
+    "word_easy": (i) => games.startWordGame(i, "facile"),
+    "word_medium": (i) => games.startWordGame(i, "medio"),
+    "word_hard": (i) => games.startWordGame(i, "difficile")
 };

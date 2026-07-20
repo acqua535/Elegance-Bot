@@ -1,68 +1,100 @@
 const { EmbedBuilder } = require("discord.js");
 const ticket = require("./ticket");
 const minigame = require("./minigame");
-const horrorEngine = require("./horrorEngine");
 
-module.exports = async function buttonHandler(interaction){
-    if(!interaction.isButton() && !interaction.isStringSelectMenu()){ return; }
+module.exports = async function buttonHandler(interaction) {
+    // Controllo che l'interazione sia un bottone o un menu
+    if (!interaction.isButton() && !interaction.isStringSelectMenu()) {
+        return;
+    }
+
     const id = interaction.customId;
     console.log("🔘 Interazione ricevuta:", id);
 
     try {
-        // VERIFY - Caricamento dinamico ultra-sicuro
-        if(interaction.isButton() && id === "verify_button"){
+        // ===============================
+        // 1. VERIFY (Pulsante di Verifica)
+        // ===============================
+        if (interaction.isButton() && id === "verify_button") {
             try {
-                const verify = require("./verify"); // Cerca in root
-                return verify.buttonHandler(interaction);
+                // Prova a caricare dalla root, se fallisce prova da commands
+                const verify = require("./verify");
+                return await verify.buttonHandler(interaction);
             } catch (e) {
-                const verify = require("./commands/verify"); // Se non trova in root, prova in commands
-                return verify.buttonHandler(interaction);
+                const verify = require("./commands/verify");
+                return await verify.buttonHandler(interaction);
             }
         }
 
-        // TICKET BUTTONS - Con il fix della recensione
-        if(interaction.isButton() && (id === "claim_ticket" || id === "close_ticket" || id.startsWith("rate_") || id.startsWith("ticket_rate"))){
-            return ticket.buttonHandler(interaction);
+        // ===============================
+        // 2. TICKET (Gestione completa)
+        // ===============================
+        // Include: claim, close, rate_*, ticket_rate*
+        if (interaction.isButton() && (
+            id === "claim_ticket" || 
+            id === "close_ticket" || 
+            id.startsWith("rate_") || 
+            id.startsWith("ticket_rate")
+        )) {
+            return await ticket.buttonHandler(interaction);
         }
 
-        // ... resto del codice identico a prima ...
-        if(interaction.isButton() && id.startsWith("horror_start_")){
-            const storyId = Number(id.replace("horror_start_", ""));
-            return horrorEngine.startStory(interaction, storyId);
+        // Gestione Menu Selezione Ticket
+        if (interaction.isStringSelectMenu() && (
+            id === "ticket_manage" || 
+            id === "ticket_category" || 
+            id === "ticket_priority"
+        )) {
+            return await ticket.router(interaction);
         }
 
-        if(interaction.isButton() && (id === "horror_inventory" || id === "horror_restart" || id.startsWith("horror_"))){
-            return horrorEngine.buttonHandler(interaction);
-        }
-
-        if(interaction.isStringSelectMenu() && id === "ticket_manage"){
-            return ticket.router(interaction);
-        }
-
-        if(id === "word_easy" || id === "word_medium" || id === "word_hard"){
-            const difficulty = id === "word_easy" ? "facile" : id === "word_medium" ? "medio" : "difficile";
-            await interaction.update({ content: `🔤 Modalità ${difficulty} selezionata!`, embeds:[], components:[] });
-            return minigame.startWordGame(interaction, difficulty);
-        }
-
-        if(interaction.isButton() && id.startsWith("game_")){
+        // ===============================
+        // 3. MINIGAME (Sistema giochi)
+        // ===============================
+        if (interaction.isButton() && id.startsWith("game_")) {
             const game = id.replace("game_", "");
-            await interaction.update({ embeds:[ new EmbedBuilder().setTitle("🎮 Minigame avviato").setDescription("La partita sta iniziando...") ], components:[] });
-            switch(game){
-                case "quiz": return minigame.quizGame(interaction);
-                case "memory": return minigame.memoryGame(interaction);
-                case "word": return minigame.wordGame(interaction);
-                case "reaction": return minigame.reactionGame(interaction);
-                case "hangman": return minigame.hangmanGame(interaction);
-                default: return interaction.followUp({ content: "❌ Minigame non trovato.", ephemeral:true });
+            
+            // Messaggio di avvio pulito
+            await interaction.update({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle("🎮 Minigame avviato")
+                        .setDescription("La partita sta iniziando, attendi un istante...")
+                        .setColor("Blue")
+                ],
+                components: []
+            });
+
+            switch (game) {
+                case "quiz": return await minigame.quizGame(interaction);
+                case "memory": return await minigame.memoryGame(interaction);
+                case "word": return await minigame.wordGame(interaction);
+                case "reaction": return await minigame.reactionGame(interaction);
+                case "hangman": return await minigame.hangmanGame(interaction);
+                default: 
+                    return await interaction.followUp({ content: "❌ Minigame non trovato.", ephemeral: true });
             }
         }
 
+        // ===============================
+        // 4. GESTIONE ERRORI / ID SCONOSCIUTI
+        // ===============================
         console.log("⚠️ Bottone non gestito:", id);
-        if(!interaction.replied && !interaction.deferred){
-            await interaction.reply({ content: "⚠️ Questo bottone non è configurato.", ephemeral:true }).catch(()=>{});
+        
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: "⚠️ Questa interazione non è configurata.",
+                ephemeral: true
+            }).catch(() => {});
         }
-    } catch(error){
-        console.error("❌ Errore ButtonHandler:", error);
+
+    } catch (error) {
+        console.error("❌ Errore critico nel buttonHandler:", error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({
+                content: "❌ Si è verificato un errore nell'elaborazione del comando.",
+                ephemeral: true
+            }).catch(() => {});
+        }
     }
 };

@@ -36,7 +36,7 @@ const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand"); 
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
-const ticketSystem = require("./ticketSystem"); // NECESSARIO PER L'IA
+const ticketSystem = require("./ticketSystem");
 
 // ==========================
 // AVVIO GENERALE DEI COMANDI

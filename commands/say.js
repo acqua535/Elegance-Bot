@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 
-// Ruolo autorizzato ad usare /say
-const SAY_ROLE_ID = "1505192718068879430";
+// Ruolo autorizzato ad usare /say (Usato ID: 1528576026421231726)
+const SAY_ROLE_ID = "1528576026421231726";
 
 module.exports = {
     data: new SlashCommandBuilder()

@@ -1,7 +1,7 @@
 const { SlashCommandBuilder, EmbedBuilder } = require("discord.js");
 
 // Canale suggerimenti (Usato ID: 1528576017579643072)
-const SUGGEST_CHANNEL_ID = "1528576017579643072";
+const SUGGEST_CHANNEL_ID = "1528576166619779102";
 
 module.exports = {
     data: new SlashCommandBuilder()

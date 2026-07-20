@@ -1,133 +1,66 @@
-const { 
-    SlashCommandBuilder, ActionRowBuilder, StringSelectMenuBuilder, 
-    ButtonBuilder, ButtonStyle, ChannelType, EmbedBuilder, PermissionFlagsBits 
-} = require("discord.js");
-
+const { EmbedBuilder } = require("discord.js");
 const ticketSystem = require("./ticketSystem");
 const transcriptManager = require("./transcript");
 
 const LOG_CHANNEL_ID = "1528576197741772902";
-const TICKET_CATEGORY_ID = "1528582447443345560";
 const TICKET_STAFF_ROLES = ["1528576030783176835"];
-const EMBED_COLOR = "#2b2d31";
-const PREFIX = "︲🎫〞﹒";
 
-module.exports = {
-    data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket di assistenza"),
+module.exports = async (interaction) => {
+    // Recuperiamo l'azione dal valore del menu (o dal customId se fosse un bottone)
+    const action = interaction.values ? interaction.values[0] : interaction.customId;
+    const ticketData = ticketSystem.getTicketByChannel(interaction.channel.id);
 
-    async execute(interaction) {
-        const menu = new StringSelectMenuBuilder()
-            .setCustomId("ticket_category")
-            .setPlaceholder("🎫 Seleziona categoria assistenza")
-            .addOptions([
-                { label: "Supporto Partner", value: "partner", emoji: "🤝" },
-                { label: "Bando Staff", value: "staff", emoji: "🛡️" },
-                { label: "Segnalazione Bug", value: "bug", emoji: "🐞" },
-                { label: "Idee / Suggerimenti", value: "idea", emoji: "💡" }
-            ]);
+    if (!ticketData) {
+        return interaction.reply({ content: "❌ Errore: Dati ticket non trovati.", ephemeral: true });
+    }
 
-        const embed = new EmbedBuilder()
-            .setColor(EMBED_COLOR)
-            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
-            .setDescription("Siamo qui per aiutarti. Seleziona una categoria e il nostro team ti risponderà il prima possibile.")
-            .setThumbnail(interaction.guild.iconURL())
-            .setFooter({ text: "Elegance Community | Sistema Ticket" });
-
-        await interaction.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)], ephemeral: false });
-    },
-
-    async categoryHandler(interaction) {
-        await interaction.deferReply({ ephemeral: true });
-        if (ticketSystem.hasOpenTicket(interaction.user.id)) return interaction.editReply({ content: "❌ Hai già un ticket aperto." });
-
-        const type = interaction.values[0];
-        const channel = await interaction.guild.channels.create({
-            name: `${PREFIX}${type}-${interaction.user.username}`,
-            type: ChannelType.GuildText,
-            parent: TICKET_CATEGORY_ID,
-            permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-                ...TICKET_STAFF_ROLES.map(r => ({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }))
-            ]
-        });
-
-        ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: 0 });
-
-        const embed = new EmbedBuilder()
-            .setColor(EMBED_COLOR)
-            .setTitle(`${PREFIX}Ticket | ${type.toUpperCase()}`)
-            .setDescription(`Benvenuto ${interaction.user}. Il ticket è stato creato. Puoi gestire le operazioni tramite il menu sottostante.`)
-            .addFields(
-                { name: "👤 Utente", value: `${interaction.user.tag}`, inline: true },
-                { name: "📋 Categoria", value: `${type.toUpperCase()}`, inline: true },
-                { name: "🤖 Stato IA", value: "Disattivato", inline: true }
-            )
-            .setThumbnail(interaction.user.displayAvatarURL());
-
-        const manageMenu = new StringSelectMenuBuilder()
-            .setCustomId("ticket_manage")
-            .setPlaceholder("⚙️ Pannello Gestione")
-            .addOptions([
-                { label: "Prendi in carico (Claim)", value: "claim_ticket", emoji: "✅" },
-                { label: "Attiva Assistente IA", value: "enable_ai", emoji: "🤖" },
-                { label: "Ping Staff (Countdown)", value: "ping_staff", emoji: "🔔" },
-                { label: "Chiudi Ticket", value: "close_ticket", emoji: "🔒" }
-            ]);
-
-        await channel.send({ content: `🔔 <@&${TICKET_STAFF_ROLES[0]}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(manageMenu)] });
-        
-        await interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
-    },
-
-    async buttonHandler(interaction) {
-        const id = interaction.customId;
-        const ticketData = ticketSystem.getAllTickets().find(t => t.channelId === interaction.channel.id);
-        if (!ticketData) return;
-
-        // Gestione Ping Staff con Countdown
-        if (id === "ping_staff") {
-            let countdown = 5;
-            const msg = await interaction.reply({ content: `🔔 Notifica staff in invio tra ${countdown} secondi...`, fetchReply: true });
-            const interval = setInterval(async () => {
-                countdown--;
-                if (countdown > 0) {
-                    await msg.edit(`🔔 Notifica staff in invio tra ${countdown} secondi...`);
-                } else {
-                    clearInterval(interval);
-                    await msg.delete().catch(() => {});
-                    await interaction.channel.send(`🔔 <@&${TICKET_STAFF_ROLES[0]}> **Attenzione!** Richiesta assistenza immediata in questo ticket.`);
+    try {
+        switch (action) {
+            case "claim_ticket":
+                if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) {
+                    return interaction.reply({ content: "❌ Solo lo staff può prendere in carico i ticket.", ephemeral: true });
                 }
-            }, 1000);
-            return;
-        }
+                await interaction.reply({ content: `✅ Ticket preso in carico da ${interaction.user}.` });
+                const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+                if (logChannel) {
+                    logChannel.send({ embeds: [new EmbedBuilder().setTitle("✅ TICKET CLAIMED").setDescription(`Staff: ${interaction.user.tag}\nTicket: ${interaction.channel.name}`).setColor("Green")] });
+                }
+                break;
 
-        // Gestione Attivazione IA
-        if (id === "enable_ai") {
-            // Qui puoi integrare la logica per settare 'aiEnabled = true' nel tuo database dei ticket
-            return interaction.reply({ content: "🤖 Assistente IA attivato per questo canale. Ora risponderò automaticamente alle domande.", ephemeral: false });
-        }
+            case "ping_staff":
+                if (!ticketSystem.canPingStaff(ticketData.owner)) {
+                    return interaction.reply({ content: "❌ Hai già pingato lo staff nelle ultime 24 ore.", ephemeral: true });
+                }
+                ticketSystem.useStaffPing(ticketData.owner);
+                await interaction.reply({ content: `🔔 Ping inviato allo staff! <@&${TICKET_STAFF_ROLES[0]}>` });
+                break;
 
-        // Gestione Claim
-        if (id === "claim_ticket") {
-            if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ Solo staff.", ephemeral: true });
-            return interaction.reply({ content: `✅ Ticket preso in carico da ${interaction.user}` });
-        }
+            case "close_ticket":
+                await interaction.reply({ content: "🔒 Chiusura ticket in corso..." });
+                
+                // Crea il transcript (assumendo che il modulo sia configurato)
+                const file = await transcriptManager.createTranscript(interaction.channel);
+                
+                // Invia transcript all'utente e al log
+                const user = interaction.guild.members.cache.get(ticketData.owner);
+                if (user) user.send({ content: "📁 Ecco il transcript del tuo ticket:", files: [file] }).catch(() => {});
+                
+                const log = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
+                if (log) log.send({ content: `📁 **Transcript per:** ${interaction.channel.name}`, files: [file] });
 
-        // Gestione Chiusura
-        if (id === "close_ticket") {
-            if (interaction.user.id !== ticketData.owner && !TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ No.", ephemeral: true });
-            await interaction.reply("🔒 Chiusura in corso...");
-            const file = await transcriptManager.createTranscript(interaction.channel);
-            await interaction.guild.members.cache.get(ticketData.owner)?.send({ content: "Ecco il transcript del tuo ticket:", files: [file] }).catch(() => {});
-            ticketSystem.deleteTicket(ticketData.owner);
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
-        }
-    },
+                // Elimina dal sistema e dal server
+                ticketSystem.deleteTicket(ticketData.owner);
+                setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
+                break;
 
-    async router(interaction) { 
-        interaction.customId = interaction.values[0]; 
-        return this.buttonHandler(interaction); 
+            default:
+                await interaction.reply({ content: "❓ Azione non riconosciuta.", ephemeral: true });
+                break;
+        }
+    } catch (error) {
+        console.error("❌ Errore in buttonHandler:", error);
+        if (!interaction.replied) {
+            await interaction.reply({ content: "❌ Si è verificato un errore durante l'esecuzione.", ephemeral: true });
+        }
     }
 };
-    

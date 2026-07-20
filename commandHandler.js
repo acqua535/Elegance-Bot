@@ -6,12 +6,21 @@ module.exports = function loadCommands(client) {
     console.log("📂 Avvio caricamento locale dei comandi...");
     console.log("-----------------------------------------");
 
-    // Risoluzione assoluta per non sbagliare percorso su Linux
-    const commandsPath = path.resolve(__dirname, "commands");
+    // Usa process.cwd() per puntare SEMPRE alla cartella principale del bot su Discloud
+    const commandsPath = path.join(process.cwd(), "commands");
+
+    console.log(`🔎 [DEBUG] Il bot sta cercando i comandi in: ${commandsPath}`);
 
     if (!fs.existsSync(commandsPath)) {
         console.log(`⚠️ Errore critico: La cartella 'commands' non esiste in: ${commandsPath}`);
-        return;
+        // Proviamo il fallback su __dirname se process.cwd fallisse per qualche motivo strano
+        const fallbackPath = path.join(__dirname, "commands");
+        console.log(`🔄 Tento il fallback su percorso interno: ${fallbackPath}`);
+        if (fs.existsSync(fallbackPath)) {
+            commandsPath = fallbackPath;
+        } else {
+            return;
+        }
     }
 
     // 🔍 SPIONE DI FILE: Ci dice ESATTAMENTE cosa vede Node dentro la cartella

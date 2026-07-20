@@ -39,7 +39,7 @@ module.exports = {
                 "**CATEGORIE DISPONIBILI:**\n" +
                 "1️⃣ **SUPPORTO** ➡️ Problemi, bug o info generali.\n" +
                 "2️⃣ **PARTNERSHIP** ➡️ Proposte di collaborazione.\n" +
-                "3️⃣ **HIGH STAFF** ➡️ Donazioni o questioni amministrative.\n" +
+                "3️⃣ **HIGH STAFF** ➡️  Questioni amministrative.\n" +
                 "4️⃣ **REPORT UTENTE** ➡️ Segnala comportamenti scorretti.\n\n" +
                 "⚠️ **STATO & REGOLE:**\n" +
                 `Stato: ${getOrariInfo()}\n` +

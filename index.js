@@ -36,7 +36,6 @@ const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand"); 
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
-const verify = require("./commands/verify"); // FIX percorso moduli: spostato sotto la cartella commands
 
 // ==========================
 // AVVIO GENERALE DEI COMANDI
@@ -72,7 +71,6 @@ process.on(
 // ==========================
 // READY SYSTEM (CORRETTO)
 // ==========================
-// Ripristinato l'evento corretto 'ready' richiesto da discord.js per andare online
 client.once(
     "ready",
     async (readyClient) => {
@@ -149,7 +147,9 @@ client.on(
             // ==========================
             if(interaction.isModalSubmit()){
                 if(interaction.customId === "verify_modal"){
-                    await verify.modalHandler(interaction);
+                    // FIXATO: Ora punta a "./verify" perché il file è nella ROOT!
+                    const verifyDynamic = require("./verify");
+                    await verifyDynamic.modalHandler(interaction);
                     return;
                 }
             }

@@ -15,7 +15,7 @@ module.exports = async function deployCommands() {
     const targetCommands = [
         "collab.js", "daily-reward.js", "embed.js", "horror.js", 
         "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
-        "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"
+        "sponsor.js", "suggest.js", "ticket.js", "unwarn.js", "warn.js", "warnings.js"
     ];
 
     const filesToDeploy = new Map();
@@ -58,8 +58,8 @@ module.exports = async function deployCommands() {
 
         await rest.put(
             Routes.applicationGuildCommands(
-                "1527327515511881739", 
-                "1505173045269233736"  
+                "1527327515511881739", // ID del Bot
+                "1505173045269233736"  // ID del Server Elegance
             ),
             { body: commands }
         );

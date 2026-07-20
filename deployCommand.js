@@ -9,11 +9,12 @@ module.exports = async function deployCommands() {
     console.log("-----------------------------------------");
 
     const commands = [];
-    // FIX SICURO: Usiamo __dirname anche qui
-    const commandsPath = path.join(__dirname, "commands");
+    
+    // FIX UNIVERSALE: process.cwd() punta sempre alla cartella principale del bot
+    const commandsPath = path.join(process.cwd(), "commands");
 
     if (!fs.existsSync(commandsPath)) {
-        console.log("⚠️ Impossibile eseguire il deploy: cartella 'commands' non trovata.");
+        console.log(`⚠️ Impossibile eseguire il deploy: cartella 'commands' non trovata in: ${commandsPath}`);
         return;
     }
 
@@ -42,10 +43,11 @@ module.exports = async function deployCommands() {
     try {
         console.log(`🚀 Invio di ${commands.length} comandi al server Discord...`);
 
+        // Invio dei comandi dell'applicazione tramite ID dell'app e ID del server
         await rest.put(
             Routes.applicationGuildCommands(
-                "1527327515511881739", 
-                "1505173045269233736"  
+                "1527327515511881739", // ID del tuo Bot
+                "1505173045269233736"  // ID del tuo Server Elegance
             ),
             { body: commands }
         );

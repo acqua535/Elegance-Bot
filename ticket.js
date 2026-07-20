@@ -9,110 +9,69 @@ const transcriptManager = require("./transcript");
 const LOG_CHANNEL_ID = "1528576197741772902";
 const TICKET_CATEGORY_ID = "1528582447443345560";
 const TICKET_STAFF_ROLES = ["1528576030783176835"];
-const EMBED_COLOR = "#2b2d31";
-const PREFIX = "︲🎫〞﹒";
 
-// Database domande avanzate (Fake AI)
-const QUESTIONS = {
-    partner: ["Come si chiama il tuo progetto?", "Quanti membri avete?", "Qual è l'obiettivo della partnership?"],
-    staff: ["Da quanto tempo sei nella community?", "Qual è la tua età?", "Perché vorresti entrare nello staff?"],
-    bug: ["Descrivi brevemente il bug.", "Dove si è verificato?", "Hai degli screenshot da allegare?"],
-    report: ["Chi è l'utente da segnalare?", "Quale regola ha infranto?", "Hai delle prove (screenshot/link)?"]
-};
+// LOGICA ORARI AUTOMATIZZATA
+function getOrariInfo() {
+    const now = new Date();
+    const ora = now.getHours();
+    const giorno = now.getDay(); // 0 = Dom, 1 = Lun, ... 6 = Sab
+    const mese = now.getMonth(); // 0 = Gen, ... 5 = Giu, 8 = Set
+
+    // Periodo Estivo: Giugno (5) a Settembre (8)
+    const isEstate = (mese >= 5 && mese <= 8);
+    const orarioChiusura = isEstate ? "00:00" : "21:00";
+
+    if (giorno === 1) return "🔴 **Chiuso** (Siamo chiusi ogni Lunedì)";
+    if (ora < 14) return "🔴 **Chiuso** (Apriamo alle 14:00)";
+    return `🟢 **Aperto** (Fino alle ${orarioChiusura})`;
+}
 
 module.exports = {
-    data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket di assistenza"),
+    data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket"),
 
     async execute(interaction) {
+        const embed = new EmbedBuilder()
+            .setColor("#2b2d31")
+            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
+            .setDescription(
+                "Il sistema di ticket permette di parlare direttamente con lo staff per chiarimenti, " +
+                "segnalazioni o assistenza tecnica.\n\n" +
+                "**CATEGORIE DISPONIBILI:**\n" +
+                "1️⃣ **SUPPORTO** ➡️ Problemi, bug o info generali.\n" +
+                "2️⃣ **PARTNERSHIP** ➡️ Proposte di collaborazione.\n" +
+                "3️⃣ **HIGH STAFF** ➡️ Donazioni o questioni amministrative.\n" +
+                "4️⃣ **REPORT UTENTE** ➡️ Segnala comportamenti scorretti.\n\n" +
+                "⚠️ **STATO & REGOLE:**\n" +
+                `Stato: ${getOrariInfo()}\n` +
+                "• Estivo/Festivi: 14:00 - 00:00\n" +
+                "• Scolastico: 14:00 - 21:00\n\n" +
+                "🚫 *Richieste di fusioni o bot comporteranno un warn.*\n" +
+                "⚠️ *Ticket inutili o ghosting comportano un warn (24h).* "
+            );
+
         const menu = new StringSelectMenuBuilder()
             .setCustomId("ticket_category")
-            .setPlaceholder("🎫 Seleziona categoria assistenza")
+            .setPlaceholder("🎫 Seleziona una categoria...")
             .addOptions([
-                { label: "Supporto Partner", value: "partner", emoji: "🤝" },
-                { label: "Bando Staff", value: "staff", emoji: "🛡️" },
-                { label: "Segnalazione Bug", value: "bug", emoji: "🐞" },
-                { label: "Report Utente", value: "report", emoji: "🚫" }
+                { label: "Supporto", value: "support", emoji: "1️⃣" },
+                { label: "Partnership", value: "partner", emoji: "2️⃣" },
+                { label: "High Staff", value: "staff", emoji: "3️⃣" },
+                { label: "Report Utente", value: "report", emoji: "4️⃣" }
             ]);
 
-        const embed = new EmbedBuilder()
-            .setColor(EMBED_COLOR)
-            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
-            .setDescription("Seleziona una categoria per iniziare.");
-
-        await interaction.reply({ embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)], ephemeral: false });
+        await interaction.reply({ 
+            embeds: [embed], 
+            components: [new ActionRowBuilder().addComponents(menu)] 
+        });
     },
 
+    // ... (Mantieni il tuo categoryHandler e buttonHandler esistenti qui sotto)
     async categoryHandler(interaction) {
-        await interaction.deferReply({ ephemeral: true });
-        const type = interaction.values[0];
-        
-        const channel = await interaction.guild.channels.create({
-            name: `${PREFIX}${type}-${interaction.user.username}`,
-            type: ChannelType.GuildText,
-            parent: TICKET_CATEGORY_ID,
-            permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
-                ...TICKET_STAFF_ROLES.map(r => ({ id: r, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }))
-            ]
-        });
-
-        ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: 0 });
-
-        const embed = new EmbedBuilder()
-            .setColor(EMBED_COLOR)
-            .setTitle(`${PREFIX}Ticket | ${type.toUpperCase()}`)
-            .setDescription(`Benvenuto ${interaction.user}. Rispondi alla prima domanda per procedere:`)
-            .addFields({ name: "Domanda 1", value: QUESTIONS[type][0] });
-
-        const manageMenu = new StringSelectMenuBuilder()
-            .setCustomId("ticket_manage")
-            .setPlaceholder("⚙️ Pannello Gestione")
-            .addOptions([
-                { label: "Prendi in carico (Claim)", value: "claim_ticket", emoji: "✅" },
-                { label: "Ping Staff (Countdown)", value: "ping_staff", emoji: "🔔" },
-                { label: "Chiudi Ticket", value: "close_ticket", emoji: "🔒" }
-            ]);
-
-        await channel.send({ content: `🔔 <@&${TICKET_STAFF_ROLES[0]}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(manageMenu)] });
-        await interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
+        // ... tua logica di creazione canale ...
     },
 
     async buttonHandler(interaction) {
-        const id = interaction.customId;
-        const ticketData = ticketSystem.getAllTickets().find(t => t.channelId === interaction.channel.id);
-        if (!ticketData) return;
-
-        if (id === "ping_staff") {
-            let countdown = 5;
-            const msg = await interaction.reply({ content: `🔔 Notifica staff tra ${countdown}s...`, fetchReply: true });
-            const interval = setInterval(async () => {
-                countdown--;
-                if (countdown > 0) await msg.edit(`🔔 Notifica staff tra ${countdown}s...`);
-                else {
-                    clearInterval(interval);
-                    msg.delete();
-                    interaction.channel.send(`🔔 <@&${TICKET_STAFF_ROLES[0]}> Richiesta assistenza immediata!`);
-                }
-            }, 1000);
-            return;
-        }
-
-        if (id === "claim_ticket") {
-            if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.reply({ content: "❌ Accesso negato.", ephemeral: true });
-            interaction.reply({ content: "✅ Ticket preso in carico." });
-            interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send({ embeds: [new EmbedBuilder().setTitle("✅ TICKET PRESO IN CARICO").setDescription(`Staff: ${interaction.user.tag}\nTicket: ${interaction.channel.name}`).setColor("Green")] });
-            return;
-        }
-
-        if (id === "close_ticket") {
-            interaction.reply("🔒 Chiusura e salvataggio...");
-            const file = await transcriptManager.createTranscript(interaction.channel);
-            interaction.guild.members.cache.get(ticketData.owner)?.send({ content: "Ecco il transcript del tuo ticket:", files: [file] }).catch(() => {});
-            interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send({ content: `📁 **Transcript per:** ${interaction.channel.name}`, files: [file] });
-            ticketSystem.deleteTicket(ticketData.owner);
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
-        }
+        // ... tua logica di gestione ...
     },
 
     async router(interaction) {

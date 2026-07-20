@@ -17,5 +17,10 @@ module.exports = {
     "game_hangman": games.hangmanGame,
     "word_easy": (i) => games.startWordGame(i, "facile"),
     "word_medium": (i) => games.startWordGame(i, "medio"),
-    "word_hard": (i) => games.startWordGame(i, "difficile")
+    "word_hard": (i) => games.startWordGame(i, "difficile"),
+
+    // Rating (Aggiunti qui dentro)
+    "rate_good": ticket.ratingHandler,
+    "rate_mid": ticket.ratingHandler,
+    "rate_bad": ticket.ratingHandler
 };

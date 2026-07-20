@@ -1,5 +1,6 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
 
+// Ruolo autorizzato ad usare /say
 const SAY_ROLE_ID = "1505192718068879430";
 
 module.exports = {
@@ -14,8 +15,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
-
-        // Controllo ruolo
+        // Controllo ruolo staff
         if (!interaction.member.roles.cache.has(SAY_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ Non hai il permesso di usare questo comando.",
@@ -25,9 +25,13 @@ module.exports = {
 
         const messaggio = interaction.options.getString("messaggio");
 
-        // Risponde solo il bot
+        // Il bot invia il messaggio direttamente
+        await interaction.channel.send({ content: messaggio });
+        
+        // Risposta effimera di conferma
         await interaction.reply({
-            content: messaggio
+            content: "✅ Messaggio inviato.",
+            ephemeral: true
         });
     }
 };

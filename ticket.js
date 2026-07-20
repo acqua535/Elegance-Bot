@@ -8,33 +8,16 @@ const TICKET_STAFF_ROLES = ["1528576030783176835"];
 const EMBED_COLOR = "#2b2d31";
 const PREFIX = "︲🎫〞﹒";
 
-const QUESTIONS = {
-    partner: ["Nome progetto?", "Membri totali?", "Obiettivo partnership?"],
-    staff: ["Da quanto sei qui?", "Età?", "Motivazione candidatura?"],
-    bug: ["Descrizione bug?", "Dove si verifica?", "Hai screenshot?"],
-    report: ["Chi vuoi segnalare?", "Quale regola ha infranto?", "Hai delle prove?"]
-};
-
-function getOrari() {
-    const now = new Date();
-    const ora = now.getHours();
-    const giorno = now.getDay();
-    const isEstate = (now.getMonth() >= 5 && now.getMonth() <= 8);
-    const chiusura = isEstate ? 24 : 21;
-    if (giorno === 1) return "🔴 **Chiuso** (Ogni Lunedì)";
-    if (ora < 14 || ora >= chiusura) return `🔴 **Chiuso** (Apertura 14:00 - ${chiusura}:00)`;
-    return `🟢 **Aperto** (Fino alle ${chiusura}:00)`;
-}
-
 module.exports = {
-    data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket di supporto"),
+    data: new SlashCommandBuilder().setName("ticket").setDescription("Apri un ticket"),
 
     async execute(interaction) {
-        const embed = new EmbedBuilder()
-            .setColor(EMBED_COLOR)
-            .setTitle("🎫 ELEGANCE | CENTRO SUPPORTO")
-            .setDescription(`Benvenuto, ${interaction.user}. Scegli una categoria:\n\n**STATO:** ${getOrari()}\n\n⚠️ *L'abuso del sistema comporta sanzioni.*`);
-        
+        // Blocco lunedì
+        if (new Date().getDay() === 1) {
+            return interaction.reply({ content: "🔴 **Sistema Chiuso:** Il supporto è offline ogni lunedì.", ephemeral: true });
+        }
+
+        const embed = new EmbedBuilder().setColor(EMBED_COLOR).setTitle("🎫 ELEGANCE | CENTRO SUPPORTO").setDescription("Seleziona una categoria per iniziare.");
         const menu = new StringSelectMenuBuilder().setCustomId("ticket_category").setPlaceholder("🎫 Seleziona categoria...").addOptions([
             { label: "Supporto Partner", value: "partner", emoji: "🤝" },
             { label: "Bando Staff", value: "staff", emoji: "🛡️" },
@@ -45,7 +28,7 @@ module.exports = {
     },
 
     async categoryHandler(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        // NON fare deferReply qui, viene fatto dal buttonHandler!
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
             name: `${PREFIX}${type}-${interaction.user.username}`,
@@ -58,42 +41,33 @@ module.exports = {
             ]
         });
         ticketSystem.createTicket(interaction.user.id, { owner: interaction.user.id, channelId: channel.id, type: type, step: 0 });
-        const embed = new EmbedBuilder().setColor(EMBED_COLOR).setTitle(`🎫 Ticket: ${type.toUpperCase()}`).setDescription(`Domanda 1: ${QUESTIONS[type][0]}`);
-        const menu = new StringSelectMenuBuilder().setCustomId("ticket_manage").setPlaceholder("⚙️ Pannello Gestione").addOptions([
-            { label: "Prendi in carico", value: "claim_ticket", emoji: "✅" },
-            { label: "Ping Staff", value: "ping_staff", emoji: "🔔" },
-            { label: "Chiudi Ticket", value: "close_ticket", emoji: "🔒" }
-        ]);
-        await channel.send({ content: `<@&${TICKET_STAFF_ROLES[0]}>`, embeds: [embed], components: [new ActionRowBuilder().addComponents(menu)] });
+        
         await interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
-        interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send(`📂 **Ticket Aperto:** ${channel.name} da ${interaction.user.tag}`);
+        
+        const manageMenu = new StringSelectMenuBuilder().setCustomId("ticket_manage").setPlaceholder("⚙️ Pannello").addOptions([
+            { label: "Claim", value: "claim_ticket", emoji: "✅" },
+            { label: "Ping", value: "ping_staff", emoji: "🔔" },
+            { label: "Chiudi", value: "close_ticket", emoji: "🔒" }
+        ]);
+        await channel.send({ content: `<@&${TICKET_STAFF_ROLES[0]}>`, components: [new ActionRowBuilder().addComponents(manageMenu)] });
     },
 
     async buttonHandler(interaction) {
+        // Qui usiamo sempre editReply
         const id = interaction.values ? interaction.values[0] : interaction.customId;
         const data = ticketSystem.getAllTickets().find(t => t.channelId === interaction.channel.id);
-        if (!data) return interaction.editReply({ content: "❌ Dati non trovati.", ephemeral: true });
-
-        const log = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
-
+        
         if (id === "ping_staff") {
-            await interaction.editReply({ content: "🔔 Ping inviato allo staff!" });
+            await interaction.editReply({ content: "🔔 Staff avvisato!" });
             await interaction.channel.send(`<@&${TICKET_STAFF_ROLES[0]}> Richiesta assistenza!`);
-            log?.send(`🔔 **Ping:** ${interaction.user.tag} ha pingato lo staff in ${interaction.channel.name}`);
         } else if (id === "claim_ticket") {
-            if (!TICKET_STAFF_ROLES.some(r => interaction.member.roles.cache.has(r))) return interaction.editReply({ content: "❌ Solo Staff.", ephemeral: true });
             await interaction.editReply({ content: `✅ Preso in carico da ${interaction.user}.` });
-            log?.send(`✅ **Claim:** ${interaction.user.tag} ha preso in carico ${interaction.channel.name}`);
         } else if (id === "close_ticket") {
-            await interaction.editReply({ content: "🔒 Chiusura in corso..." });
+            await interaction.editReply({ content: "🔒 Chiusura..." });
             const file = await transcriptManager.createTranscript(interaction.channel);
-            interaction.guild.members.cache.get(data.owner)?.send({ content: "📁 Il tuo transcript:", files: [file] }).catch(() => {});
-            log?.send({ content: `📁 **Chiuso:** ${interaction.channel.name} da ${interaction.user.tag}`, files: [file] });
-            ticketSystem.deleteTicket(data.owner);
+            interaction.guild.channels.cache.get(LOG_CHANNEL_ID)?.send({ files: [file] });
+            ticketSystem.deleteTicket(data?.owner);
             setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
         }
-    },
-
-    async router(interaction) { return this.buttonHandler(interaction); }
+    }
 };
-                                     

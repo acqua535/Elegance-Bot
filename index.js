@@ -36,6 +36,7 @@ const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand"); 
 const ticket = require("./ticket");
 const buttonHandler = require("./buttonHandler");
+const ticketSystem = require("./ticketSystem"); // NECESSARIO PER L'IA
 
 // ==========================
 // AVVIO GENERALE DEI COMANDI
@@ -54,128 +55,83 @@ const buttonHandler = require("./buttonHandler");
 // ==========================
 // ERROR SYSTEM
 // ==========================
-process.on(
-    "unhandledRejection",
-    error => {
-        console.error("❌ Unhandled Promise:", error);
-    }
-);
-
-process.on(
-    "uncaughtException",
-    error => {
-        console.error("❌ Uncaught Exception:", error);
-    }
-);
+process.on("unhandledRejection", error => console.error("❌ Unhandled Promise:", error));
+process.on("uncaughtException", error => console.error("❌ Uncaught Exception:", error));
 
 // ==========================
-// READY SYSTEM (CORRETTO)
+// READY SYSTEM
 // ==========================
-client.once(
-    "ready",
-    async (readyClient) => {
-        console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
+client.once("ready", async (readyClient) => {
+    console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
+    readyClient.user.setActivity("Elegance Community", { type: 3 });
+});
 
-        readyClient.user.setActivity(
-            "Elegance Community",
-            { type: 3 } // Watching
-        );
+// ==========================
+// ASSISTENZA IA (LOGICA DOMANDE)
+// ==========================
+const DOMANDE = {
+    bug: ["Qual è il bug riscontrato?", "Da quanto tempo persiste?", "Quali sono i passaggi per riprodurlo?"],
+    partner: ["Che server rappresenti?", "Qual è la tua proposta?", "Quanti membri ha il tuo server?"],
+    staff: ["Età?", "Esperienza precedente?", "Perché dovremmo prenderti?"],
+    idea: ["Qual è la tua idea?", "Come aiuterebbe il server?", "C'è altro da aggiungere?"]
+};
+
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    
+    // Controlla se il messaggio è in un canale ticket
+    const ticketData = ticketSystem.getTicketByChannel(message.channel.id);
+    if (!ticketData || ticketData.step === 0 || ticketData.step >= 3) return;
+
+    // Incrementa lo step
+    ticketData.step++;
+    ticketSystem.updateTicket(ticketData.userId, ticketData);
+
+    if (ticketData.step < 3) {
+        await message.channel.send(`✅ Ricevuto. **DOMANDA ${ticketData.step + 1}/3:** ${DOMANDE[ticketData.type][ticketData.step]}`);
+    } else {
+        await message.channel.send("✅ Abbiamo ricevuto tutte le info. Uno staffer arriverà a breve.");
     }
-);
+});
 
 // ==========================
 // INTERACTION ROUTER
 // ==========================
-client.on(
-    "interactionCreate",
-    async interaction => {
-        try {
-            // ==========================
-            // SLASH COMMANDS
-            // ==========================
-            if(interaction.isChatInputCommand()){
-                const command = client.commands.get(interaction.commandName);
+client.on("interactionCreate", async interaction => {
+    try {
+        if(interaction.isChatInputCommand()){
+            const command = client.commands.get(interaction.commandName);
+            if(!command) return;
+            await command.execute(interaction);
+            return;
+        }
 
-                if(!command){
-                    console.log("❌ Comando non trovato:", interaction.commandName);
-                    return;
-                }
+        if(interaction.isButton()){
+            await buttonHandler(interaction);
+            return;
+        }
 
-                try {
-                    await command.execute(interaction);
-                } catch(error){
-                    console.error("❌ Errore comando:", error);
-
-                    if(!interaction.replied && !interaction.deferred){
-                        await interaction.reply({
-                            content: "❌ Errore durante l'esecuzione del comando.",
-                            ephemeral: true
-                        }).catch(()=>{});
-                    }
-                }
+        if(interaction.isStringSelectMenu()){
+            if(interaction.customId === "ticket_category"){
+                await ticket.categoryHandler(interaction);
                 return;
             }
-
-            // ==========================
-            // BUTTONS
-            // ==========================
-            if(interaction.isButton()){
-                await buttonHandler(interaction);
+            if(interaction.customId === "ticket_manage"){
+                await ticket.router(interaction);
                 return;
-            }
-
-            // ==========================
-            // SELECT MENUS
-            // ==========================
-            if(interaction.isStringSelectMenu()){
-                if(interaction.customId === "ticket_category"){
-                    await ticket.categoryHandler(interaction);
-                    return;
-                }
-                if(interaction.customId === "ticket_manage"){
-                    await ticket.router(interaction);
-                    return;
-                }
-                if(interaction.customId === "ticket_priority"){
-                    await ticket.router(interaction);
-                    return;
-                }
-            }
-
-            // ==========================
-            // MODALS (VERIFY & OTHERS)
-            // ==========================
-            if(interaction.isModalSubmit()){
-                if(interaction.customId === "verify_modal"){
-                    // Richiamo dinamico sicuro: cerca il file dentro commands dopo l'avvio completo
-                    const verifyDynamic = require("./commands/verify.js");
-                    await verifyDynamic.modalHandler(interaction);
-                    return;
-                }
-            }
-
-        } catch(error){
-            console.error("❌ Errore interaction:", error);
-
-            if(!interaction.replied && !interaction.deferred){
-                await interaction.reply({
-                    content: "❌ Si è verificato un errore.",
-                    ephemeral: true
-                }).catch(()=>{});
             }
         }
+
+        if(interaction.isModalSubmit()){
+            if(interaction.customId === "verify_modal"){
+                const verifyDynamic = require("./commands/verify.js");
+                await verifyDynamic.modalHandler(interaction);
+                return;
+            }
+        }
+    } catch(error){
+        console.error("❌ Errore interaction:", error);
     }
-);
+});
 
-// ==========================
-// TOKEN CHECK
-// ==========================
-console.log(
-    "TOKEN PRESENTE:",
-    process.env.TOKEN ? "SI" : "NO"
-);
-
-// ==========================
-// LOGIN
-// ==========================
 client.login(process.env.TOKEN);

@@ -9,17 +9,16 @@ module.exports = function loadCommands(client) {
     const rootPath = process.cwd();
     const commandsPath = path.join(rootPath, "commands");
     
-    // Lista completa di tutti i file dei tuoi comandi
+    // Lista dei file da caricare in locale
     const targetCommands = [
         "collab.js", "daily-reward.js", "embed.js", "horror.js", 
         "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
         "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"
     ];
 
-    // Mappa per tenere traccia dei percorsi assoluti dei file trovati
-    const filesToLoad = new Map(); // nomeFile -> percorsoAssoluto
+    const filesToLoad = new Map();
 
-    // 1. Cerca prima dentro la cartella 'commands' (se esiste)
+    // 1. Controlla in 'commands'
     if (fs.existsSync(commandsPath)) {
         const internalItems = fs.readdirSync(commandsPath);
         internalItems.forEach(file => {
@@ -29,7 +28,7 @@ module.exports = function loadCommands(client) {
         });
     }
 
-    // 2. Cerca anche nella root (per i file rimasti fuori dallo zip)
+    // 2. Controlla nella root
     const rootItems = fs.readdirSync(rootPath);
     rootItems.forEach(file => {
         if (targetCommands.includes(file) && !filesToLoad.has(file)) {
@@ -37,18 +36,14 @@ module.exports = function loadCommands(client) {
         }
     });
 
-    console.log(`🔎 [DEBUG] Trovati ${filesToLoad.size} comandi totali distribuiti tra root e cartella.`);
-
-    // 3. Carica i comandi unici in memoria
+    // 3. Carica i comandi trovati
     for (const [file, filePath] of filesToLoad.entries()) {
         try {
             const command = require(filePath);
 
             if (command.data && command.execute) {
                 client.commands.set(command.data.name, command);
-                console.log(`✅ [IBRIDO] Caricato: /${command.data.name} (da: ${file})`);
-            } else {
-                console.log(`⚠️ Struttura non valida per il file: ${file}`);
+                console.log(`✅ [IBRIDO] Caricato in memoria: /${command.data.name}`);
             }
         } catch (error) {
             console.error(`❌ Errore caricamento file ${file}:`, error);

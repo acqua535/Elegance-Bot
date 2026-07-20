@@ -1,74 +1,37 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, StringSelectMenuBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
-const fs = require('fs');
+const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const fs = require("fs");
+require("dotenv").config();
 
-const DATA_PATH = './ticketsData.json';
-const STAFF_ROLE_ID = "1528576030783176835";
-const CATEGORY_ID = "1528582447443345560";
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
+client.commands = new Collection();
 
-const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
-const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
+// Caricamento comandi (usa il tuo commandHandler)
+require("./commandHandler")(client);
 
-module.exports = {
-    data: new SlashCommandBuilder().setName("ticket").setDescription("🎫 Apri un ticket"),
-
-    async execute(interaction) {
-        const menu = new StringSelectMenuBuilder()
-            .setCustomId("ticket_category")
-            .setPlaceholder("🎫 Seleziona categoria...")
-            .addOptions([
-                { label: "Partner", value: "partner", emoji: "🤝" },
-                { label: "Staff", value: "staff", emoji: "🛡️" },
-                { label: "Bug", value: "bug", emoji: "🐞" },
-                { label: "Report", value: "report", emoji: "🚫" }
-            ]);
-        await interaction.reply({ embeds: [new EmbedBuilder().setTitle("Supporto Elegance").setDescription("Seleziona:")], components: [new ActionRowBuilder().addComponents(menu)] });
-    },
-
-    async categoryHandler(interaction) {
-        await interaction.deferUpdate(); // Evita il crash
-        const channel = await interaction.guild.channels.create({
-            name: `🎫-${interaction.values[0]}-${interaction.user.username}`,
-            type: ChannelType.GuildText,
-            parent: CATEGORY_ID,
-            permissionOverwrites: [
-                { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
-            ]
-        });
-
-        const data = getData();
-        data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type: interaction.values[0] };
-        saveData(data);
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId("ping_staff").setLabel("📢 Ping Staff").setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId("close_ticket").setLabel("🔒 Chiudi").setStyle(ButtonStyle.Danger)
-        );
-        await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, components: [row] });
-    },
-
-    async buttonHandler(interaction) {
-        if (interaction.customId === 'ping_staff') {
-            const data = getData();
-            const ticket = data[interaction.channel.id];
-            if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
-                return interaction.reply({ content: "⏳ Aspetta 24h per pingare.", ephemeral: true });
-            }
-            ticket.lastPing = Date.now();
-            saveData(data);
-            await interaction.reply({ content: `<@&${STAFF_ROLE_ID}>` });
-        } else if (interaction.customId === 'close_ticket') {
-            await interaction.reply("🔒 Chiusura...");
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
+client.on("interactionCreate", async interaction => {
+    try {
+        const ticketCmd = client.commands.get('ticket');
+        
+        // Gestione Menu
+        if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category') {
+            await ticketCmd.categoryHandler(interaction);
+        } 
+        // Gestione Bottoni
+        else if (interaction.isButton() && ['ping_staff', 'close_ticket'].includes(interaction.customId)) {
+            await ticketCmd.buttonHandler(interaction);
         }
-    },
-
-    async handleMessage(message) {
-        const data = getData();
-        if (data[message.channel.id]) {
-            data[message.channel.id].lastMessage = Date.now();
-            saveData(data);
+        // Gestione Slash
+        else if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
+            if (command) await command.execute(interaction);
         }
-    }
-};
+    } catch (e) { console.error("ERRORE:", e); }
+});
+
+client.on('messageCreate', async (m) => {
+    if (m.author.bot) return;
+    const ticketCmd = client.commands.get('ticket');
+    if (ticketCmd) await ticketCmd.handleMessage(m);
+});
+
+client.login(process.env.TOKEN);

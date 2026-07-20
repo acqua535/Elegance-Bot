@@ -13,7 +13,7 @@ module.exports = {
     async categoryHandler(interaction) {
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
-            name: `🎫-${type}-${interaction.user.username}`,
+            name: `︲🎫〞﹒${type}-${interaction.user.username}`,
             type: ChannelType.GuildText,
             parent: CATEGORY_ID,
             permissionOverwrites: [

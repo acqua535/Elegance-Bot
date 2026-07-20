@@ -1,6 +1,5 @@
 const { Client, GatewayIntentBits, Collection } = require("discord.js");
 const fs = require("fs");
-const path = require("path");
 require("dotenv").config();
 
 const client = new Client({
@@ -17,16 +16,7 @@ client.commands = new Collection();
 // Import moduli
 const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand");
-const buttonHandler = require("./buttonHandler"); // Il nostro gestore universale
-const ticketSystem = require("./ticketSystem");
-
-// CONFIGURAZIONE DOMANDE (Fake IA)
-const DOMANDE = {
-    bug: ["Qual è il bug riscontrato?", "Da quanto tempo persiste?", "Quali sono i passaggi per riprodurlo?"],
-    partner: ["Che server rappresenti?", "Qual è la tua proposta?", "Quanti membri ha il tuo server?"],
-    staff: ["Età?", "Esperienza precedente?", "Perché dovremmo prenderti?"],
-    report: ["Chi è l'utente da segnalare?", "Quale regola ha infranto?", "Hai delle prove?"]
-};
+const buttonHandler = require("./buttonHandler"); 
 
 // ==========================
 // INIZIALIZZAZIONE
@@ -42,51 +32,74 @@ const DOMANDE = {
 })();
 
 // ==========================
-// LOGICA ASSISTENZA (Fake IA)
+// CICLO DI PULIZIA AUTOMATICA (Check inattività ogni minuto)
 // ==========================
-client.on('messageCreate', async (message) => {
-    if (message.author.bot) return;
-    
-    const ticketData = ticketSystem.getTicketByChannel(message.channel.id);
-    if (!ticketData) return;
+setInterval(() => {
+    if (!fs.existsSync('./ticketsData.json')) return;
+    const data = JSON.parse(fs.readFileSync('./ticketsData.json', 'utf8') || '{}');
+    const now = Date.now();
 
-    if (ticketData.step < 3) {
-        ticketData.step++;
-        ticketSystem.updateTicket(ticketData.owner, ticketData);
+    for (const channelId in data) {
+        const ticket = data[channelId];
+        if (ticket.status !== 'open') continue;
 
-        const domanda = DOMANDE[ticketData.type] ? DOMANDE[ticketData.type][ticketData.step - 1] : null;
-        
-        if (domanda) {
-            await message.channel.send(`🤖 **Assistente Elegance [Step ${ticketData.step}/3]:**\n${domanda}`);
-        } else {
-            await message.channel.send("✅ Abbiamo ricevuto tutto. Uno staffer arriverà a breve.");
+        const inactiveTime = now - (ticket.lastMessage || Date.now());
+
+        // Se inattivo da 23 ore (avviso)
+        if (inactiveTime > 82800000 && !ticket.warned) {
+            const channel = client.channels.cache.get(channelId);
+            if (channel) {
+                channel.send("⚠️ **AVVISO:** Il ticket verrà chiuso automaticamente tra 1 ora per inattività.");
+                ticket.warned = true;
+                fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
+            }
+        }
+
+        // Se inattivo da 24 ore (chiusura)
+        if (inactiveTime > 86400000) {
+            const channel = client.channels.cache.get(channelId);
+            if (channel) channel.delete().catch(() => {});
+            delete data[channelId];
+            fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
         }
     }
-});
+}, 60000); 
 
 // ==========================
-// INTERACTION ROUTER UNIVERSALE
+// INTERACTION ROUTER
 // ==========================
 client.on("interactionCreate", async interaction => {
     try {
-        // 1. Gestione Comandi Slash
-        if (interaction.isChatInputCommand()) {
+        // Gestione Menu Categorie Ticket
+        if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category') {
+            await client.commands.get('ticket').categoryHandler(interaction);
+        }
+        // Gestione Bottoni (Ping & Close)
+        else if (interaction.isButton() && ['ping_staff', 'close_ticket'].includes(interaction.customId)) {
+            await client.commands.get('ticket').buttonHandler(interaction);
+        }
+        // Gestione Comandi Slash
+        else if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (command) await command.execute(interaction);
         }
-        // 2. Gestione Universale Bottoni e Menu (Ticket, Verify, ecc.)
-        else if (interaction.isButton() || interaction.isStringSelectMenu()) {
-            await buttonHandler(interaction);
-        }
-        // 3. Gestione Modali (Verify o Aggiungi Utenti)
+        // Gestione Modali
         else if (interaction.isModalSubmit()) {
-            if (interaction.customId === "verify_modal") {
-                await require("./verify").modalHandler(interaction);
-            }
+            if (interaction.customId === "verify_modal") await require("./verify").modalHandler(interaction);
         }
     } catch (error) {
         console.error("❌ Errore interazione:", error);
     }
+});
+
+// ==========================
+// MESSAGE ROUTER (Aggiorna lastMessage)
+// ==========================
+client.on('messageCreate', async (message) => {
+    if (message.author.bot) return;
+    // Aggiorna l'attività del ticket
+    const ticketCmd = client.commands.get('ticket');
+    if (ticketCmd) await ticketCmd.handleMessage(message);
 });
 
 client.once("ready", (c) => {

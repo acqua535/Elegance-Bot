@@ -3,7 +3,6 @@ const ticket = require("./ticket");
 const minigame = require("./minigame");
 
 module.exports = async function buttonHandler(interaction) {
-    // Controllo che l'interazione sia un bottone
     if (!interaction.isButton()) return;
 
     const id = interaction.customId;
@@ -16,20 +15,13 @@ module.exports = async function buttonHandler(interaction) {
             return await verify.buttonHandler(interaction);
         }
 
-        // 2. RECENSIONI (Il tasto che viene inviato nei DM post-chiusura)
-        if (id === "apri_recensione") {
-            // Qui richiamerai il tuo futuro comando recensione
-            return await interaction.reply({ content: "⭐ Sistema recensioni in fase di attivazione...", ephemeral: true });
-        }
-
-        // 3. TICKET (Gestione bottoni diretti)
-        // Includiamo anche i nuovi ID: ping_staff, add_user, remove_user, ecc.
-        if (id === "claim_ticket" || id === "close_ticket" || id === "save_transcript" || 
-            id === "ping_staff" || id === "add_user" || id === "remove_user") {
+        // 2. TICKET (Gestione bottoni e router)
+        // Ora gestisce ping_staff, close_ticket, ecc.
+        if (id === "ping_staff" || id === "close_ticket") {
             return await ticket.buttonHandler(interaction);
         }
 
-        // 4. MINIGAME
+        // 3. MINIGAME
         if (id.startsWith("game_")) {
             const game = id.replace("game_", "");
             await interaction.update({

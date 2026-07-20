@@ -8,12 +8,10 @@ const path = require("path");
 
 require("dotenv").config();
 
-// ==========================================
-// FIX DISCLOUD: CREAZIONE AUTOMATICA CARTELLA
-// ==========================================
-const commandsPath = path.join(__dirname, "commands");
+// Usa process.cwd() che garantisce la cartella di esecuzione principale su Linux/Discloud
+const commandsPath = path.join(process.cwd(), "commands");
 if (!fs.existsSync(commandsPath)) {
-    console.log("📂 [FIX] Cartella 'commands' non trovata su Discloud. Creazione in corso...");
+    console.log("📂 [FIX] Cartella 'commands' non trovata. Creazione in corso...");
     fs.mkdirSync(commandsPath);
 }
 
@@ -72,17 +70,17 @@ process.on(
 );
 
 // ==========================
-// READY SYSTEM (AGGIORNATO)
+// READY SYSTEM (CORRETTO)
 // ==========================
-// Sostituito 'ready' con 'clientReady' per rimuovere il deprecation warning
+// Ripristinato l'evento corretto 'ready' richiesto da discord.js per andare online
 client.once(
-    "clientReady",
+    "ready",
     async (readyClient) => {
         console.log(`⚜️ Elegance-Bot online come ${readyClient.user.tag}`);
 
         readyClient.user.setActivity(
             "Elegance Community",
-            { type: 3 } // Type 3 corrisponde a "Watching"
+            { type: 3 } // Watching
         );
     }
 );
@@ -132,7 +130,6 @@ client.on(
             // SELECT MENUS
             // ==========================
             if(interaction.isStringSelectMenu()){
-                // Apertura ticket
                 if(interaction.customId === "ticket_category"){
                     await ticket.categoryHandler(interaction);
                     return;
@@ -141,7 +138,6 @@ client.on(
                     await ticket.router(interaction);
                     return;
                 }
-                // Priorità ticket
                 if(interaction.customId === "ticket_priority"){
                     await ticket.router(interaction);
                     return;

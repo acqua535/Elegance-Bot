@@ -2,62 +2,46 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = function loadCommands(client) {
-    console.log("-----------------------------------------");
-    console.log("📂 Avvio caricamento comandi (Handler Ibrido)...");
-    console.log("-----------------------------------------");
-
+    console.log("🔥 [DEBUG MOD] Avvio diagnosi comandi...");
     const rootPath = process.cwd();
-    const commandsPath = path.join(rootPath, "commands");
     
-    // Lista pulita: horror.js è stato rimosso per evitare crash
-    const targetCommands = [
-        "collab.js", "daily-reward.js", "embed.js", 
-        "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
-        "sponsor.js", "suggest.js", "ticket.js", "unwarn.js", "warn.js", "warnings.js"
-    ];
+    // Lista forzata, niente "targetCommands" che ci nascondono file
+    // Mettiamo qui dentro TUTTI i file che devono essere comandi
+    const files = ["ticket.js", "collab.js", "embed.js", "minigame.js", "modify-suggest.js", "partner.js", "say.js", "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"];
 
-    const filesToLoad = new Map();
+    files.forEach(file => {
+        const filePath = path.join(rootPath, file);
+        
+        if (!fs.existsSync(filePath)) {
+            console.log(`❌ FILE NON TROVATO: ${file} (Controlla se è nella root!)`);
+            return;
+        }
 
-    // 1. Controlla nella cartella 'commands'
-    if (fs.existsSync(commandsPath)) {
-        const internalItems = fs.readdirSync(commandsPath);
-        internalItems.forEach(file => {
-            if (targetCommands.includes(file)) {
-                filesToLoad.set(file, path.join(commandsPath, file));
+        try {
+            // Elimina la cache FORZATAMENTE
+            delete require.cache[require.resolve(filePath)];
+            
+            const command = require(filePath);
+
+            // CONTROLLO DI VERITA'
+            if (!command.data) {
+                throw new Error(`Manca l'oggetto 'data' in ${file}`);
             }
-        });
-    }
+            if (!command.execute) {
+                throw new Error(`Manca la funzione 'execute' in ${file}`);
+            }
 
-    // 2. Controlla nella root (dove tieni ticket.js)
-    const rootItems = fs.readdirSync(rootPath);
-    rootItems.forEach(file => {
-        if (targetCommands.includes(file) && !filesToLoad.has(file)) {
-            filesToLoad.set(file, path.join(rootPath, file));
+            client.commands.set(command.data.name, command);
+            console.log(`✅ CARICATO CORRETTAMENTE: /${command.data.name}`);
+
+        } catch (err) {
+            console.error("--------------------------------------------------");
+            console.error(`🚨 ERRORE FATALE NEL FILE: ${file}`);
+            console.error(`📝 Dettaglio: ${err.message}`);
+            console.error(`📍 Stack Trace: ${err.stack}`);
+            console.error("--------------------------------------------------");
         }
     });
 
-    console.log(`🔎 [DEBUG] Trovati ${filesToLoad.size} file candidati.`);
-
-    // 3. Carica i comandi in memoria
-    for (const [file, filePath] of filesToLoad.entries()) {
-        try {
-            // Eliminiamo la cache del require per sicurezza
-            delete require.cache[require.resolve(filePath)];
-            const command = require(filePath);
-
-            // Verifica che il comando abbia la struttura corretta
-            if (command.data && command.execute) {
-                client.commands.set(command.data.name, command);
-                console.log(`✅ [IBRIDO] Caricato in memoria: /${command.data.name}`);
-            } else {
-                console.log(`⚠️ [IBRIDO] Saltato: ${file} (Manca data o execute)`);
-            }
-        } catch (error) {
-            console.error(`❌ Errore caricamento file ${file}:`, error);
-        }
-    }
-
-    console.log("-----------------------------------------");
-    console.log(`📦 Caricamento completato! Comandi totali: ${client.commands.size}`);
-    console.log("-----------------------------------------");
+    console.log(`📦 Caricamento terminato. Comandi pronti: ${client.commands.size}`);
 };

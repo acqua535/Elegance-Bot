@@ -50,7 +50,7 @@ module.exports = {
         );
 
         await interaction.reply({ embeds: [embed], components: [row] });
-        console.log(`[TICKET_PANEL] Pannello di assistenza con 4 opzioni distribuito con successo nel canale ${interaction.channel.name} (${interaction.channelId}) da ${interaction.user.tag}`);
+        console.log(`[TICKET_PANEL] Pannello di assistenza distribuito con successo nel canale ${interaction.channel.name} (${interaction.channelId}) da ${interaction.user.tag}`);
     },
 
     async categoryHandler(interaction) {
@@ -149,10 +149,12 @@ module.exports = {
                     await ownerUser.send({
                         content: `📜 **Report di Trascrizione Ufficiale**\nIl tuo ticket **[${ticket.type.toUpperCase()}]** nel server **${interaction.guild.name}** è stato chiuso. In allegato trovi lo storico dei messaggi.`,
                         files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }]
-                    }).catch(() => {});
+                    }).catch(() => {
+                        console.log(`[TICKET_TRANSCRIPT] Impossibile inviare il transcript in DM all'utente ${ticket.owner} (probabilmente ha i DM chiusi).`);
+                    });
                 }
             } catch (err) {
-                console.error("[ERROR_TRANSCRIPT] Impossibile generare o inviare il transcript del ticket:", err);
+                console.error("[ERROR_TRANSCRIPT] Errore critico nella generazione del transcript:", err);
             }
 
             const ratingEmbed = new EmbedBuilder()
@@ -180,7 +182,7 @@ module.exports = {
     async ratingHandler(interaction) {
         const ratingType = interaction.customId.replace('rate_', '');
         console.log(`[TICKET_RATING] L'utente ${interaction.user.tag} ha espresso una valutazione di tipo: [${ratingType.toUpperCase()}] nel canale #${interaction.channel.name}`);
-        return interaction.reply({ content: `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.`, flags: MessageFlags.Ephemeral });
+        return interaction.editReply({ content: `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.` });
     },
 
     async handleMessage(message) {

@@ -56,8 +56,8 @@ client.on("interactionCreate", async (interaction) => {
                 }
             }
 
-            // Modal Candidature (Apply ID Canale + Form Risposte)
-            if (interaction.customId === "apply_channel_id_modal" || interaction.customId === "apply_form_modal") {
+            // Modal Form Candidature
+            if (interaction.customId === "apply_form_modal") {
                 const applyCmd = client.commands.get("apply");
                 if (applyCmd && applyCmd.modalHandler) {
                     return await applyCmd.modalHandler(interaction);
@@ -100,3 +100,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
+            

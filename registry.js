@@ -2,6 +2,7 @@ const ticket = require("./ticket");
 const games = require("./minigame");
 const verify = require("./verify");
 const entry = require("./entry");
+const invites = require("./invites");
 
 module.exports = {
     // --- TICKET ---
@@ -30,8 +31,12 @@ module.exports = {
     "verify_button": verify.buttonHandler,
     "verify_modal": verify.modalHandler,
 
-    // --- BENVENUTO / ADDIO (ENTRY SYSTEM) ---
+    // --- BENVENUTO / ADDIO ---
     "entry_toggle_welcome": entry.buttonHandler,
     "entry_toggle_leave": entry.buttonHandler,
-    "entry_set_channel": entry.buttonHandler
+    "entry_set_channel": entry.buttonHandler,
+
+    // --- INVITES SYSTEM ---
+    "invites_toggle": invites.buttonHandler,
+    "invites_set_channel": invites.buttonHandler
 };

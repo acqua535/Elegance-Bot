@@ -15,6 +15,7 @@ const COMMAND_ROLE_ID = "1528576014446231683";      // Ruolo autorizzato ad eseg
 const VERIFY_ROLE_ID = "1528576026421231726";       // Ruolo che viene AGGIUNTO (Verificato)
 const UNVERIFIED_ROLE_ID = "1528576023032102972";   // Ruolo che viene RIMOSSO (Non Verificato)
 
+// Cache temporanea per salvare i codici generati per ciascun utente
 const captchaCache = new Map();
 
 function generateCaptcha() {
@@ -27,12 +28,16 @@ function generateCaptcha() {
 }
 
 module.exports = {
+    // Struttura standard richiesta dal deployer per registrare il comando Slash
     data: new SlashCommandBuilder()
         .setName("verify")
         .setDescription("Invia il pannello ufficiale di verifica del server"),
 
+    /**
+     * Esecuzione del comando principale /verify
+     */
     async execute(interaction) {
-        // Controllo Sicurezza: Solo il ruolo autorizzato può inviare il pannello
+        // Controllo Sicurezza: Solo chi possiede il ruolo autorizzato può inviare il pannello
         if (!interaction.member.roles.cache.has(COMMAND_ROLE_ID)) {
             console.warn(`[SECURITY] Tentativo non autorizzato di /verify da parte di ${interaction.user.tag}`);
             return interaction.reply({
@@ -69,8 +74,11 @@ module.exports = {
         });
     },
 
+    /**
+     * Gestore per l'interazione al click del bottone "verify_button"
+     */
     async buttonHandler(interaction) {
-        // Controllo: L'utente è già verificato?
+        // Controllo preventiva: L'utente è già verificato?
         if (interaction.member.roles.cache.has(VERIFY_ROLE_ID)) {
             return interaction.reply({
                 content: "⚠️ **Sei già verificato!** Non hai bisogno di ripetere il processo.",
@@ -80,19 +88,20 @@ module.exports = {
 
         const captcha = generateCaptcha();
 
-        // Salva in cache
+        // Salvataggio in cache con validità di 60 secondi
         captchaCache.set(interaction.user.id, {
             code: captcha,
-            expires: Date.now() + 60000 // Scade in 60 secondi
+            expires: Date.now() + 60000
         });
 
-        // Anti-Memory Leak: Pulizia automatica dopo 65 secondi se non completa il modal
+        // Anti-Memory Leak: Pulizia automatica della memoria dopo 65 secondi
         setTimeout(() => {
             if (captchaCache.has(interaction.user.id)) {
                 captchaCache.delete(interaction.user.id);
             }
         }, 65000);
 
+        // Creazione del Modal
         const modal = new ModalBuilder()
             .setCustomId("verify_modal")
             .setTitle("Verifica Anti-Bot");
@@ -107,9 +116,13 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(input);
         modal.addComponents(row);
 
+        // Apertura finestra per l'utente (N.B. non deve essere preceduto da defer)
         await interaction.showModal(modal);
     },
 
+    /**
+     * Gestore per l'invio del modulo "verify_modal"
+     */
     async modalHandler(interaction) {
         const data = captchaCache.get(interaction.user.id);
 
@@ -135,17 +148,16 @@ module.exports = {
         const unverifiedRole = interaction.guild.roles.cache.get(UNVERIFIED_ROLE_ID);
 
         try {
-            // Rimuovi Non Verificato se ce l'ha
+            // Rimuove il ruolo Unverified se presente
             if (unverifiedRole && member.roles.cache.has(UNVERIFIED_ROLE_ID)) {
                 await member.roles.remove(unverifiedRole);
             }
 
-            // Aggiungi Verificato se non ce l'ha
+            // Aggiunge il ruolo Verified se assente
             if (verifiedRole && !member.roles.cache.has(VERIFY_ROLE_ID)) {
                 await member.roles.add(verifiedRole);
             }
 
-            // Svuota cache subito
             captchaCache.delete(interaction.user.id);
 
             await interaction.reply({
@@ -162,3 +174,4 @@ module.exports = {
         }
     }
 };
+                

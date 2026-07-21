@@ -9,12 +9,12 @@ const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
 module.exports = {
-    // 1. L'oggetto 'data' che mancava e che il commandHandler pretende di trovare!
+    // 1. Fondamentale per il commandHandler.js
     data: new SlashCommandBuilder()
         .setName('ticket')
-        .setDescription('Invia il pannello per aprire un ticket'),
+        .setDescription('Invia il pannello per aprire un ticket di assistenza'),
 
-    // 2. La funzione execute per il comando /ticket
+    // 2. Fondamentale per il commandHandler.js
     async execute(interaction) {
         const embed = new EmbedBuilder()
             .setTitle("🎟️ Assistenza Ticket")

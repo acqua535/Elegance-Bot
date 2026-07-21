@@ -3,6 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js"
 // ID CONFIGURATION (Elegance Sponsoring)
 const COLLAB_CHANNEL_ID  = "1528576181295906826";
 const LOG_CHANNEL_ID     = "1528576197741772902";
+const ALLOWED_ROLE_ID    = "1528576014446231683";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -35,6 +36,14 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // Controllo Permesso Ruolo
+        if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+            return interaction.reply({
+                content: "❌ **Non hai il ruolo necessario per eseguire questo comando!**",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const richiesta = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
         const descrizione = interaction.options.getString("descrizione");
@@ -49,22 +58,18 @@ module.exports = {
             });
         }
 
-        // 1. EMBED PUBBLICO
-        const publicEmbed = new EmbedBuilder()
-            .setTitle("✨ ELEGANCE SPONSORING ── COLLABORAZIONE")
-            .setColor(0x00C8FF)
-            .setDescription(descrizione)
-            .addFields(
-                { name: "🏷️ Categoria", value: `\`${categoria}\``, inline: true },
-                { name: "📌 Richiesta da", value: `${richiesta}`, inline: true },
-                { name: "👤 Staffer", value: `${interaction.user}`, inline: true }
-            )
-            .setFooter({ text: "Elegance Sponsoring • Official Collaboration", iconURL: interaction.guild.iconURL() })
-            .setTimestamp();
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pura
+        await collabChannel.send({ content: descrizione });
 
-        await collabChannel.send({ embeds: [publicEmbed] });
+        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
+        const infoMessage = `✨ **ELEGANCE SPONSORING ── COLLABORAZIONE**\n` +
+                            `🏷️ **Categoria:** \`${categoria}\`\n` +
+                            `📌 **Richiesta da:** ${richiesta}\n` +
+                            `👤 **Staffer:** ${interaction.user}`;
 
-        // 2. EMBED LOG
+        await collabChannel.send({ content: infoMessage });
+
+        // 3. LOG PRIVATO PER LO STAFF (Embed)
         if (logChannel) {
             const logEmbed = new EmbedBuilder()
                 .setTitle("📋 LOG COLLABORAZIONE REGISTRATA")

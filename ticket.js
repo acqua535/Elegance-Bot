@@ -1,4 +1,4 @@
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
 const fs = require('fs');
 
 const DATA_PATH = './ticketsData.json';
@@ -9,6 +9,33 @@ const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
 module.exports = {
+    // 1. L'oggetto 'data' che mancava e che il commandHandler pretende di trovare!
+    data: new SlashCommandBuilder()
+        .setName('ticket')
+        .setDescription('Invia il pannello per aprire un ticket'),
+
+    // 2. La funzione execute per il comando /ticket
+    async execute(interaction) {
+        const embed = new EmbedBuilder()
+            .setTitle("🎟️ Assistenza Ticket")
+            .setDescription("Seleziona una categoria dal menu a tendina qui sotto per aprire un ticket con lo staff.")
+            .setColor(0x2f3136);
+
+        const row = new ActionRowBuilder().addComponents(
+            new StringSelectMenuBuilder()
+                .setCustomId('ticket_category')
+                .setPlaceholder('Seleziona il motivo...')
+                .addOptions([
+                    new StringSelectMenuOptionBuilder().setLabel('Supporto Generale').setValue('supporto').setEmoji('🛠️'),
+                    new StringSelectMenuOptionBuilder().setLabel('Acquisti / Sponsor').setValue('sponsor').setEmoji('🛒'),
+                    new StringSelectMenuOptionBuilder().setLabel('Segnalazioni').setValue('report').setEmoji('🚨')
+                ])
+        );
+
+        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+    },
+
+    // Gestione Menu (chiamata dal Registry)
     async categoryHandler(interaction) {
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
@@ -36,6 +63,7 @@ module.exports = {
         return interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
     },
 
+    // Gestione Bottoni
     async buttonHandler(interaction) {
         const id = interaction.customId;
         const data = getData();
@@ -68,7 +96,6 @@ module.exports = {
         }
     },
 
-    // Aggiunto per evitare crash con il registry
     async ratingHandler(interaction) {
         const rating = interaction.customId.replace('rate_', '');
         return interaction.editReply({ content: `⭐ Grazie per il feedback (${rating.toUpperCase()})!` });
@@ -82,4 +109,3 @@ module.exports = {
         }
     }
 };
-    

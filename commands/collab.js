@@ -1,35 +1,36 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
-// CONFIG ID REALI (Elegance Sponsoring)
-const CHANNEL_ID = "1528576197741772902"; // Canale dove inviare la collaborazione
-const LOG_ID = "1528576197741772902";     // Canale Log Privato
+// ID CONFIGURATION (Elegance Sponsoring)
+const COLLAB_CHANNEL_ID  = "1528576181295906826";
+const LOG_CHANNEL_ID     = "1528576197741772902";
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("collab")
-        .setDescription("Crea una richiesta collaborazione")
+        .setDescription("Pubblica una nuova Collaborazione")
         .addUserOption(option =>
             option
                 .setName("richiesta_da")
-                .setDescription("Utente che richiede la collaborazione")
+                .setDescription("Utente che ha richiesto la collaborazione")
                 .setRequired(true)
         )
         .addStringOption(option =>
             option
                 .setName("categoria")
-                .setDescription("Categoria del server")
+                .setDescription("Categoria della collaborazione")
                 .setRequired(true)
                 .addChoices(
                     { name: "🌐 Community", value: "🌐 Community" },
                     { name: "🎮 Gaming", value: "🎮 Gaming" },
                     { name: "🎭 Roleplay", value: "🎭 Roleplay" },
-                    { name: "🚗 FiveM", value: "🚗 FiveM" }
+                    { name: "🚗 FiveM", value: "🚗 FiveM" },
+                    { name: "📢 Media / Content Creator", value: "📢 Media / Content Creator" }
                 )
         )
         .addStringOption(option =>
             option
                 .setName("descrizione")
-                .setDescription("Descrizione della collaborazione")
+                .setDescription("Dettagli della collaborazione")
                 .setRequired(true)
         ),
 
@@ -38,33 +39,53 @@ module.exports = {
         const categoria = interaction.options.getString("categoria");
         const descrizione = interaction.options.getString("descrizione");
 
-        // Messaggio iniziale totalmente pulito, senza testi ripetitivi o scritte fisse
-        const primoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n${descrizione}\n\n━━━━━━━⚜️━━━━━━━`;
+        const collabChannel = interaction.guild.channels.cache.get(COLLAB_CHANNEL_ID);
+        const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
 
-        const secondoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n👤 **Autore**\n${interaction.user}\n\n📌 **Richiesta da**\n${richiesta}\n\n🏷️ **Categoria**\n${categoria}\n\n━━━━━━━⚜️━━━━━━━`;
-
-        const channel = interaction.guild.channels.cache.get(CHANNEL_ID);
-
-        if (!channel) {
+        if (!collabChannel) {
             return interaction.reply({
-                content: "❌ Canale collaborazione non trovato.",
-                ephemeral: true
+                content: "❌ **Errore:** Canale Collaborazioni non trovato.",
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        await channel.send(primoMessaggio);
-        await channel.send(secondoMessaggio);
+        // 1. EMBED PUBBLICO
+        const publicEmbed = new EmbedBuilder()
+            .setTitle("✨ ELEGANCE SPONSORING ── COLLABORAZIONE")
+            .setColor(0x00C8FF)
+            .setDescription(descrizione)
+            .addFields(
+                { name: "🏷️ Categoria", value: `\`${categoria}\``, inline: true },
+                { name: "📌 Richiesta da", value: `${richiesta}`, inline: true },
+                { name: "👤 Staffer", value: `${interaction.user}`, inline: true }
+            )
+            .setFooter({ text: "Elegance Sponsoring • Official Collaboration", iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
 
-        const log = interaction.guild.channels.cache.get(LOG_ID);
-        if (log) {
-            await log.send(
-                `📋 **LOG COLLABORAZIONE**\n\n👤 Autore:\n${interaction.user}\n\n📌 Richiesta da:\n${richiesta}\n\n🏷️ Categoria:\n${categoria}\n\n📝 Descrizione:\n${descrizione}\n\n⏰ <t:${Math.floor(Date.now() / 1000)}:F>`
-            );
+        await collabChannel.send({ embeds: [publicEmbed] });
+
+        // 2. EMBED LOG
+        if (logChannel) {
+            const logEmbed = new EmbedBuilder()
+                .setTitle("📋 LOG COLLABORAZIONE REGISTRATA")
+                .setColor(0x00C8FF)
+                .setThumbnail(richiesta.displayAvatarURL({ dynamic: true }))
+                .addFields(
+                    { name: "👤 Esecutore Staff", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: false },
+                    { name: "📌 Richiesta da", value: `${richiesta} (\`${richiesta.id}\`)`, inline: false },
+                    { name: "🏷️ Categoria", value: categoria, inline: true },
+                    { name: "📌 Canale Destinazione", value: `<#${COLLAB_CHANNEL_ID}>`, inline: true },
+                    { name: "📝 Descrizione", value: descrizione.length > 500 ? descrizione.substring(0, 500) + "..." : descrizione, inline: false }
+                )
+                .setFooter({ text: "System Logs • Collaboration" })
+                .setTimestamp();
+
+            await logChannel.send({ embeds: [logEmbed] });
         }
 
-        await interaction.reply({
-            content: "✅ Collaborazione inviata correttamente.",
-            ephemeral: true
+        return interaction.reply({
+            content: `✅ **Collaborazione pubblicata con successo in** <#${COLLAB_CHANNEL_ID}>!`,
+            flags: MessageFlags.Ephemeral
         });
     }
 };

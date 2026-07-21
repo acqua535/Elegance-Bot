@@ -3,6 +3,7 @@ const games = require("./minigame");
 const verify = require("./verify");
 const entry = require("./entry");
 const invites = require("./invites");
+const apply = require("./apply");
 
 module.exports = {
     // --- TICKET ---
@@ -38,5 +39,10 @@ module.exports = {
 
     // --- INVITES SYSTEM ---
     "invites_toggle": invites.buttonHandler,
-    "invites_set_channel": invites.buttonHandler
+    "invites_set_channel": invites.buttonHandler,
+
+    // --- CANDIDATURE (APPLY) ---
+    "apply_toggle": apply.buttonHandler,
+    "apply_set_channel": apply.buttonHandler,
+    "apply_start_button": apply.buttonHandler
 };

@@ -321,4 +321,5 @@ module.exports = (client) => {
             logChannel.send({ embeds: [embed] }).catch(() => {});
         } catch (err) { console.error(err); }
     });
-}; // <-- Questa chiusura mancava!
+};
+                        

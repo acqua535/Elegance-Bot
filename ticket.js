@@ -15,7 +15,6 @@ module.exports = {
         .setDescription('Invia il pannello per aprire un ticket di assistenza'),
 
     async execute(interaction) {
-        // Blocco: Se il comando non viene eseguito nel canale autorizzato, sparisce nel silenzio assoluto
         if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
             return interaction.reply({ content: "❌ Non puoi usare questo comando qui.", ephemeral: true });
         }
@@ -40,7 +39,7 @@ module.exports = {
     },
 
     async categoryHandler(interaction) {
-        await interaction.deferReply({ ephemeral: true });
+        // RIMOSSO IL DEFER DOPPIO QUI (ci pensa il buttonHandler.js)
 
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
@@ -69,8 +68,6 @@ module.exports = {
     },
 
     async buttonHandler(interaction) {
-        await interaction.deferReply({ ephemeral: true });
-
         const id = interaction.customId;
         const data = getData();
         const ticket = data[interaction.channel.id];
@@ -143,4 +140,3 @@ module.exports = {
         }
     }
 };
-                                    

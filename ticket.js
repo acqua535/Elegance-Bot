@@ -9,7 +9,6 @@ const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
 module.exports = {
-    // Gestione Menu
     async categoryHandler(interaction) {
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
@@ -34,11 +33,9 @@ module.exports = {
         );
 
         await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, components: [row] });
-        // Usiamo editReply perché il tuo buttonHandler fa già il defer
         return interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
     },
 
-    // Gestione Bottoni (Tutto in uno, così il registro è felice)
     async buttonHandler(interaction) {
         const id = interaction.customId;
         const data = getData();
@@ -71,6 +68,12 @@ module.exports = {
         }
     },
 
+    // Aggiunto per evitare crash con il registry
+    async ratingHandler(interaction) {
+        const rating = interaction.customId.replace('rate_', '');
+        return interaction.editReply({ content: `⭐ Grazie per il feedback (${rating.toUpperCase()})!` });
+    },
+
     async handleMessage(message) {
         const data = getData();
         if (data[message.channel.id]) {
@@ -79,3 +82,4 @@ module.exports = {
         }
     }
 };
+    

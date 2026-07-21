@@ -5,12 +5,15 @@ const {
     ButtonStyle,
     ModalBuilder,
     TextInputBuilder,
-    TextInputStyle
+    TextInputStyle,
+    EmbedBuilder,
+    MessageFlags
 } = require("discord.js");
 
-// CONFIG ID RUOLI REALI (Elegance Sponsoring)
-const VERIFY_ROLE_ID = "1528576026421231726";      // Ruolo che viene AGGIUNTO (Verificato)
-const UNVERIFIED_ROLE_ID = "1528576023032102972";  // Ruolo che viene RIMOSSO (Non Verificato)
+// CONFIG ID RUOLI & PERMESSI (Elegance Sponsoring)
+const COMMAND_ROLE_ID = "1528576014446231683";      // Ruolo autorizzato ad eseguire /verify
+const VERIFY_ROLE_ID = "1528576026421231726";       // Ruolo che viene AGGIUNTO (Verificato)
+const UNVERIFIED_ROLE_ID = "1528576023032102972";   // Ruolo che viene RIMOSSO (Non Verificato)
 
 const captchaCache = new Map();
 
@@ -26,27 +29,42 @@ function generateCaptcha() {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("verify")
-        .setDescription("Verifica il tuo account"),
+        .setDescription("Invia il pannello ufficiale di verifica del server"),
 
     async execute(interaction) {
+        // Controllo Sicurezza: Solo il ruolo autorizzato può inviare il pannello di verifica
+        if (!interaction.member.roles.cache.has(COMMAND_ROLE_ID)) {
+            console.warn(`[SECURITY] Tentativo non autorizzato di esecuzione /verify da parte di ${interaction.user.tag}`);
+            return interaction.reply({
+                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per inviare questo pannello.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const embed = new EmbedBuilder()
+            .setTitle("🔓 ELEGANCE SPONSORING ── VERIFICA ACCOUNT")
+            .setDescription(
+                "Benvenuto nel server ufficiale di **Elegance Sponsoring**!\n\n" +
+                "Per accedere a tutte le categorie, i canali testuali e i servizi della nostra community, è necessario completare il test di sicurezza anti-bot.\n\n" +
+                "📌 **Come verificarsi:**\n" +
+                "1. Clicca sul pulsante **🔓 Verifica Ora** qui sotto.\n" +
+                "2. Inserisci il codice **CAPTCHA** generato nel modulo.\n" +
+                "3. Invia il modulo per sbloccare l'accesso al server.\n\n" +
+                "❓ *In caso di problemi o per richiedere assistenza, apri un ticket nella sezione supporto.*"
+            )
+            .setColor(0x00FF99)
+            .setFooter({ text: "Elegance Sponsoring • System Protection", iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
+
         const button = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("verify_button")
-                .setLabel("🔓 Verifica")
+                .setLabel("🔓 Verifica Ora")
                 .setStyle(ButtonStyle.Success)
         );
 
         await interaction.reply({
-            content: 
-`🔓 **Verifica Elegance**
-
-Benvenuto nella verifica di ***Elegance Sponsoring***.
-
-Per completare la verifica, esegui la procedura richiesta dal nostro bot.
-
-In caso di assistenza tecnica, richieste o problemi, apri un ticket:
-
-<#1528576197741772902>`, // Allineato al canale principale/log del server
+            embeds: [embed],
             components: [button]
         });
     },
@@ -56,16 +74,17 @@ In caso di assistenza tecnica, richieste o problemi, apri un ticket:
 
         captchaCache.set(interaction.user.id, {
             code: captcha,
-            expires: Date.now() + 60000
+            expires: Date.now() + 60000 // Scade in 60 secondi
         });
 
         const modal = new ModalBuilder()
             .setCustomId("verify_modal")
-            .setTitle("Verifica Elegance");
+            .setTitle("Verifica Anti-Bot");
 
         const input = new TextInputBuilder()
             .setCustomId("captcha_input")
-            .setLabel(`Scrivi il codice: ${captcha}`)
+            .setLabel(`Codice da inserire: ${captcha}`)
+            .setPlaceholder("Scrivi qui il codice (es: A1B2C)")
             .setStyle(TextInputStyle.Short)
             .setRequired(true);
 
@@ -81,18 +100,17 @@ In caso di assistenza tecnica, richieste o problemi, apri un ticket:
         if (!data || Date.now() > data.expires) {
             captchaCache.delete(interaction.user.id);
             return interaction.reply({
-                content: "❌ CAPTCHA scaduto. Riprova.",
-                ephemeral: true
+                content: "⏳ **Tempo Scaduto:** Il codice CAPTCHA è scaduto. Clicca nuovamente sul pulsante per rigenerarne uno nuovo.",
+                flags: MessageFlags.Ephemeral
             });
         }
 
         const answer = interaction.fields.getTextInputValue("captcha_input");
 
-        // Convertiamo in maiuscolo per evitare problemi di case-sensitive (es. 'a' invece di 'A')
         if (answer.toUpperCase().trim() !== data.code.toUpperCase()) {
             return interaction.reply({
-                content: "❌ Codice errato. Clicca di nuovo sul pulsante per rigenerarne uno nuovo.",
-                ephemeral: true
+                content: "❌ **Codice Errato:** Il codice inserito non corrisponde. Clicca di nuovo sul pulsante per riprovare.",
+                flags: MessageFlags.Ephemeral
             });
         }
 
@@ -112,17 +130,16 @@ In caso di assistenza tecnica, richieste o problemi, apri un ticket:
             captchaCache.delete(interaction.user.id);
 
             await interaction.reply({
-                content: "✅ Verifica completata! Benvenuto in Elegance Sponsoring.",
-                ephemeral: true
+                content: "✅ **Verifica Completata!** I tuoi permessi sono stati aggiornati. Benvenuto su Elegance Sponsoring!",
+                flags: MessageFlags.Ephemeral
             });
 
         } catch (error) {
-            console.error(error);
+            console.error("[VERIFY_ERROR] Errore nell'assegnazione dei ruoli:", error);
             await interaction.reply({
-                content: "❌ Errore durante l'assegnazione dei ruoli. Assicurati che il ruolo del bot sia PIÙ IN ALTO dei ruoli da assegnare nelle impostazioni del server.",
-                ephemeral: true
+                content: "❌ **Errore di Sistema:** Impossibile aggiornare i tuoi ruoli. Verifica che il ruolo del bot sia posizionato più in alto dei ruoli da assegnare nelle impostazioni del server.",
+                flags: MessageFlags.Ephemeral
             });
         }
     }
 };
-            

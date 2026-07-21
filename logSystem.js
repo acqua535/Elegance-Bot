@@ -80,7 +80,7 @@ module.exports = (client) => {
                 return logChannel.send({ embeds: [embed] }).catch(() => {});
             }
 
-            // Server Boost (Inizio o Fine Boost)
+            // Server Boost
             if (!oldMember.premiumSince && newMember.premiumSince) {
                 const embed = new EmbedBuilder()
                     .setTitle("🚀 Nuovo Server Boost!")
@@ -107,7 +107,7 @@ module.exports = (client) => {
             const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
             if (addedRoles.size > 0) {
                 const embed = new EmbedBuilder()
-                    .setTitle("🛡️ Ruolo Aggiunto a Utente")
+                    .setTitle("🛡️ Ruolo Aggiunto")
                     .setColor(0x57F287)
                     .addFields(
                         { name: "👤 Utente", value: `${newMember.user} (\`${newMember.id}\`)`, inline: true },
@@ -117,7 +117,7 @@ module.exports = (client) => {
             }
             if (removedRoles.size > 0) {
                 const embed = new EmbedBuilder()
-                    .setTitle("🛡️ Ruolo Rimosso da Utente")
+                    .setTitle("🛡️ Ruolo Rimosso")
                     .setColor(0xED4245)
                     .addFields(
                         { name: "👤 Utente", value: `${newMember.user} (\`${newMember.id}\`)`, inline: true },
@@ -136,14 +136,13 @@ module.exports = (client) => {
             const logChannel = getLogChannel(message.guild);
             if (!logChannel) return;
             const authorTag = message.author ? `${message.author} (\`${message.author.id}\`)` : "*Sconosciuto*";
-            const channelTag = message.channel ? `${message.channel}` : "*Sconosciuto*";
             const content = message.content ? (message.content.length > 1000 ? message.content.substring(0, 1000) + "..." : message.content) : "*Nessun testo*";
             const embed = new EmbedBuilder()
                 .setTitle("🗑️ Messaggio Eliminato")
                 .setColor(0xED4245)
                 .addFields(
                     { name: "👤 Autore", value: authorTag, inline: true },
-                    { name: "📌 Canale", value: channelTag, inline: true },
+                    { name: "📌 Canale", value: `${message.channel}`, inline: true },
                     { name: "📝 Contenuto", value: content }
                 ).setTimestamp();
             logChannel.send({ embeds: [embed] }).catch(() => {});
@@ -158,7 +157,7 @@ module.exports = (client) => {
             const logChannel = getLogChannel(firstMsg.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder()
-                .setTitle("🧹 Messaggi Eliminati in Massa (Clear)")
+                .setTitle("🧹 Messaggi Eliminati in Massa")
                 .setColor(0xED4245)
                 .addFields(
                     { name: "📌 Canale", value: `${firstMsg.channel}`, inline: true },
@@ -182,7 +181,7 @@ module.exports = (client) => {
                 .setColor(0xFEE75C)
                 .addFields(
                     { name: "👤 Autore", value: authorTag, inline: true },
-                    { name: "📌 Canale", value: `${oldMessage.channel ?? "*Sconosciuto*"}`, inline: true },
+                    { name: "📌 Canale", value: `${oldMessage.channel}`, inline: true },
                     { name: "⬅️ Prima", value: oldMessage.content ? oldMessage.content.substring(0, 500) : "*Vuoto*" },
                     { name: "➡️ Dopo", value: newMessage?.content ? newMessage.content.substring(0, 500) : "*Vuoto*" }
                 ).setTimestamp();
@@ -190,7 +189,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // ⭐ 7. REAZIONI (Aggiunta / Rimozione)
+    // ⭐ 7. REAZIONI
     client.on("messageReactionAdd", async (reaction, user) => {
         try {
             if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
@@ -209,7 +208,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 🔊 8. VOCALI (Tutto: Utenti, Staff Mute/Deaf, Stream, Video)
+    // 🔊 8. CANALI VOCALI
     client.on("voiceStateUpdate", async (oldState, newState) => {
         try {
             const guild = newState?.guild || oldState?.guild;
@@ -233,32 +232,17 @@ module.exports = (client) => {
                     .addFields({ name: "👤 Utente", value: `${member.user} (\`${member.id}\`)`, inline: false }, { name: "⬅️ Da", value: `<#${oldState.channelId}>`, inline: true }, { name: "➡️ A", value: `<#${newState.channelId}>`, inline: true }).setTimestamp();
                 return logChannel.send({ embeds: [embed] }).catch(() => {});
             }
-            if (oldState.serverMute !== newState.serverMute) {
-                const embed = new EmbedBuilder().setTitle(newState.serverMute ? "🎙️ Mute da Server (Staff)" : "🎙️ Unmute da Server (Staff)").setColor(newState.serverMute ? 0xED4245 : 0x57F287)
-                    .addFields({ name: "👤 Utente", value: `${member.user} (\`${member.id}\`)`, inline: true }, { name: "📌 Canale", value: `<#${newState.channelId}>`, inline: true }).setTimestamp();
-                return logChannel.send({ embeds: [embed] }).catch(() => {});
-            }
-            if (oldState.streaming !== newState.streaming) {
-                const embed = new EmbedBuilder().setTitle(newState.streaming ? "📺 Diretta Avviata" : "📺 Diretta Terminata").setColor(0x5865F2)
-                    .addFields({ name: "👤 Utente", value: `${member.user} (\`${member.id}\`)`, inline: true }, { name: "📌 Canale", value: `<#${newState.channelId}>`, inline: true }).setTimestamp();
-                return logChannel.send({ embeds: [embed] }).catch(() => {});
-            }
-            if (oldState.selfVideo !== newState.selfVideo) {
-                const embed = new EmbedBuilder().setTitle(newState.selfVideo ? "📹 Video Attivato" : "📹 Video Disattivato").setColor(0x5865F2)
-                    .addFields({ name: "👤 Utente", value: `${member.user} (\`${member.id}\`)`, inline: true }, { name: "📌 Canale", value: `<#${newState.channelId}>`, inline: true }).setTimestamp();
-                return logChannel.send({ embeds: [embed] }).catch(() => {});
-            }
         } catch (err) { console.error(err); }
     });
 
-    // 📁 9. CANALI (Creazione, Eliminazione, Modifica)
+    // 📁 9. CANALI
     client.on("channelCreate", async (channel) => {
         try {
             if (!channel?.guild) return;
             const logChannel = getLogChannel(channel.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder().setTitle("📁 Canale Creato").setColor(0x57F287)
-                .addFields({ name: "📌 Nome", value: `${channel.name}`, inline: true }, { name: "🗂️ Tipo", value: `${channel.type}`, inline: true }).setTimestamp();
+                .addFields({ name: "📌 Nome", value: `${channel.name}`, inline: true }).setTimestamp();
             logChannel.send({ embeds: [embed] }).catch(() => {});
         } catch (err) { console.error(err); }
     });
@@ -274,24 +258,13 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    client.on("channelUpdate", async (oldChannel, newChannel) => {
-        try {
-            if (!oldChannel?.guild || oldChannel.name === newChannel.name) return;
-            const logChannel = getLogChannel(oldChannel.guild);
-            if (!logChannel) return;
-            const embed = new EmbedBuilder().setTitle("✏️ Nome Canale Modificato").setColor(0xFEE75C)
-                .addFields({ name: "📌 Canale", value: `${newChannel}`, inline: false }, { name: "⬅️ Prima", value: `${oldChannel.name}`, inline: true }, { name: "➡️ Dopo", value: `${newChannel.name}`, inline: true }).setTimestamp();
-            logChannel.send({ embeds: [embed] }).catch(() => {});
-        } catch (err) { console.error(err); }
-    });
-
-    // 🛡️ 10. RUOLI (Creazione, Eliminazione, Modifica)
+    // 🛡️ 10. RUOLI
     client.on("roleCreate", async (role) => {
         try {
             const logChannel = getLogChannel(role?.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder().setTitle("👑 Ruolo Creato").setColor(0x57F287)
-                .addFields({ name: "📌 Nome Ruolo", value: `${role.name} (\`${role.id}\`)`, inline: true }).setTimestamp();
+                .addFields({ name: "📌 Nome", value: `${role.name} (\`${role.id}\`)`, inline: true }).setTimestamp();
             logChannel.send({ embeds: [embed] }).catch(() => {});
         } catch (err) { console.error(err); }
     });
@@ -301,23 +274,12 @@ module.exports = (client) => {
             const logChannel = getLogChannel(role?.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder().setTitle("🗑️ Ruolo Eliminato").setColor(0xED4245)
-                .addFields({ name: "📌 Nome Ruolo", value: `${role.name}`, inline: true }).setTimestamp();
+                .addFields({ name: "📌 Nome", value: `${role.name}`, inline: true }).setTimestamp();
             logChannel.send({ embeds: [embed] }).catch(() => {});
         } catch (err) { console.error(err); }
     });
 
-    client.on("roleUpdate", async (oldRole, newRole) => {
-        try {
-            if (!oldRole?.guild || oldRole.name === newRole.name) return;
-            const logChannel = getLogChannel(oldRole.guild);
-            if (!logChannel) return;
-            const embed = new EmbedBuilder().setTitle("✏️ Ruolo Modificato").setColor(0xFEE75C)
-                .addFields({ name: "📌 Ruolo", value: `${newRole}`, inline: false }, { name: "⬅️ Prima", value: `${oldRole.name}`, inline: true }, { name: "➡️ Dopo", value: `${newRole.name}`, inline: true }).setTimestamp();
-            logChannel.send({ embeds: [embed] }).catch(() => {});
-        } catch (err) { console.error(err); }
-    });
-
-    // 🔨 11. BAN E UNBAN
+    // 🔨 11. BAN / UNBAN
     client.on("guildBanAdd", async (ban) => {
         try {
             const logChannel = getLogChannel(ban?.guild);
@@ -344,4 +306,19 @@ module.exports = (client) => {
             const logChannel = getLogChannel(invite?.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder().setTitle("🔗 Invito Creato").setColor(0x57F287)
-                .addFields({ name: "🔑 Codice", value: `\`${invite.code}\``, inline: true }, { name: "👤 Creatore", value: invite.inviter ? `${invite.inviter}` : "N/D", inline: true }, { name: "📌 Canale", value: `${invite.channel}`, inline:
+                .addFields({ name: "🔑 Codice", value: `\`${invite.code}\``, inline: true }, { name: "📌 Canale", value: `${invite.channel}`, inline: true }).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    // 🧵 13. THREAD
+    client.on("threadCreate", async (thread) => {
+        try {
+            const logChannel = getLogChannel(thread?.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder().setTitle("🧵 Thread Creato").setColor(0x57F287)
+                .addFields({ name: "📌 Nome", value: `${thread.name}`, inline: true }).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+}; // <-- Questa chiusura mancava!

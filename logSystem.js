@@ -2,16 +2,23 @@ const { EmbedBuilder } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 
-// File locale JSON nella stessa cartella principale
 const configPath = path.join(__dirname, "logConfig.json");
 
-// Helper per recuperare l'ID del canale
+// Helper sicuro per leggere l'ID del canale
 function getLogChannel(guild) {
-    if (!fs.existsSync(configPath)) return null;
+    if (!guild) return null;
+    if (!fs.existsSync(configPath)) {
+        // Se non esiste, crea un file vuoto per evitare errori
+        try { fs.writeFileSync(configPath, JSON.stringify({ channelId: null }, null, 2)); } catch {}
+        return null;
+    }
+    
     try {
-        const data = JSON.parse(fs.readFileSync(configPath, "utf8"));
+        const rawData = fs.readFileSync(configPath, "utf8");
+        if (!rawData) return null;
+        const data = JSON.parse(rawData);
         return data.channelId ? guild.channels.cache.get(data.channelId) : null;
-    } catch {
+    } catch (err) {
         return null;
     }
 }
@@ -33,7 +40,7 @@ module.exports = (client) => {
             .setFooter({ text: `Membri totali: ${member.guild.memberCount}` })
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     // 📤 2. UTENTE USCITO
@@ -51,7 +58,7 @@ module.exports = (client) => {
             .setFooter({ text: `Membri rimasti: ${member.guild.memberCount}` })
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     // 🗑️ 3. MESSAGGIO ELIMINATO
@@ -70,7 +77,7 @@ module.exports = (client) => {
             )
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     // ✏️ 4. MESSAGGIO MODIFICATO
@@ -90,7 +97,7 @@ module.exports = (client) => {
             )
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     // 🔊 5. CANALI VOCALI
@@ -101,7 +108,6 @@ module.exports = (client) => {
 
         const member = newState.member || oldState.member;
 
-        // Entrato
         if (!oldState.channelId && newState.channelId) {
             const embed = new EmbedBuilder()
                 .setTitle("🔊 Connessione Vocale")
@@ -111,10 +117,9 @@ module.exports = (client) => {
                     { name: "📌 Canale", value: `<#${newState.channelId}>`, inline: true }
                 )
                 .setTimestamp();
-            return logChannel.send({ embeds: [embed] });
+            return logChannel.send({ embeds: [embed] }).catch(() => {});
         }
 
-        // Uscito
         if (oldState.channelId && !newState.channelId) {
             const embed = new EmbedBuilder()
                 .setTitle("🔇 Disconnessione Vocale")
@@ -124,10 +129,9 @@ module.exports = (client) => {
                     { name: "📌 Canale Lasciato", value: `<#${oldState.channelId}>`, inline: true }
                 )
                 .setTimestamp();
-            return logChannel.send({ embeds: [embed] });
+            return logChannel.send({ embeds: [embed] }).catch(() => {});
         }
 
-        // Spostato
         if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
             const embed = new EmbedBuilder()
                 .setTitle("🔄 Spostamento Vocale")
@@ -138,7 +142,7 @@ module.exports = (client) => {
                     { name: "➡️ A", value: `<#${newState.channelId}>`, inline: true }
                 )
                 .setTimestamp();
-            return logChannel.send({ embeds: [embed] });
+            return logChannel.send({ embeds: [embed] }).catch(() => {});
         }
     });
 
@@ -154,7 +158,7 @@ module.exports = (client) => {
             .addFields({ name: "📌 Nome", value: `${channel.name}`, inline: true })
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     client.on("channelDelete", async (channel) => {
@@ -168,7 +172,7 @@ module.exports = (client) => {
             .addFields({ name: "📌 Nome", value: `${channel.name}`, inline: true })
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 
     // 🔨 7. BAN UTENTE
@@ -185,7 +189,7 @@ module.exports = (client) => {
             )
             .setTimestamp();
 
-        logChannel.send({ embeds: [embed] });
+        logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 };
-                                                                 
+            

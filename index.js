@@ -5,36 +5,36 @@ const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand");
 const buttonHandler = require("./buttonHandler");
 const entry = require("./entry");
+const invites = require("./invites");
 
-// Inizializzazione Client con tutti i Intents necessari (inclusi GuildMembers per i Benvenuti)
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
+        GatewayIntentBits.GuildInvites,
         GatewayIntentBits.MessageContent
     ]
 });
 
 client.commands = new Collection();
 
-// Evento Ready: Avvio Bot, Deploy API e caricamento handler
 client.once("ready", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
-    // 1. Esegue il Deploy dei Comandi API a Discord
-    await deployCommands();
+    // Inizializzazione della mappa degli inviti
+    client.guilds.cache.forEach(guild => {
+        invites.initInvites(guild);
+    });
 
-    // 2. Carica i comandi in memoria locale per la gestione delle interazioni
+    await deployCommands();
     loadCommands(client);
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
 
-// Evento InteractionCreate: Gestisce Slash Commands, Bottoni e Modal
 client.on("interactionCreate", async (interaction) => {
     try {
-        // --- 1. COMANDI SLASH ---
         if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (!command) {
@@ -47,7 +47,6 @@ client.on("interactionCreate", async (interaction) => {
             return;
         }
 
-        // --- 2. MODAL SUBMIT (Modulo CAPTCHA Dinamico) ---
         if (interaction.isModalSubmit()) {
             if (interaction.customId.startsWith("verify_modal_")) {
                 const verifyCmd = client.commands.get("verify");
@@ -57,17 +56,14 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // --- 3. BOTTONI E MENU A TENDINA ---
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
         }
 
     } catch (error) {
-        console.error("🚨 ERRORE DURANTE L'ELABORAZIONE DELL'INTERAZIONE:", error);
-        
-        const errorMessage = "❌ Si è verificato un errore imprevisto durante l'esecuzione dell'azione.";
-        
+        console.error("🚨 ERRORE INTERAZIONE:", error);
+        const errorMessage = "❌ Si è verificato un errore imprevisto.";
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         } else {
@@ -76,22 +72,22 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
-// --- EVENTI AUTOMATICI: BENVENUTO E ADDIO ---
 client.on("guildMemberAdd", async (member) => {
     try {
         await entry.handleMemberAdd(member);
+        await invites.handleMemberAdd(member);
     } catch (error) {
-        console.error("❌ Errore durante l'invio del messaggio di Benvenuto:", error);
+        console.error("❌ Errore durante l'evento guildMemberAdd:", error);
     }
 });
 
 client.on("guildMemberRemove", async (member) => {
     try {
         await entry.handleMemberRemove(member);
+        await invites.handleMemberRemove(member);
     } catch (error) {
-        console.error("❌ Errore durante l'invio del messaggio di Addio:", error);
+        console.error("❌ Errore durante l'evento guildMemberRemove:", error);
     }
 });
 
-// Login del Bot
 client.login(process.env.TOKEN);

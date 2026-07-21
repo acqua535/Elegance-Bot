@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection } = require("discord.js");
+const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
 const fs = require("fs");
 require("dotenv").config();
 
@@ -15,7 +15,7 @@ client.commands = new Collection();
 
 const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand");
-const buttonHandler = require("./buttonHandler"); // Importiamo il tuo gestore basato su registry
+const buttonHandler = require("./buttonHandler"); // Gestore basato su registry
 
 (async () => {
     try {
@@ -28,11 +28,18 @@ const buttonHandler = require("./buttonHandler"); // Importiamo il tuo gestore b
 })();
 
 // Router interazioni centralizzato e pulito
-client.on("interactionCreate", async interaction => {
+client.on(Events.InteractionCreate, async interaction => {
     try {
-        // Se è un bottone o un select menu, lo passiamo al tuo buttonHandler a registro
+        // Se è un bottone o un select menu, lo passiamo al buttonHandler
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
+        }
+        // Se è un Modal (es: il CAPTCHA di verify.js)
+        else if (interaction.isModalSubmit()) {
+            const verifyCmd = client.commands.get("verify");
+            if (verifyCmd && verifyCmd.modalHandler) {
+                await verifyCmd.modalHandler(interaction);
+            }
         }
         // Se è un comando slash (/)
         else if (interaction.isChatInputCommand()) {
@@ -44,10 +51,10 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-client.on('messageCreate', async (message) => {
+client.on(Events.MessageCreate, async (message) => {
     if (message.author.bot) return;
     const ticketCmd = client.commands.get('ticket');
-    if (ticketCmd) await ticketCmd.handleMessage(message);
+    if (ticketCmd && ticketCmd.handleMessage) await ticketCmd.handleMessage(message);
 });
 
 setInterval(() => {
@@ -68,7 +75,7 @@ setInterval(() => {
     }
 }, 60000);
 
-client.once("ready", (c) => {
+client.once(Events.ClientReady, (c) => {
     console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);
     c.user.setActivity("Elegance Community", { type: 3 });
 });

@@ -1,83 +1,97 @@
-const { Client, GatewayIntentBits, Collection, Events } = require("discord.js");
-const fs = require("fs");
+const { Client, GatewayIntentBits, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
+const loadCommands = require("./commandHandler");
+const deployCommands = require("./deployCommand");
+const buttonHandler = require("./buttonHandler");
+const entry = require("./entry");
+
+// Inizializzazione Client con tutti i Intents necessari (inclusi GuildMembers per i Benvenuti)
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
-        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.GuildMembers,
         GatewayIntentBits.MessageContent
     ]
 });
 
 client.commands = new Collection();
 
-const loadCommands = require("./commandHandler");
-const deployCommands = require("./deployCommand");
-const buttonHandler = require("./buttonHandler"); // Gestore basato su registry
+// Evento Ready: Avvio Bot, Deploy API e caricamento handler
+client.once("ready", async () => {
+    console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
-(async () => {
-    try {
-        await deployCommands();
-        loadCommands(client);
-        console.log("📦 Bot inizializzato correttamente.");
-    } catch (error) {
-        console.error("❌ Errore durante l'inizializzazione:", error);
-    }
-})();
+    // 1. Esegue il Deploy dei Comandi API a Discord
+    await deployCommands();
 
-// Router interazioni centralizzato e pulito
-client.on(Events.InteractionCreate, async interaction => {
+    // 2. Carica i comandi in memoria locale per la gestione delle interazioni
+    loadCommands(client);
+
+    console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
+});
+
+// Evento InteractionCreate: Gestisce Slash Commands, Bottoni e Modal
+client.on("interactionCreate", async (interaction) => {
     try {
-        // Se è un bottone o un select menu, lo passiamo al buttonHandler
-        if (interaction.isButton() || interaction.isStringSelectMenu()) {
-            await buttonHandler(interaction);
+        // --- 1. COMANDI SLASH ---
+        if (interaction.isChatInputCommand()) {
+            const command = client.commands.get(interaction.commandName);
+            if (!command) {
+                return interaction.reply({
+                    content: "❌ Comando non trovato o non configurato.",
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+            await command.execute(interaction);
+            return;
         }
-        // Se è un Modal (es: il CAPTCHA di verify.js)
-        else if (interaction.isModalSubmit()) {
-            const verifyCmd = client.commands.get("verify");
-            if (verifyCmd && verifyCmd.modalHandler) {
-                await verifyCmd.modalHandler(interaction);
+
+        // --- 2. MODAL SUBMIT (Modulo CAPTCHA Dinamico) ---
+        if (interaction.isModalSubmit()) {
+            if (interaction.customId.startsWith("verify_modal_")) {
+                const verifyCmd = client.commands.get("verify");
+                if (verifyCmd && verifyCmd.modalHandler) {
+                    return await verifyCmd.modalHandler(interaction);
+                }
             }
         }
-        // Se è un comando slash (/)
-        else if (interaction.isChatInputCommand()) {
-            const command = client.commands.get(interaction.commandName);
-            if (command) await command.execute(interaction);
+
+        // --- 3. BOTTONI E MENU A TENDINA ---
+        if (interaction.isButton() || interaction.isStringSelectMenu()) {
+            await buttonHandler(interaction);
+            return;
         }
+
     } catch (error) {
-        console.error("❌ Errore critico interazione:", error);
-    }
-});
-
-client.on(Events.MessageCreate, async (message) => {
-    if (message.author.bot) return;
-    const ticketCmd = client.commands.get('ticket');
-    if (ticketCmd && ticketCmd.handleMessage) await ticketCmd.handleMessage(message);
-});
-
-setInterval(() => {
-    if (!fs.existsSync('./ticketsData.json')) return;
-    const data = JSON.parse(fs.readFileSync('./ticketsData.json', 'utf8') || '{}');
-    const now = Date.now();
-
-    for (const channelId in data) {
-        const ticket = data[channelId];
-        if (ticket.status !== 'open') continue;
-
-        if ((now - (ticket.lastMessage || Date.now())) > 86400000) {
-            const channel = client.channels.cache.get(channelId);
-            if (channel) channel.delete().catch(() => {});
-            delete data[channelId];
-            fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
+        console.error("🚨 ERRORE DURANTE L'ELABORAZIONE DELL'INTERAZIONE:", error);
+        
+        const errorMessage = "❌ Si è verificato un errore imprevisto durante l'esecuzione dell'azione.";
+        
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
+        } else {
+            await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         }
     }
-}, 60000);
-
-client.once(Events.ClientReady, (c) => {
-    console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);
-    c.user.setActivity("Elegance Community", { type: 3 });
 });
 
+// --- EVENTI AUTOMATICI: BENVENUTO E ADDIO ---
+client.on("guildMemberAdd", async (member) => {
+    try {
+        await entry.handleMemberAdd(member);
+    } catch (error) {
+        console.error("❌ Errore durante l'invio del messaggio di Benvenuto:", error);
+    }
+});
+
+client.on("guildMemberRemove", async (member) => {
+    try {
+        await entry.handleMemberRemove(member);
+    } catch (error) {
+        console.error("❌ Errore durante l'invio del messaggio di Addio:", error);
+    }
+});
+
+// Login del Bot
 client.login(process.env.TOKEN);

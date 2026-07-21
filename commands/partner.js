@@ -3,7 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js"
 // ID CONFIGURATION (Elegance Sponsoring)
 const PARTNER_CHANNEL_ID = "1528576179177787642";
 const LOG_CHANNEL_ID     = "1528576197741772902";
-const ALLOWED_ROLE_ID    = "1528576014446231683";
+const ALLOWED_ROLE_ID    = "1528576031680630804";
 
 module.exports = {
     data: new SlashCommandBuilder()

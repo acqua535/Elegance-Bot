@@ -43,6 +43,7 @@ module.exports = {
 
     // --- CANDIDATURE (APPLY) ---
     "apply_toggle": apply.buttonHandler,
-    "apply_set_channel": apply.buttonHandler,
+    "apply_set_channel_here": apply.buttonHandler,
+    "apply_set_channel_id": apply.buttonHandler,
     "apply_start_button": apply.buttonHandler
 };

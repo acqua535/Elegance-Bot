@@ -24,7 +24,7 @@ module.exports = {
         .setDescription("Gestisci o invia il pannello delle candidature Staff")
         .addSubcommand(sub =>
             sub.setName("panel")
-               .setDescription("Gestisci lo stato e il canale di invio delle candidature (Solo Staff)"))
+               .setDescription("Pannello di controllo del sistema candidature (Solo Staff)"))
         .addSubcommand(sub =>
             sub.setName("send")
                .setDescription("Invia l'embed pubblico per le candidature nel canale corrente (Solo Staff)")),
@@ -58,14 +58,9 @@ module.exports = {
                     .setStyle(applyConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
                 new ButtonBuilder()
-                    .setCustomId("apply_set_channel_here")
-                    .setLabel("📌 Imposta Canale Corrente")
-                    .setStyle(ButtonStyle.Primary),
-
-                new ButtonBuilder()
-                    .setCustomId("apply_set_channel_id")
-                    .setLabel("⚙️ Imposta tramite ID Canale")
-                    .setStyle(ButtonStyle.Secondary)
+                    .setCustomId("apply_set_channel")
+                    .setLabel("📌 Imposta Canale Ricezione")
+                    .setStyle(ButtonStyle.Primary)
             );
 
             return interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
@@ -107,7 +102,7 @@ module.exports = {
 
     // Gestore dei Bottoni
     async buttonHandler(interaction) {
-        const { customId, channel, guild } = interaction;
+        const { customId, channel, guild, user } = interaction;
 
         // Toggle Apertura/Chiusura
         if (customId === "apply_toggle") {
@@ -119,33 +114,12 @@ module.exports = {
         }
 
         // Imposta Canale Corrente
-        if (customId === "apply_set_channel_here") {
+        if (customId === "apply_set_channel") {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
             }
             applyConfig.targetChannel = channel.id;
             return module.exports.updatePanelMessage(interaction);
-        }
-
-        // Imposta tramite Popup ID Canale
-        if (customId === "apply_set_channel_id") {
-            if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-                return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
-            }
-
-            const modal = new ModalBuilder()
-                .setCustomId("apply_channel_id_modal")
-                .setTitle("Imposta ID Canale Candidature");
-
-            const input = new TextInputBuilder()
-                .setCustomId("channel_id_input")
-                .setLabel("Inserisci l'ID del canale target:")
-                .setPlaceholder("Es: 1528576171329982635")
-                .setStyle(TextInputStyle.Short)
-                .setRequired(true);
-
-            modal.addComponents(new ActionRowBuilder().addComponents(input));
-            return await interaction.showModal(modal);
         }
 
         // Clic su "Candidati Ora" (Apre la Modal del modulo)
@@ -194,29 +168,48 @@ module.exports = {
 
             return await interaction.showModal(modal);
         }
+
+        // Gestione Azioni Staff (Accetta / Rifiuta)
+        if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {
+            if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+                return interaction.reply({ content: "❌ Non hai i permessi per gestire questa candidatura.", flags: MessageFlags.Ephemeral });
+            }
+
+            const applicantId = customId.split("_")[2];
+            const applicant = await guild.members.fetch(applicantId).catch(() => null);
+
+            if (customId.startsWith("apply_accept_")) {
+                if (applicant) {
+                    await applicant.send("🎉 **Congratulazioni!** La tua candidatura Staff su **Elegance Sponsoring** è stata **ACCETTATA**! Un Admin ti contatterà a breve per il periodo di prova.").catch(() => {});
+                }
+
+                const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+                    .setColor(0x00FF00)
+                    .setTitle(`${interaction.message.embeds[0].title} ── 🟢 ACCETTATA`)
+                    .setFooter({ text: `Gestita da ${user.username}`, iconURL: user.displayAvatarURL() });
+
+                await interaction.update({ embeds: [updatedEmbed], components: [] });
+            } 
+            
+            else if (customId.startsWith("apply_reject_")) {
+                if (applicant) {
+                    await applicant.send("❌ **Candidatura Non Accolta:** Ci dispiace, ma la tua candidatura Staff su **Elegance Sponsoring** è stata rifiutata.").catch(() => {});
+                }
+
+                const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+                    .setColor(0xFF0000)
+                    .setTitle(`${interaction.message.embeds[0].title} ── 🔴 RIFIUTATA`)
+                    .setFooter({ text: `Gestita da ${user.username}`, iconURL: user.displayAvatarURL() });
+
+                await interaction.update({ embeds: [updatedEmbed], components: [] });
+            }
+        }
     },
 
-    // Gestore dell'Invio delle Modals
+    // Gestore dell'Invio del Form Compilato
     async modalHandler(interaction) {
         const { customId, guild, user } = interaction;
 
-        // Modal per Salvare l'ID Canale
-        if (customId === "apply_channel_id_modal") {
-            const inputId = interaction.fields.getTextInputValue("channel_id_input").trim();
-            const targetChan = guild.channels.cache.get(inputId);
-
-            if (!targetChan) {
-                return interaction.reply({
-                    content: `❌ **ID Non Valido:** Impossibile trovare un canale con l'ID \`${inputId}\` in questo server.`,
-                    flags: MessageFlags.Ephemeral
-                });
-            }
-
-            applyConfig.targetChannel = inputId;
-            return module.exports.updatePanelMessage(interaction);
-        }
-
-        // Modal Form compilato dal candidato
         if (customId === "apply_form_modal") {
             const ans1 = interaction.fields.getTextInputValue("apply_q1");
             const ans2 = interaction.fields.getTextInputValue("apply_q2");
@@ -228,7 +221,7 @@ module.exports = {
 
             if (!targetChannel) {
                 return interaction.reply({
-                    content: "❌ **Errore:** Il canale di destinazione delle candidature non è stato impostato correttamente dagli Admin.",
+                    content: "❌ **Errore:** Il canale di destinazione delle candidature non è stato impostato dallo Staff (Usa `/apply panel`).",
                     flags: MessageFlags.Ephemeral
                 });
             }
@@ -248,19 +241,31 @@ module.exports = {
                     { name: "📌 3. Motivazione", value: ans3 },
                     { name: "📌 4. Gestione Conflitti / Troll", value: ans4 }
                 )
-                .setFooter({ text: "Elegance Sponsoring • Modulo Inviato" })
+                .setFooter({ text: "Elegance Sponsoring • Modulo Ricevuto" })
                 .setTimestamp();
 
-            await targetChannel.send({ embeds: [resultEmbed] });
+            // Bottoni di risposta rapida per lo Staff!
+            const staffActionRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId(`apply_accept_${user.id}`)
+                    .setLabel("🟢 Accetta Candidate")
+                    .setStyle(ButtonStyle.Success),
+                new ButtonBuilder()
+                    .setCustomId(`apply_reject_${user.id}`)
+                    .setLabel("🔴 Rifiuta Candidate")
+                    .setStyle(ButtonStyle.Danger)
+            );
+
+            await targetChannel.send({ embeds: [resultEmbed], components: [staffActionRow] });
 
             return interaction.reply({
-                content: "✅ **Candidatura Inviata con Successo!** Il nostro team di Amministrazione valuterà la tua richiesta al più presto. Buona fortuna!",
+                content: "✅ **Candidatura Inviata con Successo!** L'Amministrazione valuterà il tuo modulo al più presto.",
                 flags: MessageFlags.Ephemeral
             });
         }
     },
 
-    // Helper per aggiornare il messaggio del pannello
+    // Helper aggiornamento pannello
     async updatePanelMessage(interaction) {
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
@@ -278,21 +283,11 @@ module.exports = {
                 .setStyle(applyConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
             new ButtonBuilder()
-                .setCustomId("apply_set_channel_here")
-                .setLabel("📌 Imposta Canale Corrente")
-                .setStyle(ButtonStyle.Primary),
-
-            new ButtonBuilder()
-                .setCustomId("apply_set_channel_id")
-                .setLabel("⚙️ Imposta tramite ID Canale")
-                .setStyle(ButtonStyle.Secondary)
+                .setCustomId("apply_set_channel")
+                .setLabel("📌 Imposta Canale Ricezione")
+                .setStyle(ButtonStyle.Primary)
         );
 
-        if (interaction.isModalSubmit()) {
-            return interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
-        } else {
-            return interaction.update({ embeds: [embed], components: [row] });
-        }
+        return interaction.update({ embeds: [embed], components: [row] });
     }
 };
-                    

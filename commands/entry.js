@@ -4,14 +4,14 @@ const {
     ActionRowBuilder, 
     ButtonBuilder, 
     ButtonStyle, 
-    PermissionFlagsBits,
     MessageFlags 
 } = require("discord.js");
 
-// Salva la configurazione in memoria (Puoi personalizzare gli ID canale qui)
+const STAFF_ROLE_ID = "1528576014446231683";
+
 const entryConfig = {
-    welcomeChannel: null, // ID Canale Benvenuto
-    leaveChannel: null,   // ID Canale Addio
+    welcomeChannel: null,
+    leaveChannel: null,
     welcomeEnabled: true,
     leaveEnabled: true
 };
@@ -19,15 +19,21 @@ const entryConfig = {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("entry")
-        .setDescription("Gestisci i messaggi di Benvenuto e Addio del server")
-        .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
+        .setDescription("Gestisci i messaggi di Benvenuto e Addio del server"),
 
     async execute(interaction) {
+        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+            return interaction.reply({
+                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo pannello.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO ENTRY")
             .setDescription(
                 "Da questo pannello puoi gestire e configurare il sistema di **Benvenuto** e **Addio** per il server.\n\n" +
-                `📌 **Canale Benvenuto:** ${entryConfig.welcomeChannel ? `<#${entryConfig.welcomeConfig}>` : "`Non impostato (Usa canale corrente)`"}\n` +
+                `📌 **Canale Benvenuto:** ${entryConfig.welcomeChannel ? `<#${entryConfig.welcomeChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
                 `📌 **Canale Addio:** ${entryConfig.leaveChannel ? `<#${entryConfig.leaveChannel}>` : "`Non impostato (Usa canale corrente)`"}\n\n` +
                 `• **Stato Benvenuto:** ${entryConfig.welcomeEnabled ? "🟢 Attivo" : "🔴 Disattivato"}\n` +
                 `• **Stato Addio:** ${entryConfig.leaveEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
@@ -56,8 +62,14 @@ module.exports = {
         await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
     },
 
-    // Gestore dei Bottoni del Pannello
     async buttonHandler(interaction) {
+        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+            return interaction.reply({
+                content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const { customId, channel } = interaction;
 
         if (customId === "entry_toggle_welcome") {
@@ -99,7 +111,6 @@ module.exports = {
         await interaction.update({ embeds: [embed], components: [row] });
     },
 
-    // Funzione da collegare agli eventi Discord per inviare l'embed in automatico
     async handleMemberAdd(member) {
         if (!entryConfig.welcomeEnabled) return;
 
@@ -152,4 +163,4 @@ module.exports = {
         await channel.send({ embeds: [embed] });
     }
 };
-              
+            

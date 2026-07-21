@@ -1,70 +1,90 @@
-const { SlashCommandBuilder } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
-// CONFIG ID REALI (Elegance Sponsoring)
-const CHANNEL_ID = "1528576197741772902"; // Canale dove inviare lo sponsor
-const LOG_ID = "1528576197741772902";     // Canale Log Privato
+// ID CONFIGURATION (Elegance Sponsoring)
+const SPONSOR_CHANNEL_ID = "1528576184785305600";
+const LOG_CHANNEL_ID     = "1528576197741772902";
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("sponsor")
-        .setDescription("Crea una richiesta di sponsorizzazione")
+        .setDescription("Pubblica uno Sponsor Ufficiale")
         .addUserOption(option =>
             option
-                .setName("richiesta_da")
-                .setDescription("Utente che richiede lo sponsor")
+                .setName("sponsorizzato")
+                .setDescription("Utente/Cliente sponsorizzato")
                 .setRequired(true)
         )
         .addStringOption(option =>
             option
-                .setName("categoria")
-                .setDescription("Categoria del server")
+                .setName("tipo_sponsor")
+                .setDescription("Tipologia della sponsorizzazione")
                 .setRequired(true)
                 .addChoices(
-                    { name: "🌐 Community", value: "🌐 Community" },
-                    { name: "🎮 Gaming", value: "🎮 Gaming" },
-                    { name: "🎭 Roleplay", value: "🎭 Roleplay" },
-                    { name: "🚗 FiveM", value: "🚗 FiveM" }
+                    { name: "⚡ Premium Sponsor", value: "⚡ Premium Sponsor" },
+                    { name: "🏆 Diamond Sponsor", value: "🏆 Diamond Sponsor" },
+                    { name: "💎 Gold Sponsor", value: "💎 Gold Sponsor" },
+                    { name: "🚀 Official Partner", value: "🚀 Official Partner" }
                 )
         )
         .addStringOption(option =>
             option
                 .setName("descrizione")
-                .setDescription("Descrizione dello sponsor")
+                .setDescription("Contenuto promozionale dello sponsor")
                 .setRequired(true)
         ),
 
     async execute(interaction) {
-        const richiesta = interaction.options.getUser("richiesta_da");
-        const categoria = interaction.options.getString("categoria");
+        const sponsorizzato = interaction.options.getUser("sponsorizzato");
+        const tipoSponsor = interaction.options.getString("tipo_sponsor");
         const descrizione = interaction.options.getString("descrizione");
 
-        // Messaggio iniziale pulito (mostra direttamente il testo inserito, senza scritte fisse)
-        const primoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n${descrizione}\n\n━━━━━━━⚜️━━━━━━━`;
+        const sponsorChannel = interaction.guild.channels.cache.get(SPONSOR_CHANNEL_ID);
+        const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
 
-        const secondoMessaggio = `━━━━━━━⚜️━━━━━━━\n\n👤 **Autore**\n${interaction.user}\n\n📌 **Richiesta da**\n${richiesta}\n\n🏷️ **Categoria**\n${categoria}\n\n━━━━━━━⚜️━━━━━━━`;
-
-        const channel = interaction.guild.channels.cache.get(CHANNEL_ID);
-
-        if (!channel) {
+        if (!sponsorChannel) {
             return interaction.reply({
-                content: "❌ Canale sponsor non trovato.",
-                ephemeral: true
+                content: "❌ **Errore:** Canale Sponsorship non trovato.",
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        await channel.send(primoMessaggio);
-        await channel.send(secondoMessaggio);
+        // 1. EMBED PUBBLICO
+        const publicEmbed = new EmbedBuilder()
+            .setTitle("💎 ELEGANCE SPONSORING ── SPONSORSHIP")
+            .setColor(0xFFD700)
+            .setDescription(descrizione)
+            .addFields(
+                { name: "⭐ Livello Sponsor", value: `\`${tipoSponsor}\``, inline: true },
+                { name: "📌 Sponsorizzato", value: `${sponsorizzato}`, inline: true },
+                { name: "👤 Manager", value: `${interaction.user}`, inline: true }
+            )
+            .setFooter({ text: "Elegance Sponsoring • Official Sponsorship", iconURL: interaction.guild.iconURL() })
+            .setTimestamp();
 
-        const log = interaction.guild.channels.cache.get(LOG_ID);
-        if (log) {
-            await log.send(
-                `📋 **LOG SPONSOR**\n\n👤 Autore:\n${interaction.user}\n\n📌 Richiesta da:\n${richiesta}\n\n🏷️ Categoria:\n${categoria}\n\n📝 Descrizione:\n${descrizione}\n\n⏰ <t:${Math.floor(Date.now() / 1000)}:F>`
-            );
+        await sponsorChannel.send({ embeds: [publicEmbed] });
+
+        // 2. EMBED LOG
+        if (logChannel) {
+            const logEmbed = new EmbedBuilder()
+                .setTitle("📋 LOG SPONSORSHIP REGISTRATA")
+                .setColor(0xFFD700)
+                .setThumbnail(sponsorizzato.displayAvatarURL({ dynamic: true }))
+                .addFields(
+                    { name: "👤 Esecutore Staff", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: false },
+                    { name: "💎 Sponsorizzato", value: `${sponsorizzato} (\`${sponsorizzato.id}\`)`, inline: false },
+                    { name: "⭐ Livello", value: tipoSponsor, inline: true },
+                    { name: "📌 Canale Destinazione", value: `<#${SPONSOR_CHANNEL_ID}>`, inline: true },
+                    { name: "📝 Contenuto Promo", value: descrizione.length > 500 ? descrizione.substring(0, 500) + "..." : descrizione, inline: false }
+                )
+                .setFooter({ text: "System Logs • Sponsorship" })
+                .setTimestamp();
+
+            await logChannel.send({ embeds: [logEmbed] });
         }
 
-        await interaction.reply({
-            content: "✅ Sponsorizzazione inviata correttamente.",
-            ephemeral: true
+        return interaction.reply({
+            content: `✅ **Sponsorship pubblicata con successo in** <#${SPONSOR_CHANNEL_ID}>!`,
+            flags: MessageFlags.Ephemeral
         });
     }
 };

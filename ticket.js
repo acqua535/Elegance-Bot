@@ -10,12 +10,12 @@ const LOG_CHANNEL_ID = "1528576197741772902";
 const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
-// Funzione di utilità per inviare log testuali puliti nel canale dei log
-async function sendSystemLog(guild, embed) {
+// Funzione di utilità per inviare log ed eventuali file allegati nel canale dei log
+async function sendSystemLog(guild, embed, files = []) {
     try {
         const logChannel = await guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
         if (logChannel) {
-            await logChannel.send({ embeds: [embed] });
+            await logChannel.send({ embeds: [embed], files: files });
         }
     } catch (err) {
         console.error("[ERROR_LOG_CHANNEL] Impossibile inviare il log nel canale dedicato:", err);
@@ -84,7 +84,6 @@ module.exports = {
         data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type, claimedBy: null };
         saveData(data);
 
-        // Invio log apertura nel canale apposito
         const openLogEmbed = new EmbedBuilder()
             .setTitle("📂 NUOVO TICKET APERTO")
             .setDescription(`È stato creato un nuovo canale di supporto.`)
@@ -191,16 +190,20 @@ module.exports = {
                 await interaction.reply({ content: startMsg, flags: MessageFlags.Ephemeral });
             }
 
+            let transcriptBuffer = null;
+            let transcriptFileName = `transcript-${interaction.channel.name}.txt`;
+
             try {
                 const messages = await interaction.channel.messages.fetch({ limit: 100 });
                 const transcript = messages.reverse().map(m => `[${new Date(m.createdTimestamp).toLocaleString()}] ${m.author.tag}: ${m.content}`).join('\n');
-                const buffer = Buffer.from(transcript, 'utf-8');
+                transcriptBuffer = Buffer.from(transcript, 'utf-8');
                 
+                // Invio in DM all'utente (se ha i DM aperti)
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     await ownerUser.send({
                         content: `📜 **Report di Trascrizione Ufficiale**\nIl tuo ticket **[${ticket.type.toUpperCase()}]** nel server **${interaction.guild.name}** è stato chiuso. In allegato trovi lo storico dei messaggi.`,
-                        files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }]
+                        files: [{ attachment: transcriptBuffer, name: transcriptFileName }]
                     }).catch(() => {});
                 }
             } catch (err) {
@@ -216,7 +219,10 @@ module.exports = {
                 )
                 .setColor(0xFF0000)
                 .setTimestamp();
-            await sendSystemLog(interaction.guild, closeLogEmbed);
+
+            // Inviamo il log testuale con allegato il file di transcript ufficiale!
+            const logFiles = transcriptBuffer ? [{ attachment: transcriptBuffer, name: transcriptFileName }] : [];
+            await sendSystemLog(interaction.guild, closeLogEmbed, logFiles);
 
             const ratingEmbed = new EmbedBuilder()
                 .setTitle("⭐ VALUTAZIONE DEL SUPPORTO")

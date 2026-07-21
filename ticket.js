@@ -5,9 +5,22 @@ const DATA_PATH = './ticketsData.json';
 const STAFF_ROLE_ID = "1528576030783176835";
 const CATEGORY_ID = "1528582447443345560";
 const ALLOWED_CHANNEL_ID = "1528576161959907348";
+const LOG_CHANNEL_ID = "1528576197741772902";
 
 const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
+
+// Funzione di utilità per inviare log testuali puliti nel canale dei log
+async function sendSystemLog(guild, embed) {
+    try {
+        const logChannel = await guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+        if (logChannel) {
+            await logChannel.send({ embeds: [embed] });
+        }
+    } catch (err) {
+        console.error("[ERROR_LOG_CHANNEL] Impossibile inviare il log nel canale dedicato:", err);
+    }
+}
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -50,15 +63,12 @@ module.exports = {
         );
 
         await interaction.reply({ embeds: [embed], components: [row] });
-        console.log(`[TICKET_PANEL] Pannello di assistenza distribuito con successo nel canale ${interaction.channel.name} (${interaction.channelId}) da ${interaction.user.tag}`);
     },
 
     async categoryHandler(interaction) {
         const type = interaction.values[0];
         const channelName = `︲🎫〞﹒${type}-${interaction.user.username}`;
         
-        console.log(`[TICKET_INIT] Richiesta apertura ticket [Categoria: ${type.toUpperCase()}] da parte dell'utente ${interaction.user.tag} (${interaction.user.id})`);
-
         const channel = await interaction.guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
@@ -73,6 +83,19 @@ module.exports = {
         const data = getData();
         data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type, claimedBy: null };
         saveData(data);
+
+        // Invio log apertura nel canale apposito
+        const openLogEmbed = new EmbedBuilder()
+            .setTitle("📂 NUOVO TICKET APERTO")
+            .setDescription(`È stato creato un nuovo canale di supporto.`)
+            .addFields(
+                { name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                { name: "Categoria", value: `\`${type.toUpperCase()}\``, inline: true },
+                { name: "Canale", value: `${channel} (\`#${channel.name}\`)`, inline: false }
+            )
+            .setColor(0x00FF99)
+            .setTimestamp();
+        await sendSystemLog(interaction.guild, openLogEmbed);
 
         const welcomeEmbed = new EmbedBuilder()
             .setTitle(`🎫 TICKET APERTO ── [${type.toUpperCase()}]`)
@@ -94,7 +117,6 @@ module.exports = {
         );
 
         await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [welcomeEmbed], components: [row] });
-        console.log(`[TICKET_CREATED] Canale di supporto generato con successo: #${channel.name} (${channel.id})`);
 
         return interaction.followUp({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}`, flags: MessageFlags.Ephemeral });
     },
@@ -105,39 +127,69 @@ module.exports = {
         const ticket = data[interaction.channel.id];
         
         if (!ticket) {
-            console.warn(`[WARNING] Tentativo di interazione su un canale non registrato come ticket: ${interaction.channel.id}`);
-            return interaction.editReply({ content: "❌ **Errore Critico:** Impossibile trovare i metadati associati a questo ticket nei registri di sistema." });
+            const errText = "❌ **Errore Critico:** Impossibile trovare i metadati associati a questo ticket nei registri di sistema.";
+            if (interaction.deferred || interaction.replied) return interaction.editReply({ content: errText });
+            return interaction.reply({ content: errText, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'ping_staff') {
             if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
-                return interaction.editReply({ content: "⏳ **Coaktif Attivo:** È possibile sollecitare l'intervento dello staff solo una volta ogni 24 ore." });
+                const msg = "⏳ **Cooldown Attivo:** È possibile sollecitare l'intervento dello staff solo una volta ogni 24 ore.";
+                if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
+                return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
             }
             ticket.lastPing = Date.now();
             saveData(data);
             
-            console.log(`[TICKET_ACTION] L'utente ${interaction.user.tag} ha sollecitato l'intervento dello staff nel ticket #${interaction.channel.name}`);
-            
             await interaction.channel.send({ 
                 content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento immediato dello staff in questo canale!` 
             });
-            return interaction.editReply({ content: "✅ Sollecito inviato con successo allo staff!" });
+
+            const pingLogEmbed = new EmbedBuilder()
+                .setTitle("📢 SOLLECITO STAFF")
+                .setDescription(`Un utente ha sollecitato l'intervento nel canale ${interaction.channel}`)
+                .addFields({ name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true })
+                .setColor(0xFFA500)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, pingLogEmbed);
+
+            const okMsg = "✅ Sollecito inviato con successo allo staff!";
+            if (interaction.deferred || interaction.replied) return interaction.editReply({ content: okMsg });
+            return interaction.reply({ content: okMsg, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'claim_ticket') {
             if (ticket.claimedBy) {
-                return interaction.editReply({ content: `⚠️ **Attenzione:** Questo ticket è già stato preso in carico da <@${ticket.claimedBy}>.` });
+                const msg = `⚠️ **Attenzione:** Questo ticket è già stato preso in carico da <@${ticket.claimedBy}>.`;
+                if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
+                return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
             }
             ticket.claimedBy = interaction.user.id;
             saveData(data);
             
-            console.log(`[TICKET_CLAIMED] Il membro dello staff ${interaction.user.tag} (${interaction.user.id}) ha preso in carico il ticket #${interaction.channel.name}`);
-            return interaction.editReply({ content: `🛡️ **Ticket Preso in Carico:** Il presente canale di assistenza è ora gestito ufficialmente da ${interaction.user}.` });
+            const claimLogEmbed = new EmbedBuilder()
+                .setTitle("🛡️ TICKET PRESO IN CARICO")
+                .setDescription(`Il ticket ${interaction.channel} è stato assegnato a un membro dello staff.`)
+                .addFields(
+                    { name: "Staff", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                    { name: "Canale", value: `${interaction.channel.name}`, inline: true }
+                )
+                .setColor(0x0099FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, claimLogEmbed);
+
+            const msg = `🛡️ **Ticket Preso in Carico:** Il presente canale di assistenza è ora gestito ufficialmente da ${interaction.user}.`;
+            if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
+            return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'close_ticket') {
-            await interaction.editReply({ content: "🔒 **Procedura di chiusura avviata:** Estrazione log chat e generazione report in corso..." });
-            console.log(`[TICKET_CLOSE] Avvio procedura di chiusura per il ticket #${interaction.channel.name} (${interaction.channel.id}) richiesto da ${interaction.user.tag}`);
+            const startMsg = "🔒 **Procedura di chiusura avviata:** Estrazione log chat e generazione report in corso...";
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: startMsg });
+            } else {
+                await interaction.reply({ content: startMsg, flags: MessageFlags.Ephemeral });
+            }
 
             try {
                 const messages = await interaction.channel.messages.fetch({ limit: 100 });
@@ -149,13 +201,22 @@ module.exports = {
                     await ownerUser.send({
                         content: `📜 **Report di Trascrizione Ufficiale**\nIl tuo ticket **[${ticket.type.toUpperCase()}]** nel server **${interaction.guild.name}** è stato chiuso. In allegato trovi lo storico dei messaggi.`,
                         files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }]
-                    }).catch(() => {
-                        console.log(`[TICKET_TRANSCRIPT] Impossibile inviare il transcript in DM all'utente ${ticket.owner} (probabilmente ha i DM chiusi).`);
-                    });
+                    }).catch(() => {});
                 }
             } catch (err) {
-                console.error("[ERROR_TRANSCRIPT] Errore critico nella generazione del transcript:", err);
+                console.error("[ERROR_TRANSCRIPT] Errore nella generazione del transcript:", err);
             }
+
+            const closeLogEmbed = new EmbedBuilder()
+                .setTitle("🔒 TICKET CHIUSO")
+                .setDescription(`Il ticket \`#${interaction.channel.name}\` è stato chiuso da ${interaction.user}.`)
+                .addFields(
+                    { name: "Categoria", value: `\`${ticket.type.toUpperCase()}\``, inline: true },
+                    { name: "Creatore", value: `<@${ticket.owner}>`, inline: true }
+                )
+                .setColor(0xFF0000)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, closeLogEmbed);
 
             const ratingEmbed = new EmbedBuilder()
                 .setTitle("⭐ VALUTAZIONE DEL SUPPORTO")
@@ -174,15 +235,30 @@ module.exports = {
             ticket.status = 'closed';
             saveData(data);
 
-            console.log(`[TICKET_DELETED] Il canale #${interaction.channel.name} verrà eliminato permanentemente tra 5 secondi.`);
             setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
         }
     },
 
     async ratingHandler(interaction) {
-        const ratingType = interaction.customId.replace('rate_', '');
-        console.log(`[TICKET_RATING] L'utente ${interaction.user.tag} ha espresso una valutazione di tipo: [${ratingType.toUpperCase()}] nel canale #${interaction.channel.name}`);
-        return interaction.editReply({ content: `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.` });
+        const ratingType = interaction.customId.replace('rate_', '').toUpperCase();
+        
+        const ratingLogEmbed = new EmbedBuilder()
+            .setTitle("⭐ VALUTAZIONE RICEVUTA")
+            .setDescription(`Un utente ha lasciato un feedback per il supporto nel canale \`#${interaction.channel.name}\``)
+            .addFields(
+                { name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                { name: "Valutazione", value: `**${ratingType}**`, inline: true }
+            )
+            .setColor(0xFFD700)
+            .setTimestamp();
+        await sendSystemLog(interaction.guild, ratingLogEmbed);
+
+        const content = `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.`;
+        
+        if (interaction.deferred || interaction.replied) {
+            return interaction.editReply({ content });
+        }
+        return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     },
 
     async handleMessage(message) {

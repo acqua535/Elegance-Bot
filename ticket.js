@@ -39,8 +39,6 @@ module.exports = {
     },
 
     async categoryHandler(interaction) {
-        // RIMOSSO IL DEFER DOPPIO QUI (ci pensa il buttonHandler.js)
-
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
             name: `︲🎫〞﹒${type}-${interaction.user.username}`,
@@ -64,7 +62,9 @@ module.exports = {
         );
 
         await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, components: [row] });
-        return interaction.editReply({ content: `✅ Ticket creato con successo: ${channel}` });
+        
+        // Usiamo followUp perché il buttonHandler ha fatto deferUpdate sul menu
+        return interaction.followUp({ content: `✅ Ticket creato con successo: ${channel}`, ephemeral: true });
     },
 
     async buttonHandler(interaction) {

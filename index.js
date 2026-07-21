@@ -13,13 +13,10 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Import moduli essenziali
 const loadCommands = require("./commandHandler");
 const deployCommands = require("./deployCommand");
+const buttonHandler = require("./buttonHandler"); // Importiamo il tuo gestore basato su registry
 
-// ==========================
-// INIZIALIZZAZIONE
-// ==========================
 (async () => {
     try {
         await deployCommands();
@@ -30,22 +27,14 @@ const deployCommands = require("./deployCommand");
     }
 })();
 
-// ==========================
-// ROUTER INTERAZIONI (Il cuore del sistema)
-// ==========================
+// Router interazioni centralizzato e pulito
 client.on("interactionCreate", async interaction => {
     try {
-        const ticketCmd = client.commands.get('ticket');
-
-        // 1. Gestione Menu Ticket (Select Menu)
-        if (interaction.isStringSelectMenu() && interaction.customId === 'ticket_category') {
-            await ticketCmd.categoryHandler(interaction);
+        // Se è un bottone o un select menu, lo passiamo al tuo buttonHandler a registro
+        if (interaction.isButton() || interaction.isStringSelectMenu()) {
+            await buttonHandler(interaction);
         }
-        // 2. Gestione Bottoni Ticket (Ping & Close)
-        else if (interaction.isButton() && ['ping_staff', 'close_ticket'].includes(interaction.customId)) {
-            await ticketCmd.buttonHandler(interaction);
-        }
-        // 3. Gestione Comandi Slash (/)
+        // Se è un comando slash (/)
         else if (interaction.isChatInputCommand()) {
             const command = client.commands.get(interaction.commandName);
             if (command) await command.execute(interaction);
@@ -55,18 +44,12 @@ client.on("interactionCreate", async interaction => {
     }
 });
 
-// ==========================
-// MESSAGE ROUTER (Per l'inattività)
-// ==========================
 client.on('messageCreate', async (message) => {
     if (message.author.bot) return;
     const ticketCmd = client.commands.get('ticket');
     if (ticketCmd) await ticketCmd.handleMessage(message);
 });
 
-// ==========================
-// CICLO DI PULIZIA (Autodistruzione)
-// ==========================
 setInterval(() => {
     if (!fs.existsSync('./ticketsData.json')) return;
     const data = JSON.parse(fs.readFileSync('./ticketsData.json', 'utf8') || '{}');
@@ -76,7 +59,6 @@ setInterval(() => {
         const ticket = data[channelId];
         if (ticket.status !== 'open') continue;
 
-        // Se inattivo da oltre 24 ore -> Elimina
         if ((now - (ticket.lastMessage || Date.now())) > 86400000) {
             const channel = client.channels.cache.get(channelId);
             if (channel) channel.delete().catch(() => {});
@@ -84,7 +66,7 @@ setInterval(() => {
             fs.writeFileSync('./ticketsData.json', JSON.stringify(data, null, 4));
         }
     }
-}, 60000); // Controllo ogni minuto
+}, 60000);
 
 client.once("ready", (c) => {
     console.log(`⚜️ Elegance-Bot online come ${c.user.tag}`);

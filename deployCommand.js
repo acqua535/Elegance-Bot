@@ -12,44 +12,47 @@ module.exports = async function deployCommands() {
     const rootPath = process.cwd();
     const commandsPath = path.join(rootPath, "commands");
 
-    // LISTA UFFICIALE (Ho rimosso horror.js per sempre)
-    const targetCommands = [
-        "collab.js", "daily-reward.js", "embed.js", 
-        "minigame.js", "modify-suggest.js", "partner.js", "say.js", 
-        "sponsor.js", "suggest.js", "ticket.js", "unwarn.js", "warn.js", "warnings.js"
+    // File di sistema da ignorare automaticamente (non sono comandi slash)
+    const ignoredFiles = [
+        "index.js", "main.js", "commandHandler.js", 
+        "deployCommand.js", "deploy-commands.js", "buttonHandler.js"
     ];
 
     const filesToDeploy = new Map();
 
-    // 1. Controlla cartella 'commands'
+    // 1. Cerca prima dentro la cartella 'commands'
     if (fs.existsSync(commandsPath)) {
-        fs.readdirSync(commandsPath).forEach(file => {
-            if (targetCommands.includes(file)) filesToDeploy.set(file, path.join(commandsPath, file));
-        });
+        fs.readdirSync(commandsPath)
+            .filter(file => file.endsWith(".js") && !ignoredFiles.includes(file))
+            .forEach(file => {
+                filesToDeploy.set(file, path.join(commandsPath, file));
+            });
     }
 
-    // 2. Controlla nella root
-    fs.readdirSync(rootPath).forEach(file => {
-        if (targetCommands.includes(file) && !filesToDeploy.has(file)) {
-            filesToDeploy.set(file, path.join(rootPath, file));
-        }
-    });
+    // 2. Cerca nella root (se non è già stato preso da /commands)
+    fs.readdirSync(rootPath)
+        .filter(file => file.endsWith(".js") && !ignoredFiles.includes(file))
+        .forEach(file => {
+            if (!filesToDeploy.has(file)) {
+                filesToDeploy.set(file, path.join(rootPath, file));
+            }
+        });
 
-    // 3. Caricamento forzato
+    // 3. Caricamento dinamico e preparazione dei comandi
     for (const [file, filePath] of filesToDeploy.entries()) {
         try {
-            // Pulisco la cache per evitare che Discord riceva versioni vecchie
+            // Pulisce la cache per inviare sempre la versione più aggiornata
             delete require.cache[require.resolve(filePath)];
             const command = require(filePath);
             
-            if (command.data) {
+            if (command && command.data && typeof command.data.toJSON === "function") {
                 commands.push(command.data.toJSON());
-                console.log(`📌 Pronto per Discord API: /${command.data.name}`);
+                console.log(`📌 Pronto per Discord API: /${command.data.name} (${path.relative(rootPath, filePath)})`);
             } else {
-                console.warn(`⚠️ Saltato (data mancante): ${file}`);
+                console.warn(`⚠️ Saltato (non è un comando valido o manca 'data'): ${file}`);
             }
         } catch (error) {
-            console.error(`❌ Errore critico nel leggere ${file}:`, error);
+            console.error(`❌ Errore critico nel leggere ${file}:`, error.message);
         }
     }
 
@@ -63,6 +66,7 @@ module.exports = async function deployCommands() {
     try {
         console.log(`🚀 Invio di ${commands.length} comandi a Discord...`);
 
+        // Sincronizzazione immediata per il Server
         await rest.put(
             Routes.applicationGuildCommands(
                 "1527327515511881739", // ID del Bot

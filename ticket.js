@@ -4,7 +4,7 @@ const fs = require('fs');
 const DATA_PATH = './ticketsData.json';
 const STAFF_ROLE_ID = "1528576030783176835";
 const CATEGORY_ID = "1528582447443345560";
-const AUTHORIZED_USER_ID = "1528576014446231683"; // L'unico che può digitare /ticket
+const ALLOWED_CHANNEL_ID = "1528576161959907348"; // L'unico canale in cui si può fare /ticket
 
 const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
@@ -12,15 +12,12 @@ const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket')
-        .setDescription('Invia il pannello per aprire un ticket (Solo Admin autorizzato)'),
+        .setDescription('Invia il pannello per aprire un ticket di assistenza'),
 
     async execute(interaction) {
-        // Blocco: SOLO l'ID specificato può lanciare il comando /ticket
-        if (interaction.user.id !== AUTHORIZED_USER_ID) {
-            return interaction.reply({ 
-                content: "❌ Non hai i permessi per usare questo comando!", 
-                ephemeral: true 
-            });
+        // Blocco: Se il comando non viene eseguito nel canale autorizzato, sparisce nel silenzio assoluto
+        if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
+            return interaction.reply({ content: "❌ Non puoi usare questo comando qui.", ephemeral: true });
         }
 
         const embed = new EmbedBuilder()
@@ -39,11 +36,9 @@ module.exports = {
                 ])
         );
 
-        // Pannello visibile a tutti nel canale in cui viene inviato
         await interaction.reply({ embeds: [embed], components: [row] });
     },
 
-    // Chiunque può usare il menu a tendina per aprire il suo ticket
     async categoryHandler(interaction) {
         await interaction.deferReply({ ephemeral: true });
 
@@ -148,3 +143,4 @@ module.exports = {
         }
     }
 };
+                                    

@@ -4,44 +4,58 @@ const path = require("path");
 module.exports = function loadCommands(client) {
     console.log("🔥 [DEBUG MOD] Avvio diagnosi comandi...");
     const rootPath = process.cwd();
-    
-    // Lista forzata, niente "targetCommands" che ci nascondono file
-    // Mettiamo qui dentro TUTTI i file che devono essere comandi
-    const files = ["ticket.js", "collab.js", "embed.js", "minigame.js", "modify-suggest.js", "partner.js", "say.js", "sponsor.js", "suggest.js", "unwarn.js", "warn.js", "warnings.js"];
+    const commandsFolder = path.join(rootPath, "commands");
 
-    files.forEach(file => {
-        const filePath = path.join(rootPath, file);
+    // Raccogliamo tutti i file .js sia dalla Root che dalla cartella /commands
+    let filesToLoad = [];
+
+    // 1. Cerca file .js nella Root
+    const rootFiles = fs.readdirSync(rootPath)
+        .filter(file => file.endsWith(".js"));
+    
+    rootFiles.forEach(file => filesToLoad.push(path.join(rootPath, file)));
+
+    // 2. Cerca file .js nella cartella commands (se esiste)
+    if (fs.existsSync(commandsFolder)) {
+        const subFiles = fs.readdirSync(commandsFolder)
+            .filter(file => file.endsWith(".js"));
         
-        if (!fs.existsSync(filePath)) {
-            console.log(`❌ FILE NON TROVATO: ${file} (Controlla se è nella root!)`);
-            return;
-        }
+        subFiles.forEach(file => filesToLoad.push(path.join(commandsFolder, file)));
+    }
+
+    filesToLoad.forEach(filePath => {
+        const fileName = path.basename(filePath);
+
+        // Ignoriamo i file di configurazione, handler o main che non sono comandi slash
+        const ignoredFiles = [
+            "index.js", "main.js", "commandHandler.js", 
+            "deployCommand.js", "deploy-commands.js", "buttonHandler.js"
+        ];
+
+        if (ignoredFiles.includes(fileName)) return;
 
         try {
-            // Elimina la cache FORZATAMENTE
+            // Rimuove la cache per caricare sempre la versione più aggiornata
             delete require.cache[require.resolve(filePath)];
             
             const command = require(filePath);
 
-            // CONTROLLO DI VERITA'
-            if (!command.data) {
-                throw new Error(`Manca l'oggetto 'data' in ${file}`);
-            }
-            if (!command.execute) {
-                throw new Error(`Manca la funzione 'execute' in ${file}`);
+            // Verifichiamo che sia un comando slash valido (con 'data' ed 'execute')
+            if (!command || !command.data || !command.execute) {
+                return; // Ignora silenziosamente file ausiliari o helper
             }
 
             client.commands.set(command.data.name, command);
-            console.log(`✅ CARICATO CORRETTAMENTE: /${command.data.name}`);
+            console.log(`✅ CARICATO CORRETTAMENTE: /${command.data.name} (${path.relative(rootPath, filePath)})`);
 
         } catch (err) {
             console.error("--------------------------------------------------");
-            console.error(`🚨 ERRORE FATALE NEL FILE: ${file}`);
+            console.error(`🚨 ERRORE FATALE NEL FILE: ${fileName}`);
             console.error(`📝 Dettaglio: ${err.message}`);
-            console.error(`📍 Stack Trace: ${err.stack}`);
             console.error("--------------------------------------------------");
         }
     });
 
     console.log(`📦 Caricamento terminato. Comandi pronti: ${client.commands.size}`);
 };
+                          

@@ -3,6 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js"
 // ID CONFIGURATION (Elegance Sponsoring)
 const SPONSOR_CHANNEL_ID = "1528576184785305600";
 const LOG_CHANNEL_ID     = "1528576197741772902";
+const ALLOWED_ROLE_ID    = "1528576014446231683";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -17,13 +18,13 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName("tipo_sponsor")
-                .setDescription("Tipologia della sponsorizzazione")
+                .setDescription("Pacchetto / Tipologia della sponsorizzazione")
                 .setRequired(true)
                 .addChoices(
-                    { name: "⚡ Premium Sponsor", value: "⚡ Premium Sponsor" },
-                    { name: "🏆 Diamond Sponsor", value: "🏆 Diamond Sponsor" },
-                    { name: "💎 Gold Sponsor", value: "💎 Gold Sponsor" },
-                    { name: "🚀 Official Partner", value: "🚀 Official Partner" }
+                    { name: "✧ ʙᴀsɪᴄ (24h Annunci)", value: "✧ ʙᴀsɪᴄ ─── Sponsorizzazione in evidenza nel canale annunci per 24 ore." },
+                    { name: "✧ sᴛᴀɴᴅᴀʀᴅ (Ping @everyone / @here + 3 giorni)", value: "✧ sᴛᴀɴᴅᴀʀᴅ ─── Ping generale (@everyone / @here) + sponsorizzazione fissata per 3 giorni." },
+                    { name: "✧ ᴘʀᴇᴍɪᴜM (Ping + 1 Settimana + Banner)", value: "✧ ᴘʀᴇᴍɪᴜM ─── Pacchetto completo: ping generale, sponsorizzazione fissata per 1 settimana + banner." },
+                    { name: "✧ ᴄᴜsᴛᴏᴍ (Soluzione personalizzata)", value: "✧ ᴄᴜsᴛᴏᴍ ─── Soluzioni personalizzate a lungo termine." }
                 )
         )
         .addStringOption(option =>
@@ -34,6 +35,14 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // Controllo Permesso Ruolo
+        if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
+            return interaction.reply({
+                content: "❌ **Non hai il ruolo necessario per eseguire questo comando!**",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const sponsorizzato = interaction.options.getUser("sponsorizzato");
         const tipoSponsor = interaction.options.getString("tipo_sponsor");
         const descrizione = interaction.options.getString("descrizione");
@@ -48,22 +57,18 @@ module.exports = {
             });
         }
 
-        // 1. EMBED PUBBLICO
-        const publicEmbed = new EmbedBuilder()
-            .setTitle("💎 ELEGANCE SPONSORING ── SPONSORSHIP")
-            .setColor(0xFFD700)
-            .setDescription(descrizione)
-            .addFields(
-                { name: "⭐ Livello Sponsor", value: `\`${tipoSponsor}\``, inline: true },
-                { name: "📌 Sponsorizzato", value: `${sponsorizzato}`, inline: true },
-                { name: "👤 Manager", value: `${interaction.user}`, inline: true }
-            )
-            .setFooter({ text: "Elegance Sponsoring • Official Sponsorship", iconURL: interaction.guild.iconURL() })
-            .setTimestamp();
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pura
+        await sponsorChannel.send({ content: descrizione });
 
-        await sponsorChannel.send({ embeds: [publicEmbed] });
+        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
+        const infoMessage = `💎 **ELEGANCE SPONSORING ── SPONSORSHIP**\n` +
+                            `⭐ **Pacchetto Sponsor:** \`${tipoSponsor}\`\n` +
+                            `📌 **Sponsorizzato:** ${sponsorizzato}\n` +
+                            `👤 **Manager:** ${interaction.user}`;
 
-        // 2. EMBED LOG
+        await sponsorChannel.send({ content: infoMessage });
+
+        // 3. LOG PRIVATO PER LO STAFF (Embed)
         if (logChannel) {
             const logEmbed = new EmbedBuilder()
                 .setTitle("📋 LOG SPONSORSHIP REGISTRATA")
@@ -72,7 +77,7 @@ module.exports = {
                 .addFields(
                     { name: "👤 Esecutore Staff", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: false },
                     { name: "💎 Sponsorizzato", value: `${sponsorizzato} (\`${sponsorizzato.id}\`)`, inline: false },
-                    { name: "⭐ Livello", value: tipoSponsor, inline: true },
+                    { name: "⭐ Pacchetto scelto", value: tipoSponsor, inline: false },
                     { name: "📌 Canale Destinazione", value: `<#${SPONSOR_CHANNEL_ID}>`, inline: true },
                     { name: "📝 Contenuto Promo", value: descrizione.length > 500 ? descrizione.substring(0, 500) + "..." : descrizione, inline: false }
                 )

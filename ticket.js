@@ -4,18 +4,25 @@ const fs = require('fs');
 const DATA_PATH = './ticketsData.json';
 const STAFF_ROLE_ID = "1528576030783176835";
 const CATEGORY_ID = "1528582447443345560";
+const AUTHORIZED_USER_ID = "1528576014446231683"; // L'unico che può digitare /ticket
 
 const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
 module.exports = {
-    // 1. Fondamentale per il commandHandler.js
     data: new SlashCommandBuilder()
         .setName('ticket')
-        .setDescription('Invia il pannello per aprire un ticket di assistenza'),
+        .setDescription('Invia il pannello per aprire un ticket (Solo Admin autorizzato)'),
 
-    // 2. Fondamentale per il commandHandler.js
     async execute(interaction) {
+        // Blocco: SOLO l'ID specificato può lanciare il comando /ticket
+        if (interaction.user.id !== AUTHORIZED_USER_ID) {
+            return interaction.reply({ 
+                content: "❌ Non hai i permessi per usare questo comando!", 
+                ephemeral: true 
+            });
+        }
+
         const embed = new EmbedBuilder()
             .setTitle("🎟️ Assistenza Ticket")
             .setDescription("Seleziona una categoria dal menu a tendina qui sotto per aprire un ticket con lo staff.")
@@ -32,11 +39,14 @@ module.exports = {
                 ])
         );
 
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        // Pannello visibile a tutti nel canale in cui viene inviato
+        await interaction.reply({ embeds: [embed], components: [row] });
     },
 
-    // Gestione Menu (chiamata dal Registry)
+    // Chiunque può usare il menu a tendina per aprire il suo ticket
     async categoryHandler(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const type = interaction.values[0];
         const channel = await interaction.guild.channels.create({
             name: `︲🎫〞﹒${type}-${interaction.user.username}`,
@@ -44,8 +54,8 @@ module.exports = {
             parent: CATEGORY_ID,
             permissionOverwrites: [
                 { id: interaction.guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] },
-                { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages] }
+                { id: interaction.user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] },
+                { id: STAFF_ROLE_ID, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory] }
             ]
         });
 
@@ -60,11 +70,12 @@ module.exports = {
         );
 
         await channel.send({ content: `${interaction.user} <@&${STAFF_ROLE_ID}>`, components: [row] });
-        return interaction.editReply({ content: `✅ Ticket creato: ${channel}` });
+        return interaction.editReply({ content: `✅ Ticket creato con successo: ${channel}` });
     },
 
-    // Gestione Bottoni
     async buttonHandler(interaction) {
+        await interaction.deferReply({ ephemeral: true });
+
         const id = interaction.customId;
         const data = getData();
         const ticket = data[interaction.channel.id];
@@ -84,21 +95,49 @@ module.exports = {
             if (ticket.claimedBy) return interaction.editReply({ content: `⚠️ Ticket già preso da <@${ticket.claimedBy}>` });
             ticket.claimedBy = interaction.user.id;
             saveData(data);
-            await interaction.channel.setName(`✅-${interaction.channel.name.replace('🎫-', '')}`);
+            await interaction.channel.setName(`✅-${interaction.channel.name.replace('🎫-', '')}`).catch(() => {});
             return interaction.editReply({ content: `🛡️ Ticket preso in carico da ${interaction.user}.` });
         }
 
         if (id === 'close_ticket') {
-            await interaction.editReply({ content: "🔒 Chiusura in corso..." });
+            await interaction.editReply({ content: "🔒 Chiusura in corso, generazione transcript e salvataggio..." });
+
+            try {
+                const messages = await interaction.channel.messages.fetch({ limit: 100 });
+                const transcript = messages.reverse().map(m => `[${new Date(m.createdTimestamp).toLocaleString()}] ${m.author.tag}: ${m.content}`).join('\n');
+                const buffer = Buffer.from(transcript, 'utf-8');
+                
+                const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
+                if (ownerUser) {
+                    await ownerUser.send({
+                        content: `📜 Transcript del tuo ticket (${ticket.type}) nel server ${interaction.guild.name}:`,
+                        files: [{ attachment: buffer, name: `transcript-${interaction.channel.name}.txt` }]
+                    }).catch(() => {});
+                }
+            } catch (err) {
+                console.error("Errore generazione transcript:", err);
+            }
+
+            const ratingRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('rate_good').setLabel('⭐ Ottimo').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('rate_mid').setLabel('⭐ Medio').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('rate_bad').setLabel('⭐ Scadente').setStyle(ButtonStyle.Danger)
+            );
+
+            await interaction.channel.send({
+                content: `🔒 Il ticket sta per essere chiuso. Lascia una valutazione sullo staff:`,
+                components: [ratingRow]
+            }).catch(() => {});
+
             ticket.status = 'closed';
             saveData(data);
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 3000);
+
+            setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
         }
     },
 
     async ratingHandler(interaction) {
-        const rating = interaction.customId.replace('rate_', '');
-        return interaction.editReply({ content: `⭐ Grazie per il feedback (${rating.toUpperCase()})!` });
+        await interaction.reply({ content: "⭐ Grazie mille per il tuo feedback!", ephemeral: true });
     },
 
     async handleMessage(message) {

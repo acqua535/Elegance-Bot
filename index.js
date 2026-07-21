@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, MessageFlags } = require("discord.js");
+const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
 const loadCommands = require("./commandHandler");
@@ -6,7 +6,7 @@ const deployCommands = require("./deployCommand");
 const buttonHandler = require("./buttonHandler");
 const entry = require("./entry");
 const invites = require("./invites");
-const logSystem = require("./logSystem"); // Importato il modulo dei log
+const logSystem = require("./logSystem"); // Sistema di log unico senza JSON
 
 const client = new Client({
     intents: [
@@ -14,8 +14,15 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.MessageContent,
-        GatewayIntentBits.GuildVoiceStates // Aggiunto per tracciare i log dei canali vocali
+        GatewayIntentBits.MessageContent,   // Legge il contenuto per i log eliminati/modificati
+        GatewayIntentBits.GuildVoiceStates, // Traccia entrate/uscite/spostamenti nelle vocali
+        GatewayIntentBits.GuildBans         // Traccia i ban degli utenti
+    ],
+    partials: [
+        Partials.Message,      // Intercetta anche messaggi vecchi o non in cache
+        Partials.Channel,
+        Partials.Reaction,
+        Partials.GuildMember
     ]
 });
 
@@ -32,7 +39,7 @@ client.once("ready", async () => {
     await deployCommands();
     loadCommands(client);
 
-    // Inizializzazione dei log di sistema
+    // Inizializzazione del sistema dei Log
     logSystem(client);
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
@@ -105,3 +112,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
+            

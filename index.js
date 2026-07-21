@@ -6,6 +6,7 @@ const deployCommands = require("./deployCommand");
 const buttonHandler = require("./buttonHandler");
 const entry = require("./entry");
 const invites = require("./invites");
+const logSystem = require("./logSystem"); // Importato il modulo dei log
 
 const client = new Client({
     intents: [
@@ -13,7 +14,8 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.MessageContent
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates // Aggiunto per tracciare i log dei canali vocali
     ]
 });
 
@@ -29,6 +31,9 @@ client.once("ready", async () => {
 
     await deployCommands();
     loadCommands(client);
+
+    // Inizializzazione dei log di sistema
+    logSystem(client);
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
@@ -100,4 +105,3 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
-            

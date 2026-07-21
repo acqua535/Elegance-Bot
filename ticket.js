@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, StringSelectMenuBuilder, StringSelectMenuOptionBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits, StringSelectMenuBuilder, StringSelectMenuOptionBuilder, MessageFlags } = require('discord.js');
 const fs = require('fs');
 
 const DATA_PATH = './ticketsData.json';
@@ -17,7 +17,7 @@ module.exports = {
     async execute(interaction) {
         if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
             console.warn(`[SECURITY] Tentativo di esecuzione non autorizzata del comando /ticket da parte di ${interaction.user.tag} (${interaction.user.id}) nel canale ${interaction.channelId}`);
-            return interaction.reply({ content: "❌ **Accesso Negato:** Questo comando non può essere eseguito in questo canale.", ephemeral: true });
+            return interaction.reply({ content: "❌ **Accesso Negato:** Questo comando non può essere eseguito in questo canale.", flags: MessageFlags.Ephemeral });
         }
 
         const embed = new EmbedBuilder()
@@ -28,9 +28,10 @@ module.exports = {
                 "⚠️ *Ti invitiamo ad aprire un ticket solo se strettamente necessario per evitare sanzioni.*"
             )
             .addFields(
-                { name: "🛠️ Supporto Generale", value: "Assistenza tecnica, informazioni generali e dubbi sul server.", inline: false },
-                { name: "🛒 Acquisti & Sponsor", value: "Gestione pacchetti sponsor, partnership e transazioni.", inline: false },
-                { name: "🚨 Segnalazioni", value: "Report su utenti, comportamenti scorreti o problemi di sicurezza.", inline: false }
+                { name: "💎 Servizi & VIP", value: "Assistenza dedicata sui servizi offerti e gestione privilegi.", inline: false },
+                { name: "🤝 Partnership & Sponsor", value: "Gestione collaborazioni, accordi commerciali e sponsorizzazioni.", inline: false },
+                { name: "🐛 Bug & Errori", value: "Segnalazione di malfunzionamenti, bug tecnici o problemi di sistema.", inline: false },
+                { name: "🚨 Segnalazioni", value: "Report su utenti, comportamenti scorretti o violazioni del regolamento.", inline: false }
             )
             .setColor(0x2f3136)
             .setFooter({ text: "Elegance Sponsoring • Secure Ticket System", iconURL: interaction.guild.iconURL() })
@@ -41,14 +42,15 @@ module.exports = {
                 .setCustomId('ticket_category')
                 .setPlaceholder('📂 Seleziona il dipartimento di supporto...')
                 .addOptions([
-                    new StringSelectMenuOptionBuilder().setLabel('Supporto Generale').setValue('supporto').setDescription('Richiedi assistenza generale o aiuto col bot').setEmoji('🛠️'),
-                    new StringSelectMenuOptionBuilder().setLabel('Acquisti / Sponsor').setValue('sponsor').setDescription('Gestione partnership e collaborazioni commerciali').setEmoji('🛒'),
+                    new StringSelectMenuOptionBuilder().setLabel('Servizi & VIP').setValue('servizi').setDescription('Assistenza dedicata sui servizi offerti').setEmoji('💎'),
+                    new StringSelectMenuOptionBuilder().setLabel('Partnership & Sponsor').setValue('partner').setDescription('Gestione collaborazioni e accordi commerciali').setEmoji('🤝'),
+                    new StringSelectMenuOptionBuilder().setLabel('Bug & Errori').setValue('bug').setDescription('Segnala malfunzionamenti o problemi tecnici').setEmoji('🐛'),
                     new StringSelectMenuOptionBuilder().setLabel('Segnalazioni').setValue('report').setDescription('Segnala infrazioni o problemi gravi').setEmoji('🚨')
                 ])
         );
 
         await interaction.reply({ embeds: [embed], components: [row] });
-        console.log(`[TICKET_PANEL] Pannello di assistenza distribuito con successo nel canale ${interaction.channel.name} (${interaction.channelId}) da ${interaction.user.tag}`);
+        console.log(`[TICKET_PANEL] Pannello di assistenza con 4 opzioni distribuito con successo nel canale ${interaction.channel.name} (${interaction.channelId}) da ${interaction.user.tag}`);
     },
 
     async categoryHandler(interaction) {
@@ -94,7 +96,7 @@ module.exports = {
         await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [welcomeEmbed], components: [row] });
         console.log(`[TICKET_CREATED] Canale di supporto generato con successo: #${channel.name} (${channel.id})`);
 
-        return interaction.followUp({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}`, ephemeral: true });
+        return interaction.followUp({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}`, flags: MessageFlags.Ephemeral });
     },
 
     async buttonHandler(interaction) {
@@ -104,37 +106,37 @@ module.exports = {
         
         if (!ticket) {
             console.warn(`[WARNING] Tentativo di interazione su un canale non registrato come ticket: ${interaction.channel.id}`);
-            return interaction.reply({ content: "❌ **Errore Critico:** Impossibile trovare i metadati associati a questo ticket nei registri di sistema.", ephemeral: true });
+            return interaction.editReply({ content: "❌ **Errore Critico:** Impossibile trovare i metadati associati a questo ticket nei registri di sistema." });
         }
 
         if (id === 'ping_staff') {
             if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
-                return interaction.reply({ content: "⏳ **Coaktif Attivo:** È possibile sollecitare l'intervento dello staff solo una volta ogni 24 ore.", ephemeral: true });
+                return interaction.editReply({ content: "⏳ **Coaktif Attivo:** È possibile sollecitare l'intervento dello staff solo una volta ogni 24 ore." });
             }
             ticket.lastPing = Date.now();
             saveData(data);
             
             console.log(`[TICKET_ACTION] L'utente ${interaction.user.tag} ha sollecitato l'intervento dello staff nel ticket #${interaction.channel.name}`);
             
-            // Messaggio PUBBLICO nel canale con la vera menzione del ruolo staff
-            return interaction.reply({ 
+            await interaction.channel.send({ 
                 content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento immediato dello staff in questo canale!` 
             });
+            return interaction.editReply({ content: "✅ Sollecito inviato con successo allo staff!" });
         }
 
         if (id === 'claim_ticket') {
             if (ticket.claimedBy) {
-                return interaction.reply({ content: `⚠️ **Attenzione:** Questo ticket è già stato preso in carico da <@${ticket.claimedBy}>.`, ephemeral: true });
+                return interaction.editReply({ content: `⚠️ **Attenzione:** Questo ticket è già stato preso in carico da <@${ticket.claimedBy}>.` });
             }
             ticket.claimedBy = interaction.user.id;
             saveData(data);
             
             console.log(`[TICKET_CLAIMED] Il membro dello staff ${interaction.user.tag} (${interaction.user.id}) ha preso in carico il ticket #${interaction.channel.name}`);
-            return interaction.reply({ content: `🛡️ **Ticket Preso in Carico:** Il presente canale di assistenza è ora gestito ufficialmente da ${interaction.user}.` });
+            return interaction.editReply({ content: `🛡️ **Ticket Preso in Carico:** Il presente canale di assistenza è ora gestito ufficialmente da ${interaction.user}.` });
         }
 
         if (id === 'close_ticket') {
-            await interaction.reply({ content: "🔒 **Procedura di chiusura avviata:** Estrazione log chat e generazione report in corso...", ephemeral: false });
+            await interaction.editReply({ content: "🔒 **Procedura di chiusura avviata:** Estrazione log chat e generazione report in corso..." });
             console.log(`[TICKET_CLOSE] Avvio procedura di chiusura per il ticket #${interaction.channel.name} (${interaction.channel.id}) richiesto da ${interaction.user.tag}`);
 
             try {
@@ -178,7 +180,7 @@ module.exports = {
     async ratingHandler(interaction) {
         const ratingType = interaction.customId.replace('rate_', '');
         console.log(`[TICKET_RATING] L'utente ${interaction.user.tag} ha espresso una valutazione di tipo: [${ratingType.toUpperCase()}] nel canale #${interaction.channel.name}`);
-        return interaction.reply({ content: `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.`, ephemeral: true });
+        return interaction.reply({ content: `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.`, flags: MessageFlags.Ephemeral });
     },
 
     async handleMessage(message) {

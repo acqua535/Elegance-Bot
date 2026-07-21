@@ -48,10 +48,19 @@ client.on("interactionCreate", async (interaction) => {
         }
 
         if (interaction.isModalSubmit()) {
+            // Modal Verifica / Captcha
             if (interaction.customId.startsWith("verify_modal_")) {
                 const verifyCmd = client.commands.get("verify");
                 if (verifyCmd && verifyCmd.modalHandler) {
                     return await verifyCmd.modalHandler(interaction);
+                }
+            }
+
+            // Modal Candidature (Apply ID Canale + Form Risposte)
+            if (interaction.customId === "apply_channel_id_modal" || interaction.customId === "apply_form_modal") {
+                const applyCmd = client.commands.get("apply");
+                if (applyCmd && applyCmd.modalHandler) {
+                    return await applyCmd.modalHandler(interaction);
                 }
             }
         }

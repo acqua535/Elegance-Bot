@@ -1,5 +1,6 @@
 const ticket = require("./ticket");
 const games = require("./minigame");
+const verify = require("./verify");
 
 module.exports = {
     // Ticket
@@ -22,5 +23,9 @@ module.exports = {
     // Rating (Aggiunti qui dentro)
     "rate_good": ticket.ratingHandler,
     "rate_mid": ticket.ratingHandler,
-    "rate_bad": ticket.ratingHandler
+    "rate_bad": ticket.ratingHandler,
+
+    // Sistema di Verifica
+    "verify_button": verify.buttonHandler,
+    "verify_modal": verify.modalHandler
 };

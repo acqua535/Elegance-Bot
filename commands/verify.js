@@ -10,13 +10,13 @@ const {
     MessageFlags
 } = require("discord.js");
 
-// CONFIG ID RUOLI & PERMESSI (Elegance Sponsoring)
-const COMMAND_ROLE_ID = "1528576014446231683";      // Ruolo autorizzato ad eseguire /verify
-const VERIFY_ROLE_ID = "1528576026421231726";       // Ruolo che viene AGGIUNTO (Verificato)
-const UNVERIFIED_ROLE_ID = "1528576023032102972";   // Ruolo che viene RIMOSSO (Non Verificato)
+// CONFIG ID RUOLI CORRETTI (Elegance Sponsoring)
+const COMMAND_ROLE_ID = "1528576014446231683";     // Ruolo autorizzato ad inviare /verify
+const VERIFY_ROLE_ID = "1528576073833517168";      // Ruolo VERIFICATO (Membri)
+const UNVERIFIED_ROLE_ID = "1528576075007791185";  // Ruolo NON VERIFICATO
 
 function generateCaptcha() {
-    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Esclusi caratteri ambigui (O, 0, I, 1)
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Esclusi caratteri ambigui
     let code = "";
     for (let i = 0; i < 5; i++) {
         code += chars[Math.floor(Math.random() * chars.length)];
@@ -68,7 +68,6 @@ module.exports = {
     async buttonHandler(interaction) {
         const captcha = generateCaptcha();
 
-        // Passiamo il codice direttamente dentro il CustomId del Modal così non scade mai!
         const modal = new ModalBuilder()
             .setCustomId(`verify_modal_${captcha}`)
             .setTitle("Verifica Anti-Bot");
@@ -89,7 +88,6 @@ module.exports = {
     },
 
     async modalHandler(interaction) {
-        // Estraiamo il codice corretto direttamente dall'ID della Modal
         const expectedCode = interaction.customId.replace("verify_modal_", "");
         const answer = interaction.fields.getTextInputValue("captcha_input").trim().toUpperCase();
 
@@ -105,10 +103,12 @@ module.exports = {
         const unverifiedRole = interaction.guild.roles.cache.get(UNVERIFIED_ROLE_ID);
 
         try {
+            // Rimuove il ruolo Non Verificato (se presente)
             if (unverifiedRole && member.roles.cache.has(UNVERIFIED_ROLE_ID)) {
                 await member.roles.remove(unverifiedRole);
             }
 
+            // Aggiunge il ruolo Verificato
             if (verifiedRole) {
                 await member.roles.add(verifiedRole);
             }

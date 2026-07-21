@@ -1,29 +1,15 @@
 const { EmbedBuilder } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
 
-const configPath = path.join(__dirname, "logConfig.json");
-
-// Helper sicuro per leggere l'ID del canale
-function getLogChannel(guild) {
-    if (!guild) return null;
-    if (!fs.existsSync(configPath)) {
-        // Se non esiste, crea un file vuoto per evitare errori
-        try { fs.writeFileSync(configPath, JSON.stringify({ channelId: null }, null, 2)); } catch {}
-        return null;
-    }
-    
-    try {
-        const rawData = fs.readFileSync(configPath, "utf8");
-        if (!rawData) return null;
-        const data = JSON.parse(rawData);
-        return data.channelId ? guild.channels.cache.get(data.channelId) : null;
-    } catch (err) {
-        return null;
-    }
-}
+// 📌 INCOLLA QUI L'ID DEL CANALE LOG DEL TUO SERVER
+const LOG_CHANNEL_ID = "1528576197741772902"; 
 
 module.exports = (client) => {
+    // Helper per recuperare il canale
+    const getLogChannel = (guild) => {
+        if (!guild || !LOG_CHANNEL_ID || LOG_CHANNEL_ID === "INCOLLA_QUI_L_ID_DEL_CANALE") return null;
+        return guild.channels.cache.get(LOG_CHANNEL_ID);
+    };
+
     // 📥 1. UTENTE ENTRATO
     client.on("guildMemberAdd", async (member) => {
         const logChannel = getLogChannel(member.guild);
@@ -192,4 +178,3 @@ module.exports = (client) => {
         logChannel.send({ embeds: [embed] }).catch(() => {});
     });
 };
-            

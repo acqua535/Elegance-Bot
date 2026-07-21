@@ -32,9 +32,9 @@ module.exports = {
         .setDescription("Invia il pannello ufficiale di verifica del server"),
 
     async execute(interaction) {
-        // Controllo Sicurezza: Solo il ruolo autorizzato può inviare il pannello di verifica
+        // Controllo Sicurezza: Solo il ruolo autorizzato può inviare il pannello
         if (!interaction.member.roles.cache.has(COMMAND_ROLE_ID)) {
-            console.warn(`[SECURITY] Tentativo non autorizzato di esecuzione /verify da parte di ${interaction.user.tag}`);
+            console.warn(`[SECURITY] Tentativo non autorizzato di /verify da parte di ${interaction.user.tag}`);
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per inviare questo pannello.",
                 flags: MessageFlags.Ephemeral
@@ -70,12 +70,28 @@ module.exports = {
     },
 
     async buttonHandler(interaction) {
+        // Controllo: L'utente è già verificato?
+        if (interaction.member.roles.cache.has(VERIFY_ROLE_ID)) {
+            return interaction.reply({
+                content: "⚠️ **Sei già verificato!** Non hai bisogno di ripetere il processo.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const captcha = generateCaptcha();
 
+        // Salva in cache
         captchaCache.set(interaction.user.id, {
             code: captcha,
             expires: Date.now() + 60000 // Scade in 60 secondi
         });
+
+        // Anti-Memory Leak: Pulizia automatica dopo 65 secondi se non completa il modal
+        setTimeout(() => {
+            if (captchaCache.has(interaction.user.id)) {
+                captchaCache.delete(interaction.user.id);
+            }
+        }, 65000);
 
         const modal = new ModalBuilder()
             .setCustomId("verify_modal")
@@ -119,14 +135,17 @@ module.exports = {
         const unverifiedRole = interaction.guild.roles.cache.get(UNVERIFIED_ROLE_ID);
 
         try {
+            // Rimuovi Non Verificato se ce l'ha
             if (unverifiedRole && member.roles.cache.has(UNVERIFIED_ROLE_ID)) {
                 await member.roles.remove(unverifiedRole);
             }
 
-            if (verifiedRole) {
+            // Aggiungi Verificato se non ce l'ha
+            if (verifiedRole && !member.roles.cache.has(VERIFY_ROLE_ID)) {
                 await member.roles.add(verifiedRole);
             }
 
+            // Svuota cache subito
             captchaCache.delete(interaction.user.id);
 
             await interaction.reply({

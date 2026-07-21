@@ -10,63 +10,78 @@ module.exports = async function deployCommands() {
 
     const commands = [];
     const rootPath = process.cwd();
-    const commandsPath = path.join(rootPath, "commands");
+    const commandsFolder = path.join(rootPath, "commands");
 
-    // File di sistema da ignorare automaticamente (non sono comandi slash)
+    // File di sistema e helper da non considerare mai come comandi slash
     const ignoredFiles = [
         "index.js", "main.js", "commandHandler.js", 
-        "deployCommand.js", "deploy-commands.js", "buttonHandler.js"
+        "deployCommand.js", "deploy-commands.js", "buttonHandler.js",
+        "config.js", "registry.js"
     ];
 
-    const filesToDeploy = new Map();
+    // Utilizziamo un Map per garantire che ogni NOME DI COMANDO sia unico
+    const uniqueCommandsMap = new Map();
 
-    // 1. Cerca prima dentro la cartella 'commands'
-    if (fs.existsSync(commandsPath)) {
-        fs.readdirSync(commandsPath)
-            .filter(file => file.endsWith(".js") && !ignoredFiles.includes(file))
-            .forEach(file => {
-                filesToDeploy.set(file, path.join(commandsPath, file));
-            });
+    // Funzione di utilità per filtrare i file duplicati o temporanei
+    const isValidFile = (file) => {
+        if (!file.endsWith(".js")) return false;
+        if (ignoredFiles.includes(file)) return false;
+        // Filtra copie tipo "file (1).js", "file - Copia.js", ecc.
+        if (/\s*\(\d+\)\.js$/.test(file) || file.includes(" - Copia")) return false;
+        return true;
+    };
+
+    let filesToScan = [];
+
+    // 1. Raccoglie prima i file dalla cartella /commands (priorità alta)
+    if (fs.existsSync(commandsFolder)) {
+        const subFiles = fs.readdirSync(commandsFolder).filter(isValidFile);
+        subFiles.forEach(file => filesToScan.push(path.join(commandsFolder, file)));
     }
 
-    // 2. Cerca nella root (se non è già stato preso da /commands)
-    fs.readdirSync(rootPath)
-        .filter(file => file.endsWith(".js") && !ignoredFiles.includes(file))
-        .forEach(file => {
-            if (!filesToDeploy.has(file)) {
-                filesToDeploy.set(file, path.join(rootPath, file));
-            }
-        });
+    // 2. Raccoglie i file dalla Root (solo se non già inclusi)
+    const rootFiles = fs.readdirSync(rootPath).filter(isValidFile);
+    rootFiles.forEach(file => filesToScan.push(path.join(rootPath, file)));
 
-    // 3. Caricamento dinamico e preparazione dei comandi
-    for (const [file, filePath] of filesToDeploy.entries()) {
+    // 3. Processa i file e applica la deduplica per nome comando
+    for (const filePath of filesToScan) {
         try {
-            // Pulisce la cache per inviare sempre la versione più aggiornata
             delete require.cache[require.resolve(filePath)];
             const command = require(filePath);
-            
+
+            // Verifica che il file sia un vero comando Slash
             if (command && command.data && typeof command.data.toJSON === "function") {
-                commands.push(command.data.toJSON());
-                console.log(`📌 Pronto per Discord API: /${command.data.name} (${path.relative(rootPath, filePath)})`);
-            } else {
-                console.warn(`⚠️ Saltato (non è un comando valido o manca 'data'): ${file}`);
+                const commandName = command.data.name;
+
+                // Se il comando non è ancora stato aggiunto, lo inserisce nel Map
+                if (!uniqueCommandsMap.has(commandName)) {
+                    uniqueCommandsMap.set(commandName, {
+                        json: command.data.toJSON(),
+                        file: path.basename(filePath)
+                    });
+                }
             }
         } catch (error) {
-            console.error(`❌ Errore critico nel leggere ${file}:`, error.message);
+            // Ignora in silenzio moduli di supporto/funzioni (es. logSystem.js, ticketSystem.js)
         }
     }
 
+    // Convertiamo il Map filtrato nell'array per le API
+    for (const [name, info] of uniqueCommandsMap.entries()) {
+        commands.push(info.json);
+        console.log(`📌 Pronto per Discord API: /${name} (${info.file})`);
+    }
+
     if (commands.length === 0) {
-        console.log("⚠️ Nessun comando valido trovato. Deploy annullato.");
+        console.log("⚠️ Nessun comando valido trovato per il deploy.");
         return;
     }
 
     const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
     try {
-        console.log(`🚀 Invio di ${commands.length} comandi a Discord...`);
+        console.log(`🚀 Invio di ${commands.length} comandi univoci a Discord...`);
 
-        // Sincronizzazione immediata per il Server
         await rest.put(
             Routes.applicationGuildCommands(
                 "1527327515511881739", // ID del Bot
@@ -76,7 +91,7 @@ module.exports = async function deployCommands() {
         );
 
         console.log("-----------------------------------------");
-        console.log(`✅ Sincronizzazione completata! ${commands.length} comandi inviati.`);
+        console.log(`✅ Sincronizzazione completata! ${commands.length} comandi univoci inviati.`);
         console.log("-----------------------------------------");
     } catch (error) {
         console.error("❌ Errore critico durante il deploy API:", error);

@@ -2,7 +2,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } =
 const fs = require("fs");
 const path = require("path");
 
-// File locale per salvare l'ID del canale
+// Punta al file JSON nella cartella principale
 const configPath = path.join(__dirname, "../logConfig.json");
 
 module.exports = {
@@ -18,7 +18,6 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        // Se non specificato, usa il canale corrente
         const targetChannel = interaction.options.getChannel("canale") || interaction.channel;
 
         if (!targetChannel.isTextBased()) {
@@ -28,7 +27,6 @@ module.exports = {
             });
         }
 
-        // Salva l'ID del canale su file JSON
         fs.writeFileSync(configPath, JSON.stringify({ channelId: targetChannel.id }, null, 2));
 
         const embed = new EmbedBuilder()
@@ -37,7 +35,7 @@ module.exports = {
             .setDescription(`Tutti i log del server stile Probot verranno ora inviati in ${targetChannel}!`)
             .addFields({
                 name: "📌 Eventi Monitorati",
-                value: "• Ingressi & Uscite\n• Messaggi Eliminati & Modificati\n• Canali Vocali (Entrata, Uscita, Spostamento)\n• Creazione / Eliminazione Canali e Ruoli\n• Ban Utenti",
+                value: "• Ingressi & Uscite\n• Messaggi Eliminati & Modificati\n• Canali Vocali (Entrata, Uscita, Spostamento)\n• Creazione / Eliminazione Canali\n• Ban Utenti",
                 inline: false
             })
             .setFooter({ text: "Elegance Logs • System Active" })

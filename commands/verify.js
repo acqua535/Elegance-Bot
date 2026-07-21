@@ -15,10 +15,8 @@ const COMMAND_ROLE_ID = "1528576014446231683";      // Ruolo autorizzato ad eseg
 const VERIFY_ROLE_ID = "1528576026421231726";       // Ruolo che viene AGGIUNTO (Verificato)
 const UNVERIFIED_ROLE_ID = "1528576023032102972";   // Ruolo che viene RIMOSSO (Non Verificato)
 
-const captchaCache = new Map();
-
 function generateCaptcha() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Esclusi caratteri ambigui (O, 0, I, 1)
     let code = "";
     for (let i = 0; i < 5; i++) {
         code += chars[Math.floor(Math.random() * chars.length)];
@@ -27,17 +25,12 @@ function generateCaptcha() {
 }
 
 module.exports = {
-    // Metadati aggiuntivi spesso richiesti dai comandi/deployer custom
-    category: "utility",
-    description: "Invia il pannello ufficiale di verifica del server",
-    
     data: new SlashCommandBuilder()
         .setName("verify")
         .setDescription("Invia il pannello ufficiale di verifica del server"),
 
     async execute(interaction) {
         if (!interaction.member.roles.cache.has(COMMAND_ROLE_ID)) {
-            console.warn(`[SECURITY] Tentativo non autorizzato di /verify da parte di ${interaction.user.tag}`);
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per inviare questo pannello.",
                 flags: MessageFlags.Ephemeral
@@ -73,35 +66,20 @@ module.exports = {
     },
 
     async buttonHandler(interaction) {
-        if (interaction.member.roles.cache.has(VERIFY_ROLE_ID)) {
-            return interaction.reply({
-                content: "⚠️ **Sei già verificato!** Non hai bisogno di ripetere il processo.",
-                flags: MessageFlags.Ephemeral
-            });
-        }
-
         const captcha = generateCaptcha();
 
-        captchaCache.set(interaction.user.id, {
-            code: captcha,
-            expires: Date.now() + 60000
-        });
-
-        setTimeout(() => {
-            if (captchaCache.has(interaction.user.id)) {
-                captchaCache.delete(interaction.user.id);
-            }
-        }, 65000);
-
+        // Passiamo il codice direttamente dentro il CustomId del Modal così non scade mai!
         const modal = new ModalBuilder()
-            .setCustomId("verify_modal")
+            .setCustomId(`verify_modal_${captcha}`)
             .setTitle("Verifica Anti-Bot");
 
         const input = new TextInputBuilder()
             .setCustomId("captcha_input")
-            .setLabel(`Codice da inserire: ${captcha}`)
-            .setPlaceholder("Scrivi qui il codice (es: A1B2C)")
+            .setLabel(`Inserisci questo codice: ${captcha}`)
+            .setPlaceholder(`Esempio: ${captcha}`)
             .setStyle(TextInputStyle.Short)
+            .setMinLength(5)
+            .setMaxLength(5)
             .setRequired(true);
 
         const row = new ActionRowBuilder().addComponents(input);
@@ -111,21 +89,13 @@ module.exports = {
     },
 
     async modalHandler(interaction) {
-        const data = captchaCache.get(interaction.user.id);
+        // Estraiamo il codice corretto direttamente dall'ID della Modal
+        const expectedCode = interaction.customId.replace("verify_modal_", "");
+        const answer = interaction.fields.getTextInputValue("captcha_input").trim().toUpperCase();
 
-        if (!data || Date.now() > data.expires) {
-            captchaCache.delete(interaction.user.id);
+        if (answer !== expectedCode) {
             return interaction.reply({
-                content: "⏳ **Tempo Scaduto:** Il codice CAPTCHA è scaduto. Clicca nuovamente sul pulsante per rigenerarne uno nuovo.",
-                flags: MessageFlags.Ephemeral
-            });
-        }
-
-        const answer = interaction.fields.getTextInputValue("captcha_input");
-
-        if (answer.toUpperCase().trim() !== data.code.toUpperCase()) {
-            return interaction.reply({
-                content: "❌ **Codice Errato:** Il codice inserito non corrisponde. Clicca di nuovo sul pulsante per riprovare.",
+                content: `❌ **Codice Errato:** Hai scritto \`${answer}\`, ma il codice era \`${expectedCode}\`. Clicca di nuovo su Verifica per riprovare.`,
                 flags: MessageFlags.Ephemeral
             });
         }
@@ -139,24 +109,21 @@ module.exports = {
                 await member.roles.remove(unverifiedRole);
             }
 
-            if (verifiedRole && !member.roles.cache.has(VERIFY_ROLE_ID)) {
+            if (verifiedRole) {
                 await member.roles.add(verifiedRole);
             }
 
-            captchaCache.delete(interaction.user.id);
-
             await interaction.reply({
-                content: "✅ **Verifica Completata!** I tuoi permessi sono stati aggiornati. Benvenuto su Elegance Sponsoring!",
+                content: "✅ **Verifica Completata!** Il tuo account è stato verificato con successo. Benvenuto su Elegance Sponsoring!",
                 flags: MessageFlags.Ephemeral
             });
 
         } catch (error) {
             console.error("[VERIFY_ERROR] Errore nell'assegnazione dei ruoli:", error);
             await interaction.reply({
-                content: "❌ **Errore di Sistema:** Impossibile aggiornare i tuoi ruoli. Verifica che il ruolo del bot sia posizionato più in alto dei ruoli da assegnare nelle impostazioni del server.",
+                content: "❌ **Errore di Sistema:** Impossibile aggiornare i tuoi ruoli. Verifica che la gerarchia dei ruoli del bot sia posizionata sopra i ruoli da assegnare.",
                 flags: MessageFlags.Ephemeral
             });
         }
     }
 };
-            

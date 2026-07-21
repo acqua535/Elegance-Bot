@@ -12,7 +12,7 @@ const {
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
-// Configurazione globale/permanente in memoria
+// Configurazione globale
 global.applyConfig = global.applyConfig || {
     targetChannel: null,
     enabled: true
@@ -44,7 +44,7 @@ module.exports = {
                 .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
                 .setDescription(
                     "Da questo pannello puoi attivare/disattivare il sistema e impostare il canale dove lo Staff riceverà le candidature inoltrate.\n\n" +
-                    `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "`Non impostato (Usa uno dei bottoni sotto)`"}\n` +
+                    `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
                     `• **Stato Candidature:** ${global.applyConfig.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
                 )
                 .setColor(0x00FF99)
@@ -105,7 +105,7 @@ module.exports = {
         }
     },
 
-    // Gestore dei Bottoni
+    // Gestore Bottoni
     async buttonHandler(interaction) {
         const { customId, channel, guild, user } = interaction;
 
@@ -232,7 +232,7 @@ module.exports = {
         }
     },
 
-    // Gestore dell'Invia Modals (Sia ID Canale che Form Candidatura)
+    // Gestore Invio Modal
     async modalHandler(interaction) {
         const { customId, guild, user } = interaction;
 
@@ -259,12 +259,18 @@ module.exports = {
             const ans3 = interaction.fields.getTextInputValue("apply_q3");
             const ans4 = interaction.fields.getTextInputValue("apply_q4");
 
-            const targetChanId = global.applyConfig.targetChannel || guild.systemChannelId;
-            const targetChannel = guild.channels.cache.get(targetChanId);
+            if (!global.applyConfig.targetChannel) {
+                return interaction.reply({
+                    content: "❌ **Errore di Configurazione:** Il canale per ricevere le risposte non è stato impostato! Avvisa gli Admin di usare `/apply panel`.",
+                    flags: MessageFlags.Ephemeral
+                });
+            }
+
+            const targetChannel = guild.channels.cache.get(global.applyConfig.targetChannel);
 
             if (!targetChannel) {
                 return interaction.reply({
-                    content: "❌ **Errore:** Il canale di destinazione delle candidature non è stato impostato dallo Staff. Usa `/apply panel` prima!",
+                    content: "❌ **Errore:** Il canale impostato per le candidature non esiste più o il bot non ha i permessi per vederlo.",
                     flags: MessageFlags.Ephemeral
                 });
             }
@@ -307,13 +313,13 @@ module.exports = {
         }
     },
 
-    // Helper aggiornamento messaggio del pannello
+    // Helper per aggiornare il pannello
     async updatePanelMessage(interaction) {
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
             .setDescription(
                 "Configurazione aggiornata con successo!\n\n" +
-                `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "`Non impostato (Usa uno dei bottoni sotto)`"}\n` +
+                `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
                 `• **Stato Candidature:** ${global.applyConfig.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
             )
             .setColor(0x00FF99);

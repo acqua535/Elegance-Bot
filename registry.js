@@ -1,11 +1,24 @@
 const ticket = require("./ticket");
-const games = require("./minigame");
+const games = require("./minigame"); // Punta al nostro minigame.js aggiornato
 const verify = require("./verify");
 const entry = require("./entry");
 const invites = require("./invites");
 const apply = require("./apply");
 
-module.exports = {
+module.exports = async (interaction) => {
+    // 1. Intercetta il Menu a tendina dell'Hub dei minigiochi
+    if (interaction.isStringSelectMenu() && interaction.customId === 'game_hub_select') {
+        return await games.handleGameInteraction(interaction);
+    }
+
+    // Seleziona la rotta in base al customId del pulsante o menu standard
+    const handler = registryMap[interaction.customId];
+    if (handler) {
+        return await handler(interaction);
+    }
+};
+
+const registryMap = {
     // --- TICKET ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage": ticket.buttonHandler,
@@ -17,16 +30,6 @@ module.exports = {
     "rate_good": ticket.ratingHandler,
     "rate_mid": ticket.ratingHandler,
     "rate_bad": ticket.ratingHandler,
-
-    // --- GIOCHI ---
-    "game_quiz": games.quizGame,
-    "game_memory": games.memoryGame,
-    "game_word": games.wordGame,
-    "game_reaction": games.reactionGame,
-    "game_hangman": games.hangmanGame,
-    "word_easy": (i) => games.startWordGame(i, "facile"),
-    "word_medium": (i) => games.startWordGame(i, "medio"),
-    "word_hard": (i) => games.startWordGame(i, "difficile"),
 
     // --- VERIFICA / CAPTCHA ---
     "verify_button": verify.buttonHandler,
@@ -49,3 +52,4 @@ module.exports = {
     "apply_accept": apply.buttonHandler,
     "apply_reject": apply.buttonHandler
 };
+    

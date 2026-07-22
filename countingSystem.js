@@ -27,33 +27,48 @@ module.exports = (client) => {
         // ==========================================
         if (countingChannelId && message.channel.id === countingChannelId) {
             const input = message.content.trim();
+            const expectedNumber = currentNumber + 1;
 
-            // Controllo: deve contenere SOLO cifre
+            // ❌ Errore 1: Ha scritto del testo invece di soli numeri
             if (!/^\d+$/.test(input)) {
                 await message.delete().catch(() => {});
+                
+                // Salviamo il record raggiunto prima del reset
+                const oldRecord = currentNumber;
+                currentNumber = 0;
+                lastUserId = null;
+
+                const failMsg = await message.channel.send(`💥 ${message.author} ha scritto del testo invece di un numero! Il conteggio si è azzerato! Si riparte da **1** (Record raggiunto: **${oldRecord}**).`);
                 return;
             }
 
             const num = parseInt(input, 10);
-            const expectedNumber = currentNumber + 1;
 
-            // Se l'utente scrive due volte di seguito
+            // ❌ Errore 2: Ha contato due volte di fila
             if (message.author.id === lastUserId) {
-                await message.delete().catch(() => {});
-                const warningMsg = await message.channel.send(`⚠️ ${message.author}, non puoi contare due volte di fila! Lascia fare ad un altro utente.`);
-                setTimeout(() => warningMsg.delete().catch(() => {}), 4000);
+                await message.react("❌").catch(() => {});
+                
+                const oldRecord = currentNumber;
+                currentNumber = 0;
+                lastUserId = null;
+
+                await message.channel.send(`💥 ${message.author} ha contato due volte di seguito! Il conteggio si azzera! Si riparte da **1** (Record raggiunto: **${oldRecord}**).`);
                 return;
             }
 
-            // Se il numero è sbagliato
+            // ❌ Errore 3: Numero sbagliato
             if (num !== expectedNumber) {
-                await message.delete().catch(() => {});
-                const warningMsg = await message.channel.send(`❌ Numero errato, ${message.author}! Il prossimo numero da inserire è **${expectedNumber}**.`);
-                setTimeout(() => warningMsg.delete().catch(() => {}), 4000);
+                await message.react("❌").catch(() => {});
+                
+                const oldRecord = currentNumber;
+                currentNumber = 0;
+                lastUserId = null;
+
+                await message.channel.send(`💥 ${message.author} ha sbagliato numero (ha scritto **${num}** invece di **${expectedNumber}**)! Il conteggio si azzera! Si riparte da **1** (Record raggiunto: **${oldRecord}**).`);
                 return;
             }
 
-            // Successo! Aggiorniamo il punteggio
+            // ✅ SUCCESSO!
             currentNumber = expectedNumber;
             lastUserId = message.author.id;
             await message.react("✅").catch(() => {});
@@ -102,35 +117,52 @@ module.exports = (client) => {
 
             // Se la sessione AI è attiva, gestiamo i numeri
             if (aiSessionActive) {
-                // Controllo: deve contenere SOLO cifre
+                const expectedNumber = aiCurrentNumber + 1;
+
+                // ❌ Errore AI 1: Testo invece di numeri
                 if (!/^\d+$/.test(content)) {
-                    await message.delete().catch(() => {});
+                    await message.react("❌").catch(() => {});
+                    
+                    const oldRecord = aiCurrentNumber;
+                    aiCurrentNumber = 0;
+                    aiLastTurn = null;
+
+                    await message.channel.send(`💥 ${message.author}, hai inviato del testo! La sfida AI si azzera! Si riparte da **1** (Punteggio raggiunto: **${oldRecord}**).`);
                     return;
                 }
 
                 const num = parseInt(content, 10);
-                const expectedNumber = aiCurrentNumber + 1;
 
+                // ❌ Errore AI 2: L'utente scrive due numeri di fila prima dell'AI
                 if (aiLastTurn === "user") {
-                    await message.delete().catch(() => {});
-                    const warningMsg = await message.channel.send(`⚠️ ${message.author}, attendi che la risposta dell'AI prima di inviare un altro numero!`);
-                    setTimeout(() => warningMsg.delete().catch(() => {}), 4000);
+                    await message.react("❌").catch(() => {});
+                    
+                    const oldRecord = aiCurrentNumber;
+                    aiCurrentNumber = 0;
+                    aiLastTurn = null;
+
+                    await message.channel.send(`💥 ${message.author}, non hai aspettato l'AI! Conteggio azzerato! Si riparte da **1** (Punteggio raggiunto: **${oldRecord}**).`);
                     return;
                 }
 
+                // ❌ Errore AI 3: Numero sbagliato
                 if (num !== expectedNumber) {
-                    await message.delete().catch(() => {});
-                    const warningMsg = await message.channel.send(`❌ Numero sbagliato! Devi inserire **${expectedNumber}**.`);
-                    setTimeout(() => warningMsg.delete().catch(() => {}), 4000);
+                    await message.react("❌").catch(() => {});
+                    
+                    const oldRecord = aiCurrentNumber;
+                    aiCurrentNumber = 0;
+                    aiLastTurn = null;
+
+                    await message.channel.send(`💥 ${message.author}, numero errato! Volevo **${expectedNumber}** ma hai scritto **${num}**. Conteggio azzerato! Si riparte da **1** (Punteggio raggiunto: **${oldRecord}**).`);
                     return;
                 }
 
-                // Numero utente valido!
+                // ✅ Numero utente valido!
                 aiCurrentNumber = expectedNumber;
                 aiLastTurn = "user";
                 await message.react("✅").catch(() => {});
 
-                // Il bot risponde subito con il numero successivo
+                // Risposta automatica dell'AI dopo 1 secondo
                 setTimeout(async () => {
                     aiCurrentNumber += 1;
                     aiLastTurn = "bot";
@@ -140,4 +172,3 @@ module.exports = (client) => {
         }
     });
 };
-          

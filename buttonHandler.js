@@ -1,8 +1,14 @@
 const registry = require("./registry");
 const apply = require("./apply");
+const games = require("./minigame");
 
 module.exports = async (interaction) => {
     const customId = interaction.customId;
+
+    // Gestione speciale per i menu a tendina dell'Hub minigiochi
+    if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
+        return await games.handleGameInteraction(interaction);
+    }
 
     // Gestione speciale dei pulsanti candidatura con ID dinamico (es: apply_accept_123456)
     if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {

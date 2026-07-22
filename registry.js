@@ -6,7 +6,7 @@ const invites = require("./invites");
 const apply = require("./apply");
 
 module.exports = async (interaction) => {
-    // 1. Intercetta il Menu a tendina dell'Hub dei minigiochi
+    // 1. Intercetta il Menu a tendina dell'Hub dei minigiochi o altri select menu globali
     if (interaction.isStringSelectMenu() && interaction.customId === 'game_hub_select') {
         return await games.handleGameInteraction(interaction);
     }
@@ -52,4 +52,3 @@ const registryMap = {
     "apply_accept": apply.buttonHandler,
     "apply_reject": apply.buttonHandler
 };
-    

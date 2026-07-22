@@ -63,7 +63,6 @@ module.exports = {
             return interaction.reply({ content: "❌ **Accesso Negato:** Questo comando non può essere eseguito in questo canale.", flags: MessageFlags.Ephemeral });
         }
 
-        // 🌟 EMBED PRINCIPALE (/ticket) MOLTO ARRICCHITO
         const embed = new EmbedBuilder()
             .setTitle("🛡️ ELEGANCE SPONSORING ── CENTER ASSISTANCE")
             .setDescription(
@@ -76,26 +75,10 @@ module.exports = {
                 "• ⚠️ **Uso Responsabile:** Aprire ticket inutili, goliardici o privi di senso porterà a sanzioni disciplinari o al blacklist dal supporto."
             )
             .addFields(
-                { 
-                    name: "💎 ── Servizi & Pass VIP", 
-                    value: "📊 *Richiedi informazioni sui nostri servizi esclusivi, attivazione pacchetti VIP o assistenza sui pagamenti effettuati.*", 
-                    inline: false 
-                },
-                { 
-                    name: "🤝 ── Partnership & Sponsoring", 
-                    value: "📈 *Invia le tue proposte commerciali, accordi di collaborazione o richieste di sponsorship per la tua community/brand.*", 
-                    inline: false 
-                },
-                { 
-                    name: "🐛 ── Bug & Problemi Tecnici", 
-                    value: "🔧 *Segnala errori di sistema, malfunzionamenti dei bot o problematiche tecniche riscontrate nei nostri canali.*", 
-                    inline: false 
-                },
-                { 
-                    name: "🚨 ── Segnalazioni & Report Staff", 
-                    value: "🛡️ *Invia segnalazioni riservate riguardanti utenti scorretti, tentativi di truffa o violazioni del regolamento.*", 
-                    inline: false 
-                }
+                { name: "💎 ── Servizi & Pass VIP", value: "📊 *Richiedi informazioni sui nostri servizi esclusivi, attivazione pacchetti VIP o assistenza sui pagamenti effettuati.*", inline: false },
+                { name: "🤝 ── Partnership & Sponsoring", value: "📈 *Invia le tue proposte commerciali, accordi di collaborazione o richieste di sponsorship per la tua community/brand.*", inline: false },
+                { name: "🐛 ── Bug & Problemi Tecnici", value: "🔧 *Segnala errori di sistema, malfunzionamenti dei bot o problematiche tecniche riscontrate nei nostri canali.*", inline: false },
+                { name: "🚨 ── Segnalazioni & Report Staff", value: "🛡️ *Invia segnalazioni riservate riguardanti utenti scorretti, tentativi di truffa o violazioni del regolamento.*", inline: false }
             )
             .setColor(0x2f3136)
             .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
@@ -117,7 +100,7 @@ module.exports = {
         await interaction.reply({ embeds: [embed], components: [row] });
     },
 
-    async categoryHandler(interaction) {
+        async categoryHandler(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
         const type = interaction.values[0];
@@ -134,7 +117,6 @@ module.exports = {
             ]
         });
 
-        // Salvataggio metadati
         const data = getData();
         data[channel.id] = { 
             owner: interaction.user.id, 
@@ -161,7 +143,6 @@ module.exports = {
             .setTimestamp();
         await sendSystemLog(interaction.guild, openLogEmbed);
 
-        // 🌟 EMBED BENVENUTO NEL CANALE TICKET MOLTO ARRICCHITO
         const welcomeEmbed = new EmbedBuilder()
             .setTitle(`🎫 BENVENUTO NEL SUPPORTO ── [${type.toUpperCase()}]`)
             .setDescription(
@@ -170,8 +151,8 @@ module.exports = {
                 "Un membro del nostro Staff prende in carico le richieste nell'ordine di arrivo. Nel frattempo, segui le istruzioni sottostanti per velocizzare l'operazione.\n\n" +
                 "📜 **Regolamento del Canale di Assistenza:**\n" +
                 "1️⃣ **Non Pingare lo Staff:** I solleciti continui rallentano il supporto. Utilizza il pulsante `📢 Notifica Staff` solo se strettamente necessario.\n" +
-                "2️⃣ **Sii Dettagliato:** Fornisci subito tutte le informazioni necessarie (screenshot, video o ID) senza attendere che ti vengano chieste.\n" +
-                "3️⃣ **Rispetto ed Educazione:** Mantiensiti educato. L'uso di un linguaggio offensivo comporterà la chiusura immediata del ticket e provvedimenti disciplinari."
+                "2️⃣ **Sii Dettagliato:** Fornisci subito tutte le informazioni necessarie senza attendere che ti vengano chieste.\n" +
+                "3️⃣ **Rispetto ed Educazione:** Mantiensiti educato. Linguaggio offensivo comporterà la chiusura e sanzioni."
             )
             .addFields(
                 { name: "👤 Richiedente", value: `${interaction.user}`, inline: true },
@@ -191,12 +172,10 @@ module.exports = {
 
         await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [welcomeEmbed], components: [row] });
 
-        // Messaggio guidato del Bot
         await channel.send({
-            content: `🤖 **Assistente Virtuale Elegance:**\nCiao ${interaction.user}! Per permettere allo Staff di aiutarti nel minor tempo possibile, abbiamo avviato un rapido questionario di 3 domande specifiche per la categoria **${type.toUpperCase()}**.\n\n👉 **Digita \`inizia\` qui sotto in chat per avviare le domande.**`
+            content: `🤖 **Assistente Virtuale Elegance:**\nCiao ${interaction.user}! Per permettere allo Staff di aiutarti nel minor tempo possibile, abbiamo avviato un rapido questionario di 3 domande per la categoria **${type.toUpperCase()}**.\n\n👉 **Digita \`inizia\` qui sotto in chat per avviare le domande.**`
         });
 
-        // 🎯 RISPOSTA RICHIESTA: Ticket creato: #ticket
         return interaction.editReply({ content: `Ticket creato: ${channel}` });
     },
 
@@ -210,12 +189,10 @@ module.exports = {
 
         ticket.lastMessage = Date.now();
 
-        // Se il questionario è attivo ed è l'utente del ticket a scrivere
         if (ticket.questionnaire && ticket.owner === message.author.id && ticket.questionnaire.step !== -1) {
             const q = ticket.questionnaire;
             const questions = CATEGORY_QUESTIONS[ticket.type] || CATEGORY_QUESTIONS['servizi'];
 
-            // Step 0: Attesa di "inizia"
             if (q.step === 0) {
                 if (message.content.trim().toLowerCase() === 'inizia') {
                     q.step = 1;
@@ -229,7 +206,6 @@ module.exports = {
                 return;
             }
 
-            // Step 1..3: Raccolta risposte
             if (q.step >= 1 && q.step <= 3) {
                 q.answers.push({ question: questions[q.step - 1], answer: message.content });
 
@@ -238,7 +214,6 @@ module.exports = {
                     saveData(data);
                     await message.channel.send({ content: `📝 **Risposta registrata!**\n\n**Domanda ${q.step}/3:** ${questions[q.step - 1]}` });
                 } else {
-                    // Questionario Completato
                     q.step = -1;
                     saveData(data);
 
@@ -254,7 +229,7 @@ module.exports = {
                     });
 
                     await message.channel.send({ 
-                        content: `✨ **Questionario completato con successo!** Le tue risposte sono state registrate e trasmesse allo staff. A breve un operatore prenderà in carico la richiesta.`, 
+                        content: `✨ **Questionario completato con successo!** Le tue risposte sono state registrate. A breve un operatore prenderà in carico la richiesta.`, 
                         embeds: [summaryEmbed] 
                     });
                 }
@@ -271,14 +246,14 @@ module.exports = {
         const ticket = data[interaction.channel.id];
         
         if (!ticket) {
-            const errText = "❌ **Errore Critico:** Impossibile trovare i metadati associati a questo ticket nei registri di sistema.";
+            const errText = "❌ **Errore:** Impossibile trovare i dati del ticket.";
             if (interaction.deferred || interaction.replied) return interaction.editReply({ content: errText });
             return interaction.reply({ content: errText, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'ping_staff') {
             if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
-                const msg = "⏳ **Cooldown Attivo:** È possibile sollecitare l'intervento dello staff solo una volta ogni 24 ore.";
+                const msg = "⏳ **Cooldown:** Puoi sollecitare lo staff solo una volta ogni 24 ore.";
                 if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
                 return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
             }
@@ -286,25 +261,25 @@ module.exports = {
             saveData(data);
             
             await interaction.channel.send({ 
-                content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento dello staff in questo canale!` 
+                content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento dello staff!` 
             });
 
             const pingLogEmbed = new EmbedBuilder()
                 .setTitle("📢 SOLLECITO STAFF")
-                .setDescription(`Un utente ha sollecitato l'intervento nel canale ${interaction.channel}`)
+                .setDescription(`Sollecito nel canale ${interaction.channel}`)
                 .addFields({ name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true })
                 .setColor(0xFFA500)
                 .setTimestamp();
             await sendSystemLog(interaction.guild, pingLogEmbed);
 
-            const okMsg = "✅ Sollecito inviato con successo allo staff!";
+            const okMsg = "✅ Sollecito inviato allo staff!";
             if (interaction.deferred || interaction.replied) return interaction.editReply({ content: okMsg });
             return interaction.reply({ content: okMsg, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'claim_ticket') {
             if (ticket.claimedBy) {
-                const msg = `⚠️ **Attenzione:** Questo ticket è già stato preso in carico da <@${ticket.claimedBy}>.`;
+                const msg = `⚠️ **Attenzione:** Ticket già in carico a <@${ticket.claimedBy}>.`;
                 if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
                 return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
             }
@@ -313,7 +288,7 @@ module.exports = {
             
             const claimLogEmbed = new EmbedBuilder()
                 .setTitle("🛡️ TICKET PRESO IN CARICO")
-                .setDescription(`Il ticket ${interaction.channel} è stato assegnato a un membro dello staff.`)
+                .setDescription(`Il ticket ${interaction.channel} è stato preso in carico.`)
                 .addFields(
                     { name: "Staff", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
                     { name: "Canale", value: `${interaction.channel.name}`, inline: true }
@@ -322,13 +297,13 @@ module.exports = {
                 .setTimestamp();
             await sendSystemLog(interaction.guild, claimLogEmbed);
 
-            const msg = `🛡️ **Ticket Preso in Carico:** Il presente canale di assistenza è ora gestito ufficialmente da ${interaction.user}.`;
+            const msg = `🛡️ **Ticket Preso in Carico:** Gestito ora da ${interaction.user}.`;
             if (interaction.deferred || interaction.replied) return interaction.editReply({ content: msg });
             return interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
         }
 
         if (id === 'close_ticket') {
-            const startMsg = "🔒 **Procedura di chiusura avviata:** Estrazione log chat e generazione report in corso...";
+            const startMsg = "🔒 **Chiusura avviata:** Generazione transcript...";
             if (interaction.deferred || interaction.replied) {
                 await interaction.editReply({ content: startMsg });
             } else {
@@ -346,20 +321,70 @@ module.exports = {
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     await ownerUser.send({
-                        content: `📜 **Report di Trascrizione Ufficiale**\nIl tuo ticket **[${ticket.type.toUpperCase()}]** nel server **${interaction.guild.name}** è stato chiuso. In allegato trovi lo storico dei messaggi.`,
+                        content: `📜 **Report Trascrizione Ticket**\nIl tuo ticket **[${ticket.type.toUpperCase()}]** in **${interaction.guild.name}** è stato chiuso.`,
                         files: [{ attachment: transcriptBuffer, name: transcriptFileName }]
                     }).catch(() => {});
                 }
             } catch (err) {
-                console.error("[ERROR_TRANSCRIPT] Errore nella generazione del transcript:", err);
+                console.error("[ERROR_TRANSCRIPT]", err);
             }
 
             const closeLogEmbed = new EmbedBuilder()
                 .setTitle("🔒 TICKET CHIUSO")
-                .setDescription(`Il ticket \`#${interaction.channel.name}\` è stato chiuso da ${interaction.user}.`)
+                .setDescription(`Canale \`#${interaction.channel.name}\` chiuso da ${interaction.user}.`)
                 .addFields(
                     { name: "Categoria", value: `\`${ticket.type.toUpperCase()}\``, inline: true },
                     { name: "Creatore", value: `<@${ticket.owner}>`, inline: true }
                 )
                 .setColor(0xFF0000)
-                .s
+                .setTimestamp();
+
+            const logFiles = transcriptBuffer ? [{ attachment: transcriptBuffer, name: transcriptFileName }] : [];
+            await sendSystemLog(interaction.guild, closeLogEmbed, logFiles);
+
+            const ratingEmbed = new EmbedBuilder()
+                .setTitle("⭐ VALUTAZIONE SUPPORTO")
+                .setDescription("Valuta l'assistenza ricevuta cliccando su uno dei pulsanti:")
+                .setColor(0xFFD700)
+                .setTimestamp();
+
+            const ratingRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder().setCustomId('rate_good').setLabel('⭐ Ottimo').setStyle(ButtonStyle.Success),
+                new ButtonBuilder().setCustomId('rate_mid').setLabel('⭐ Medio').setStyle(ButtonStyle.Secondary),
+                new ButtonBuilder().setCustomId('rate_bad').setLabel('⭐ Scadente').setStyle(ButtonStyle.Danger)
+            );
+
+            await interaction.channel.send({ embeds: [ratingEmbed], components: [ratingRow] }).catch(() => {});
+
+            ticket.status = 'closed';
+            saveData(data);
+
+            const targetChannel = interaction.channel;
+            if (targetChannel) {
+                setTimeout(() => {
+                    targetChannel.delete().catch(() => {});
+                }, 5000);
+            }
+        }
+    },
+
+    async ratingHandler(interaction) {
+        const ratingType = interaction.customId.replace('rate_', '').toUpperCase();
+        
+        const ratingLogEmbed = new EmbedBuilder()
+            .setTitle("⭐ VALUTAZIONE RICEVUTA")
+            .setDescription(`Valutazione per \`#${interaction.channel.name}\``)
+            .addFields(
+                { name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
+                { name: "Valutazione", value: `**${ratingType}**`, inline: true }
+            )
+            .setColor(0xFFD700)
+            .setTimestamp();
+        await sendSystemLog(interaction.guild, ratingLogEmbed);
+
+        const content = `⭐ **Grazie!** La tua valutazione è stata registrata.`;
+        if (interaction.deferred || interaction.replied) return interaction.editReply({ content });
+        return interaction.reply({ content, flags: MessageFlags.Ephemeral });
+    }
+};
+                                               

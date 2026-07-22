@@ -1,7 +1,8 @@
 // minigame.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
 const inventory = require('./inventory');
-const achievements = require('./achievements');
+const path = require('path');
+const achievements = require(path.join(__dirname, 'achievements.js'));
 
 const QUIZ_QUESTIONS = [
     { q: "Qual è il pianeta più vicino al Sole?", options: ["Venere", "Mercurio", "Marte", "Terra"], answer: "Mercurio" },

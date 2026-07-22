@@ -7,18 +7,25 @@ const LOG_CHANNEL_ID = "1528576197741772902";
 // 📌 ID DEL RUOLO AUTORIZZATO A MANDARE LINK
 const ALLOWED_ROLE_ID = "1528576014446231683";
 
+// 📌 LISTA CANALI AUTORIZZATI (Dove i link sono permessi a tutti)
+const ALLOWED_CHANNELS = [
+    "1528576184785305600",
+    "1528576181295906826",
+    "1528576179177787642"
+];
+
 module.exports = (client) => {
     client.on("messageCreate", async (message) => {
         try {
             // Ignora bot e messaggi privati
             if (message.author.bot || !message.guild) return;
 
-            // 🔓 ESENZIONI: Amministratori O chi possiede il ruolo specificato possono inviare link
-            const isAuthorized = 
-                message.member?.permissions.has("Administrator") || 
-                message.member?.roles.cache.has(ALLOWED_ROLE_ID);
+            // 🔓 ESENZIONE 1: Il messaggio si trova in uno dei canali consentiti
+            if (ALLOWED_CHANNELS.includes(message.channel.id)) return;
 
-            if (isAuthorized) return;
+            // 🔓 ESENZIONE 2: L'utente possiede il ruolo autorizzato
+            const hasAllowedRole = message.member?.roles.cache.has(ALLOWED_ROLE_ID);
+            if (hasAllowedRole) return;
 
             const content = message.content;
 

@@ -1,175 +1,64 @@
-const {
-    SlashCommandBuilder,
-    EmbedBuilder
-} = require("discord.js");
+// inventory.js
+const usersDB = new Map();
 
-
-const gameSystem = require("./gameSystem");
-
-
+function initUser(userId) {
+    if (!usersDB.has(userId)) {
+        usersDB.set(userId, {
+            xp: 0,
+            coins: 0,
+            items: {}, // Es. { "Legno": 5, "Spada": 1 }
+            achievements: [], // Array di ID achievement sbloccati
+            stats: {
+                messages: 0,
+                invites: 0,
+                gamesPlayed: 0,
+                gamesWon: 0,
+                bombsDefused: 0,
+                quizzesWon: 0
+            }
+        });
+    }
+    return usersDB.get(userId);
+}
 
 module.exports = {
-
-
-    data: new SlashCommandBuilder()
-
-        .setName("inventory")
-
-        .setDescription(
-            "Mostra il tuo profilo gaming, inventario e ricompense"
-        ),
-
-
-
-    async execute(interaction) {
-
-
-        const userId =
-        interaction.user.id;
-
-
-
-        const profile =
-        gameSystem.getProfile(userId);
-
-
-
-        const items =
-        profile.inventory &&
-        profile.inventory.length > 0
-
-        ?
-
-        profile.inventory.join("\n")
-
-        :
-
-        "🎁 Nessun oggetto ottenuto";
-
-
-
-
-
-        const achievements =
-
-        profile.achievements &&
-        profile.achievements.length > 0
-
-        ?
-
-        profile.achievements
-        .map(
-            a => `🏆 ${a}`
-        )
-        .join("\n")
-
-        :
-
-        "🔒 Nessun achievement sbloccato";
-
-
-
-
-
-
-        const embed =
-
-        new EmbedBuilder()
-
-
-
-        .setTitle(
-            `🎒 Inventario di ${interaction.user.username}`
-        )
-
-
-
-        .setThumbnail(
-
-            interaction.user.displayAvatarURL({
-
-                dynamic:true
-
-            })
-
-        )
-
-
-
-        .setDescription(
-
-`
-━━━━━━━━━━━━━━━━━━
-
-🪙 **Monete**
-
-${profile.coins || 0}
-
-
-━━━━━━━━━━━━━━━━━━
-
-🎁 **Oggetti**
-
-${items}
-
-
-━━━━━━━━━━━━━━━━━━
-
-🏆 **Achievement**
-
-${achievements}
-
-
-━━━━━━━━━━━━━━━━━━
-
-🎮 **Statistiche Gaming**
-
-🎲 Partite:
-${profile.games || 0}
-
-🏆 Vittorie:
-${profile.wins || 0}
-
-❌ Sconfitte:
-${profile.losses || 0}
-
-
-━━━━━━━━━━━━━━━━━━
-
-🔥 **Streak**
-
-Attuale:
-${profile.streak || 0}
-
-Record:
-${profile.bestStreak || 0}
-
-
-━━━━━━━━━━━━━━━━━━
-
-Continua a giocare per ottenere nuove ricompense! ⚜️
-`
-
-        )
-
-
-
-        .setColor("Gold");
-
-
-
-
-
-        await interaction.reply({
-
-            embeds:[
-                embed
-            ]
-
-        });
-
-
+    getUser: (userId) => initUser(userId),
+    
+    addXP: (userId, amount) => {
+        const user = initUser(userId);
+        user.xp += amount;
+        return user.xp;
+    },
+    
+    addCoins: (userId, amount) => {
+        const user = initUser(userId);
+        user.coins += amount;
+        return user.coins;
+    },
+    
+    addItem: (userId, item, quantity = 1) => {
+        const user = initUser(userId);
+        user.items[item] = (user.items[item] || 0) + quantity;
+        return user.items[item];
+    },
+    
+    incrementStat: (userId, statName, amount = 1) => {
+        const user = initUser(userId);
+        if (user.stats[statName] !== undefined) {
+            user.stats[statName] += amount;
+        }
+    },
+    
+    hasAchievement: (userId, achId) => {
+        return initUser(userId).achievements.includes(achId);
+    },
+    
+    unlockAchievement: (userId, achId) => {
+        const user = initUser(userId);
+        if (!user.achievements.includes(achId)) {
+            user.achievements.push(achId);
+            return true; // Sbloccato ora
+        }
+        return false; // Già sbloccato
     }
-
-
 };

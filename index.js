@@ -6,8 +6,8 @@ const deployCommands = require("./deployCommand");
 const buttonHandler = require("./buttonHandler");
 const entry = require("./entry");
 const invites = require("./invites");
-const logSystem = require("./logSystem"); // Sistema di log unico
-const countingSystem = require("./countingSystem"); // 1. Importiamo il file qui in alto!
+const logSystem = require("./logSystem"); 
+const countingSystem = require("./countingSystem"); 
 
 const client = new Client({
     intents: [
@@ -15,12 +15,12 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.MessageContent,   // Legge il contenuto dei messaggi per i numeri del Counting e i Log
-        GatewayIntentBits.GuildVoiceStates, // Traccia entrate/uscite/spostamenti nelle vocali
-        GatewayIntentBits.GuildBans         // Traccia i ban degli utenti
+        GatewayIntentBits.MessageContent,
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildBans
     ],
     partials: [
-        Partials.Message,      // Intercetta anche messaggi vecchi o non in cache
+        Partials.Message,
         Partials.Channel,
         Partials.Reaction,
         Partials.GuildMember
@@ -32,7 +32,6 @@ client.commands = new Collection();
 client.once("ready", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
-    // Inizializzazione della mappa degli inviti
     client.guilds.cache.forEach(guild => {
         invites.initInvites(guild);
     });
@@ -40,9 +39,8 @@ client.once("ready", async () => {
     await deployCommands();
     loadCommands(client);
 
-    // Inizializzazione dei sistemi di eventi
     logSystem(client);
-    countingSystem(client); // 2. Lo attiviamo QUI dove 'client' esiste già!
+    countingSystem(client);
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
@@ -62,7 +60,6 @@ client.on("interactionCreate", async (interaction) => {
         }
 
         if (interaction.isModalSubmit()) {
-            // Modal Verifica / Captcha
             if (interaction.customId.startsWith("verify_modal_")) {
                 const verifyCmd = client.commands.get("verify");
                 if (verifyCmd && verifyCmd.modalHandler) {
@@ -70,7 +67,6 @@ client.on("interactionCreate", async (interaction) => {
                 }
             }
 
-            // Modal Form Candidature
             if (interaction.customId === "apply_form_modal") {
                 const applyCmd = client.commands.get("apply");
                 if (applyCmd && applyCmd.modalHandler) {
@@ -79,6 +75,7 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
+        // Gestisce pulsanti e menu a tendina (incluso il nuovo hub dei minigiochi)
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
@@ -114,4 +111,3 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
-                

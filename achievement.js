@@ -1,350 +1,105 @@
-// =====================================
-// ELEGANCE BOT - ACHIEVEMENT SYSTEM
-// =====================================
+// achievements.js
+const inventory = require("./inventory");
 
+const ACHIEVEMENTS = {
+    // ==========================================
+    // 💬 SERVER & CHAT (Attività globale)
+    // ==========================================
+    "socializzazione": { title: "👋 Rottura del Ghiaccio", desc: "Hai inviato il tuo primo messaggio!", req: (stats) => stats.messages >= 1 },
+    "chiacchierone": { title: "🗣️ Chiacchierone", desc: "Hai inviato 50 messaggi nel server.", req: (stats) => stats.messages >= 50 },
+    "oratore": { title: "🎙️ Oratore Seriale", desc: "Hai inviato 500 messaggi! Ormai vivi qui.", req: (stats) => stats.messages >= 500 },
+    "spammone": { title: "⌨️ Tastiera Infuocata", desc: "Hai raggiunto 2.000 messaggi! Riposati un po'.", req: (stats) => stats.messages >= 2000 },
+    
+    "primo_invito": { title: "💌 Reclutatore Novizio", desc: "Hai invitato la tua prima persona nel server.", req: (stats) => stats.invites >= 1 },
+    "influencer": { title: "🌟 Influencer", desc: "Hai invitato ben 10 persone nel server!", req: (stats) => stats.invites >= 10 },
 
-const achievements = {
+    // ==========================================
+    // 💰 ECONOMIA 
+    // ==========================================
+    "risparmiatore": { title: "🪙 Risparmiatore", desc: "Hai accumulato le tue prime 500 monete.", req: (stats, user) => user.coins >= 500 },
+    "capitalista": { title: "💸 Zio Paperone", desc: "Hai raggiunto 5.000 monete nel portafoglio!", req: (stats, user) => user.coins >= 5000 },
 
-
-    // =========================
-    // GENERALI
-    // =========================
-
-
-    first_game: {
-
-        name: "🎮 Primo Passo",
-
-        description:
-        "Completa il tuo primo minigame",
-
-        reward: 50
-
+    // ==========================================
+    // ⛏️ CRAFTING & MINECRAFT VIBES
+    // ==========================================
+    "getting_wood": { 
+        title: "🪵 Getting Wood", 
+        desc: "Hai craftato il tuo primo oggetto in assoluto.", 
+        req: (stats) => stats.itemsCrafted >= 1 
+    },
+    "time_to_mine": { 
+        title: "⛏️ Time to Mine!", 
+        desc: "Hai craftato un Piccone. Ora si scava sul serio!", 
+        // Controlla se l'utente ha almeno un piccone nell'inventario
+        req: (stats, user) => (user.items["Piccone di Ferro"] || 0) >= 1 
+    },
+    "time_to_strike": { 
+        title: "⚔️ Time to Strike!", 
+        desc: "Hai craftato una Spada. I mostri tremano.", 
+        req: (stats, user) => (user.items["Spada di Metallo"] || 0) >= 1 
+    },
+    "magia_oscura": { 
+        title: "🔮 Stregone", 
+        desc: "Hai craftato l'Amuleto Magico (Oggetto Speciale).", 
+        req: (stats, user) => (user.items["Amuleto Magico"] || 0) >= 1 
+    },
+    "mastro_costruttore": { 
+        title: "🛠️ Mastro Costruttore", 
+        desc: "Hai craftato ben 20 oggetti totali.", 
+        req: (stats) => stats.itemsCrafted >= 20 
     },
 
-
-
-    games_10: {
-
-        name: "🔥 Giocatore Attivo",
-
-        description:
-        "Completa 10 minigame",
-
-        reward: 100
-
-    },
-
-
-
-    games_50: {
-
-        name: "⚔️ Veterano Gaming",
-
-        description:
-        "Completa 50 minigame",
-
-        reward: 250
-
-    },
-
-
-
-    games_100: {
-
-        name: "👑 Maestro dei Giochi",
-
-        description:
-        "Completa 100 minigame",
-
-        reward: 500
-
-    },
-
-
-
-
-
-
-    // =========================
-    // QUIZ
-    // =========================
-
-
-
-    quiz_first: {
-
-        name:"🧠 Prima Risposta",
-
-        description:
-        "Vinci il primo quiz",
-
-        reward:50
-
-    },
-
-
-
-    quiz_10: {
-
-        name:"📚 Studioso",
-
-        description:
-        "Vinci 10 quiz",
-
-        reward:150
-
-    },
-
-
-
-    quiz_30: {
-
-        name:"🏆 Enciclopedia Vivente",
-
-        description:
-        "Completa tutti i 30 quiz",
-
-        reward:500
-
-    },
-
-
-
-
-
-
-    // =========================
-    // MEMORY
-    // =========================
-
-
-
-    memory_first: {
-
-        name:"🧩 Memoria Base",
-
-        description:
-        "Vinci il primo Memory",
-
-        reward:50
-
-    },
-
-
-
-    memory_10: {
-
-        name:"🧠 Memoria Perfetta",
-
-        description:
-        "Vinci 10 Memory",
-
-        reward:200
-
-    },
-
-
-
-
-
-
-
-    // =========================
-    // PAROLA
-    // =========================
-
-
-
-    word_first: {
-
-        name:"🔤 Prima Parola",
-
-        description:
-        "Indovina la prima parola",
-
-        reward:50
-
-    },
-
-
-
-    word_10: {
-
-        name:"📖 Esperto Linguista",
-
-        description:
-        "Indovina 10 parole",
-
-        reward:200
-
-    },
-
-
-
-
-
-
-
-    // =========================
-    // REACTION
-    // =========================
-
-
-
-    reaction_first: {
-
-        name:"⚡ Riflessi Veloci",
-
-        description:
-        "Vinci il primo Reaction",
-
-        reward:50
-
-    },
-
-
-
-    reaction_5: {
-
-        name:"🚀 Velocista",
-
-        description:
-        "Vinci 5 Reaction",
-
-        reward:150
-
-    },
-
-
-
-
-
-
-
-    // =========================
-    // IMPICCATO
-    // =========================
-
-
-
-    hangman_first: {
-
-        name:"🪢 Primo Impiccato",
-
-        description:
-        "Vinci il primo Impiccato",
-
-        reward:50
-
-    },
-
-
-
-    hangman_5: {
-
-        name:"🎯 Indovino",
-
-        description:
-        "Vinci 5 Impiccati",
-
-        reward:150
-
-    },
-
-
-
-
-
-
-
-
-    // =========================
-    // STREAK
-    // =========================
-
-
-
-    streak_5: {
-
-        name:"🔥 Serie Perfetta",
-
-        description:
-        "Raggiungi 5 vittorie consecutive",
-
-        reward:200
-
-    },
-
-
-
-    streak_10: {
-
-        name:"👑 Leggenda delle Streak",
-
-        description:
-        "Raggiungi 10 vittorie consecutive",
-
-        reward:500
-
-    },
-
-
-
-
-
-
-
-    // =========================
-    // ECONOMIA
-    // =========================
-
-
-
-    rich: {
-
-        name:"🪙 Ricco",
-
-        description:
-        "Ottieni 1000 monete",
-
-        reward:200
-
-    },
-
-
-
-
-
-
-
-    // =========================
-    // FINALE
-    // =========================
-
-
-
-    ultimate_player: {
-
-        name:"🌟 Ultimate Player",
-
-        description:
-        "Sblocca tutti gli achievement",
-
-        reward:1000
-
+    // ==========================================
+    // ⭐ PROGRESSIONE GLOBALE (XP)
+    // ==========================================
+    "livello_bronzo": { title: "🥉 Rango Bronzo", desc: "Hai raggiunto 500 XP.", req: (stats, user) => user.xp >= 500 },
+    "livello_argento": { title: "🥈 Rango Argento", desc: "Hai raggiunto 2.000 XP.", req: (stats, user) => user.xp >= 2000 },
+    "livello_oro": { title: "🥇 Rango Oro", desc: "Hai raggiunto 5.000 XP.", req: (stats, user) => user.xp >= 5000 },
+    "leggenda": { title: "👑 Leggenda Vivente", desc: "Hai raggiunto i 20.000 XP. Inchinatevi!", req: (stats, user) => user.xp >= 20000 },
+
+    // ==========================================
+    // 🎮 MINIGIOCHI - GENERALI
+    // ==========================================
+    "novellino": { title: "🕹️ Insert Coin", desc: "Hai giocato al tuo primo minigioco.", req: (stats) => stats.gamesPlayed >= 1 },
+    "giocatore_assiduo": { title: "🎰 Dipendente dall'Arcade", desc: "Hai giocato a 50 minigiochi totali.", req: (stats) => stats.gamesPlayed >= 50 },
+    "vincitore_seriale": { title: "🏆 Asso Pigliatutto", desc: "Hai vinto 100 minigiochi in totale!", req: (stats) => stats.gamesWon >= 100 },
+
+    // ==========================================
+    // 🎯 MINIGIOCHI - SPECIFICI
+    // ==========================================
+    "secchione": { title: "🧠 Secchione", desc: "Hai vinto 5 Quiz.", req: (stats) => stats.quizzesWon >= 5 },
+    "tuttologo": { title: "📚 Enciclopedia Umana", desc: "Hai vinto 50 Quiz!", req: (stats) => stats.quizzesWon >= 50 },
+    "artificiere": { title: "✂️ Mani Fermissime", desc: "Hai disinnescato 3 bombe.", req: (stats) => stats.bombsDefused >= 3 },
+    "eroe_nazionale": { title: "🦸‍♂️ Eroe Nazionale", desc: "Hai salvato il server disinnescando 20 bombe!", req: (stats) => stats.bombsDefused >= 20 },
+    "mente_fotografica": { title: "📸 Mente Fotografica", desc: "Hai vinto 10 partite a Memory.", req: (stats) => stats.memoryWon >= 10 },
+    "dita_fulminee": { title: "⚡ Dita Fulminee", desc: "Hai vinto 10 partite a Reaction Game.", req: (stats) => stats.reactionWon >= 10 },
+    "salvavita": { title: "🪢 Avvocato Difensore", desc: "Hai salvato 10 omini all'Impiccato.", req: (stats) => stats.hangmanWon >= 10 },
+    "sbancatore": { title: "🎰 Jackpot!", desc: "Hai sbancato vincendo il Jackpot massimo alla Ruota!", req: (stats) => stats.jackpots >= 1 }
+};
+
+/**
+ * Controlla gli achievement di un utente e restituisce quelli appena sbloccati
+ */
+function check(userId) {
+    const user = inventory.getUser(userId);
+    const unlockedNow = [];
+
+    for (const [id, ach] of Object.entries(ACHIEVEMENTS)) {
+        if (!user.achievements.includes(id)) {
+            // Passiamo sia stats che l'oggetto user intero, così possiamo leggere l'inventario (user.items)
+            if (ach.req(user.stats, user)) {
+                inventory.unlockAchievement(userId, id);
+                unlockedNow.push(`**${ach.title}**\n*${ach.desc}*`);
+                
+                // Ricompensa per ogni achievement sbloccato
+                inventory.addCoins(userId, 50); 
+                inventory.addXP(userId, 100);
+            }
+        }
     }
 
+    return unlockedNow;
+}
 
-
-};
-
-
-
-
-
-module.exports = {
-
-    achievements
-
-};
+module.exports = { check, ACHIEVEMENTS };
+        

@@ -1,5 +1,5 @@
 // minigame.js - PARTE 1
-const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, SlashCommandBuilder } = require('discord.js');
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 // Mappa globale per l'Anti-Spam (traccia i giochi attivi degli utenti)
 const activeGames = new Map();
@@ -134,7 +134,7 @@ module.exports = {
         if (activeGames.has(userId)) {
             return interaction.reply({ 
                 content: "⚠️ **Hai già un minigioco in corso!** Termina quello attuale prima di aprirne un altro.", 
-                ephemeral: true 
+                flags: [MessageFlags.Ephemeral] 
             });
         }
 
@@ -157,7 +157,8 @@ module.exports = {
             .setTitle('🎮 Arcade & Minigames Hub')
             .setDescription('Benvenuto nel centro giochi ufficiale! Seleziona dal menu a tendina qui sotto il minigioco a cui vuoi giocare.\n\n*Nota: Puoi giocare a un gioco alla volta!*');
 
-        await interaction.reply({ embeds: [embed], components: [row], ephemeral: true });
+        // VISIBILE A TUTTI NEL CANALE (Niente Ephemeral)
+        await interaction.reply({ embeds: [embed], components: [row] });
     },
 
     async handleGameInteraction(interaction) {
@@ -189,8 +190,6 @@ module.exports = {
         }
     }
 };
-
-// [Aspetto la tua conferma o il segnale per mandarti la Parte 2 con le funzioni dei singoli giochi!]
 
 // minigame.js - PARTE 2
 
@@ -443,4 +442,4 @@ async function startWheel(interaction) {
 
     activeGames.delete(userId);
     await interaction.update({ content: null, embeds: [embed], components: [] });
-            }
+}

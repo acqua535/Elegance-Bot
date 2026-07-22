@@ -1,19 +1,28 @@
 const { EmbedBuilder } = require("discord.js");
-const moderation = require("./moderationSystem"); // 📌 Colleghiamo il sistema di moderazione centrale
+const moderation = require("./moderationSystem"); // Colleghiamo il sistema di moderazione centrale
 
 // 📌 ID DEL CANALE LOG PER L'ANTI-LINK
 const LOG_CHANNEL_ID = "1528576197741772902";
 
+// 📌 ID DEL RUOLO AUTORIZZATO A MANDARE LINK
+const ALLOWED_ROLE_ID = "1528576014446231683";
+
 module.exports = (client) => {
     client.on("messageCreate", async (message) => {
         try {
-            // Ignora bot, messaggi privati e staff/amministratori
+            // Ignora bot e messaggi privati
             if (message.author.bot || !message.guild) return;
-            if (message.member && message.member.permissions.has("Administrator")) return;
+
+            // 🔓 ESENZIONI: Amministratori O chi possiede il ruolo specificato possono inviare link
+            const isAuthorized = 
+                message.member?.permissions.has("Administrator") || 
+                message.member?.roles.cache.has(ALLOWED_ROLE_ID);
+
+            if (isAuthorized) return;
 
             const content = message.content;
 
-            // 🛡️ REGEX BLINDATA ANTI-LINK (Trova HTTP/HTTPS, WWW, Discord Invites, IP e Dominio.estensione)
+            // 🛡️ REGEX BLINDATA ANTI-LINK
             const linkRegex = /(https?:\/\/[^\s]+)|(www\.[^\s]+)|(discord\.(gg|io|me|li|com\/invite)\/[^\s]+)|([a-zA-Z0-9-]+\.(com|net|org|edu|gov|mil|int|biz|info|name|pro|tech|xyz|online|site|store|app|dev|io|co|it|fr|de|uk|es|ru|eu|me|tv|cc|tk|ml|ga|cf|gq)[^\s]*)|(\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b)/gi;
 
             if (!linkRegex.test(content)) return;

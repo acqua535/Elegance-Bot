@@ -1,1566 +1,316 @@
-// PARTE 1/2 - MINIGAME.JS
-// Base system:
-// - Minigame Hub
-// - Anti raid
-// - Quiz avanzato
-// - XP system hook
-// - Achievement hook
-// - ButtonHandler globale compatibile
+// minigame.js
+const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
+const inventory = require('./inventory');
+const achievements = require('./achievements');
 
-
-const {
-    SlashCommandBuilder,
-    EmbedBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle
-} = require("discord.js");
-
-
-const gameSystem = require("./gameSystem");
-
-
-
-// ============================
-// ACTIVE GAMES
-// ============================
-
-const activeGames = new Set();
-
-
-
-// ============================
-// RECENT GAMES
-// ============================
-
-const recentGames = {
-
-    quiz: []
-
-};
-
-
-
-// ============================
-// QUIZ DATABASE
-// ============================
-
-const quizzes = [
-
-{
-id:1,
-question:"Qual è il pianeta più grande del Sistema Solare?",
-answer:"giove"
-},
-
-{
-id:2,
-question:"Qual è la capitale d'Italia?",
-answer:"roma"
-},
-
-{
-id:3,
-question:"Quanto fa 5 + 7?",
-answer:"12"
-},
-
-{
-id:4,
-question:"Chi ha scritto la Divina Commedia?",
-answer:"dante"
-},
-
-{
-id:5,
-question:"Quanti continenti ci sono?",
-answer:"7"
-},
-
-{
-id:6,
-question:"Qual è il mammifero più grande del mondo?",
-answer:"balena azzurra"
-},
-
-{
-id:7,
-question:"Qual è il satellite naturale della Terra?",
-answer:"luna"
-},
-
-{
-id:8,
-question:"Qual è la stella più vicina alla Terra?",
-answer:"sole"
-},
-
-{
-id:9,
-question:"In che anno è iniziata la Seconda Guerra Mondiale?",
-answer:"1939"
-},
-
-{
-id:10,
-question:"Qual è la lingua più parlata al mondo?",
-answer:"cinese"
-},
-
-{
-id:11,
-question:"Qual è il simbolo chimico dell'acqua?",
-answer:"h2o"
-},
-
-{
-id:12,
-question:"Quanti lati ha un esagono?",
-answer:"6"
-},
-
-{
-id:13,
-question:"Qual è il pianeta rosso?",
-answer:"marte"
-},
-
-{
-id:14,
-question:"Chi ha inventato la lampadina?",
-answer:"edison"
-},
-
-{
-id:15,
-question:"Qual è l'animale terrestre più veloce?",
-answer:"ghepardo"
-},
-
-{
-id:16,
-question:"Qual è il continente più grande?",
-answer:"asia"
-},
-
-{
-id:17,
-question:"Quanto fa 9 x 9?",
-answer:"81"
-},
-
-{
-id:18,
-question:"Qual è la capitale della Francia?",
-answer:"parigi"
-},
-
-{
-id:19,
-question:"Qual è il colore del cielo in una giornata serena?",
-answer:"blu"
-},
-
-{
-id:20,
-question:"Quale gas respiriamo principalmente?",
-answer:"ossigeno"
-},
-
-{
-id:21,
-question:"Qual è il pianeta più vicino al Sole?",
-answer:"mercurio"
-},
-
-{
-id:22,
-question:"Quanti giorni ha un anno normale?",
-answer:"365"
-},
-
-{
-id:23,
-question:"Qual è il nome del nostro pianeta?",
-answer:"terra"
-},
-
-{
-id:24,
-question:"Quale animale viene chiamato re della savana?",
-answer:"leone"
-},
-
-{
-id:25,
-question:"Qual è la capitale della Spagna?",
-answer:"madrid"
-},
-
-{
-id:26,
-question:"Quante ore ci sono in un giorno?",
-answer:"24"
-},
-
-{
-id:27,
-question:"Qual è il più grande oceano della Terra?",
-answer:"pacifico"
-},
-
-{
-id:28,
-question:"Quale strumento misura la temperatura?",
-answer:"termometro"
-},
-
-{
-id:29,
-question:"Qual è il pianeta con gli anelli più famosi?",
-answer:"saturno"
-},
-
-{
-id:30,
-question:"Quanti colori ha l'arcobaleno?",
-answer:"7"
-}
-
+// ==========================================
+// 🧠 1. DATABASE 50 QUIZ
+// ==========================================
+const QUIZ_QUESTIONS = [
+    { q: "Qual è il pianeta più vicino al Sole?", options: ["Venere", "Mercurio", "Marte", "Terra"], answer: "Mercurio" },
+    { q: "Chi ha dipinto la Gioconda?", options: ["Michelangelo", "Leonardo da Vinci", "Raffaello", "Donatello"], answer: "Leonardo da Vinci" },
+    { q: "In quale anno è sbarcato l'uomo sulla Luna?", options: ["1965", "1969", "1972", "1980"], answer: "1969" },
+    { q: "Qual è l'elemento chimico con simbolo 'Au'?", options: ["Argento", "Rame", "Oro", "Alluminio"], answer: "Oro" },
+    { q: "Quanti continenti ci sono sulla Terra?", options: ["5", "6", "7", "8"], answer: "7" },
+    { q: "Qual è la capitale dell'Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], answer: "Canberra" },
+    { q: "Chi ha scritto la Divina Commedia?", options: ["Petrarca", "Boccaccio", "Dante Alighieri", "Manzoni"], answer: "Dante Alighieri" },
+    { q: "Quanto fa 8 x 8?", options: ["56", "64", "72", "48"], answer: "64" },
+    { q: "Qual è l'animale terrestre più veloce?", options: ["Leone", "Ghepardo", "Tigre", "Leopardo"], answer: "Ghepardo" },
+    { q: "In quale continente si trova il deserto del Sahara?", options: ["Asia", "America", "Africa", "Oceania"], answer: "Africa" },
+    { q: "Qual è il monte più alto del mondo?", options: ["K2", "Everest", "Monte Bianco", "Kilimangiaro"], answer: "Everest" },
+    { q: "Qual è il simbolo chimico dell'Acqua?", options: ["CO2", "H2O", "O2", "NaCl"], answer: "H2O" },
+    { q: "Quanti lati ha un esagono?", options: ["5", "6", "7", "8"], answer: "6" },
+    { q: "Qual è il paese più esteso al mondo?", options: ["Cina", "Stati Uniti", "Canada", "Russia"], answer: "Russia" },
+    { q: "Chi ha inventato la lampadina a incandescenza commerciale?", options: ["Tesla", "Edison", "Einstein", "Meucci"], answer: "Edison" },
+    { q: "Qual è la lingua più parlata al mondo per numero di madrelingua?", options: ["Inglese", "Spagnolo", "Mandarino", "Hindi"], answer: "Mandarino" },
+    { q: "In quale anno è iniziata la Seconda Guerra Mondiale?", options: ["1939", "1941", "1945", "1914"], answer: "1939" },
+    { q: "Qual è il pianeta più grande del Sistema Solare?", options: ["Saturno", "Giove", "Nettuno", "Urano"], answer: "Giove" },
+    { q: "Qual è la capitale del Giappone?", options: ["Kyoto", "Osaka", "Tokyo", "Hiroshima"], answer: "Tokyo" },
+    { q: "Quanti secondi ci sono in un'ora?", options: ["3600", "1800", "7200", "6000"], answer: "3600" },
+    { q: "Chi ha scritto '1984'?", options: ["Aldous Huxley", "George Orwell", "Ray Bradbury", "J.K. Rowling"], answer: "George Orwell" },
+    { q: "Qual è l'oceano più grande della Terra?", options: ["Atlantico", "Indiano", "Artico", "Pacifico"], answer: "Pacifico" },
+    { q: "Qual è il metallo liquido a temperatura ambiente?", options: ["Ferro", "Mercurio", "Piombo", "Oro"], answer: "Mercurio" },
+    { q: "In quale stato si trova la torre di Pisa?", options: ["Francia", "Spagna", "Italia", "Grecia"], answer: "Italia" },
+    { q: "Qual è l'organo umano più grande?", options: ["Cuore", "Fegato", "Cervello", "Pelle"], answer: "Pelle" },
+    { q: "Quanti giocatori ci sono in una squadra di calcio in campo?", options: ["9", "10", "11", "12"], answer: "11" },
+    { q: "Chi ha formulato la teoria della relatività?", options: ["Newton", "Einstein", "Galilei", "Hawking"], answer: "Einstein" },
+    { q: "Qual è la valuta ufficiale del Regno Unito?", options: ["Euro", "Dollaro", "Sterlina", "Franco"], answer: "Sterlina" },
+    { q: "Qual è il gas più abbondante nell'atmosfera terrestre?", options: ["Ossigeno", "Azoto", "Anidride Carbonica", "Idrogeno"], answer: "Azoto" },
+    { q: "In che anno l'Italia ha vinto i suoi ultimi Mondiali di calcio (al 2026)?", options: ["1994", "2002", "2006", "2010"], answer: "2006" },
+    { q: "Qual è la capitale del Canada?", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"], answer: "Ottawa" },
+    { q: "Chi ha scolpito il David?", options: ["Donatello", "Michelangelo", "Bernini", "Giotto"], answer: "Michelangelo" },
+    { q: "Qual è il prefisso telefonico internazionale dell'Italia?", options: ["+33", "+34", "+39", "+44"], answer: "+39" },
+    { q: "Qual è l'osso più lungo del corpo umano?", options: ["Omero", "Femore", "Tibia", "Radio"], answer: "Femore" },
+    { q: "Qual è il fiume più lungo del mondo?", options: ["Nilo", "Amazzonia", "Mississippi", "Yangtze"], answer: "Nilo" },
+    { q: "Quanti tasti ha un pianoforte standard?", options: ["88", "76", "64", "92"], answer: "88" },
+    { q: "In quale città si trova il Colosseo?", options: ["Milano", "Napoli", "Roma", "Firenze"], answer: "Roma" },
+    { q: "Qual è la radice quadrata di 144?", options: ["10", "11", "12", "14"], answer: "12" },
+    { q: "Chi ha scoperto l'America?", options: ["Amerigo Vespucci", "Cristoforo Colombo", "Magellano", "Marco Polo"], answer: "Cristoforo Colombo" },
+    { q: "Qual è l'animale simbolo del WWF?", options: ["Leone", "Panda", "Tigre", "Elefante"], answer: "Panda" },
+    { q: "Qual è la capitale della Germania?", options: ["Monaco", "Francoforte", "Berlino", "Amburgo"], answer: "Berlino" },
+    { q: "Quanti bit ci sono in un byte?", options: ["4", "8", "16", "32"], answer: "8" },
+    { q: "Qual è il colore della bandiera delle Nazioni Unite?", options: ["Rosso", "Verde", "Blu", "Giallo"], answer: "Blu" },
+    { q: "Chi ha dipinto 'La Notte Stellata'?", options: ["Monet", "Van Gogh", "Picasso", "Cézanne"], answer: "Van Gogh" },
+    { q: "Qual è il pianeta conosciuto come il Pianeta Rosso?", options: ["Marte", "Venere", "Giove", "Saturno"], answer: "Marte"],
+    { q: "Qual è il nome del cane di Topolino?", options: ["Snoopy", "Pluto", "Goofy", "Bolt"], answer: "Pluto" },
+    { q: "In quale sport si usa un anello e un pallone arancione?", options: ["Calcio", "Basket", "Tennis", "Rugby"], answer: "Basket" },
+    { q: "Qual è la capitale della Spagna?", options: ["Barcellona", "Valencia", "Madrid", "Siviglia"], answer: "Madrid" },
+    { q: "Quale gas serve alle piante per la fotosintesi?", options: ["Ossigeno", "Azoto", "Anidride Carbonica", "Elio"], answer: "Anidride Carbonica" },
+    { q: "Quanti anni durò la Guerra dei Cent'anni?", options: ["100", "105", "116", "99"], answer: "116" }
 ];
 
+// ==========================================
+// ✂️ 2. DATABASE 50 INDOVINELLI CAVI (Bomba)
+// ==========================================
+const BOMB_WIRES_POOL = [
+    { text: "Sono il colore del sangue e del fuoco. Tagliami se hai coraggio.", correct: "rosso" },
+    { text: "Rappresento l'oceano profondo e la calma gelida.", correct: "blu" },
+    { text: "Nasco unendo la luce del sole e il cielo. Sono la vita nei campi.", correct: "verde" },
+    { text: "Sono l'oro dei folli e il colore del sole a mezzogiorno.", correct: "giallo" },
+    { text: "Logica: (Rosso + Giallo) - Rosso = ?", correct: "giallo" },
+    { text: "Se unisci il blu e il rosso nei miei circuiti, che colore formo? (Prendi il principale primario freddo tra i due)", correct: "blu" },
+    { text: "Non sono verde, non sono blu, non sono giallo. Quale rimasto sono?", correct: "rosso" },
+    { text: "Nei semaori indico lo stop assoluto.", correct: "rosso" },
+    { text: "Nei semaori indico il via libera.", correct: "verde" },
+    { text: "Colore associato all'energia elettrica e alle banane.", correct: "giallo" },
+    { text: "Colore associato al ghiaccio e all'acqua potabile nei tubi.", correct: "blu" },
+    { text: "Il mio cavo è l'opposto esatto del verde nello spettro complementare base.", correct: "rosso" },
+    { text: "Taglia il cavo che evoca la clorofilla.", correct: "verde" },
+    { text: "Taglia il cavo che evoca lo zolfo puro.", correct: "giallo" },
+    { text: "Taglia il cavo che evoca lo zaffiro.", correct: "blu" },
+    { text: "Taglia il cavo che evoca il rubino.", correct: "rosso" },
+    { text: "Frequenza di 700nm nello spettro visivo. Quale cavo è?", correct: "rosso" },
+    { text: "Frequenza di 450nm nello spettro visivo. Quale cavo è?", correct: "blu" },
+    { text: "Frequenza di 530nm nello spettro visivo. Quale cavo è?", correct: "verde" },
+    { text: "Frequenza di 580nm nello spettro visivo. Quale cavo è?", correct: "giallo" },
+    { text: "Rompicapo: Sono primario, caldo, e brucio.", correct: "rosso" },
+    { text: "Rompicapo: Sono primario, freddo, e scorro.", correct: "blu" },
+    { text: "Rompicapo: Sono secondario nei modelli RGB tradizionali caldi.", correct: "giallo" },
+    { text: "Rompicapo: Sono il colore della foresta amazzonica.", correct: "verde" },
+    { text: "Quale cavo ha il minor numero di lettere nel nome?", correct: "blu" },
+    { text: "Quale cavo ha il maggior numero di lettere nel nome tra rosso, blu, verde, giallo?", correct: "giallo" },
+    { text: "Se mescoli giallo e blu, ottieni me.", correct: "verde" },
+    { text: "Se rimuovi il blu dal ciano, ottieni me (rosso primario sottrattivo).", correct: "verde" }, // (Semplificato)
+    { text: "Taglia il cavo del colore del deserto sabbioso.", correct: "giallo" },
+    { text: "Taglia il cavo del colore del cielo notturno sereno.", correct: "blu" },
+    { text: "Taglia il cavo del colore di una fragola matura.", correct: "rosso" },
+    { text: "Taglia il cavo del colore di un lime aspro.", correct: "verde" },
+    { text: "Sequenza di Fibonacci: Colore n.3 se Rosso=1, Blu=2, Verde=3.", correct: "verde" },
+    { text: "Codice esadecimale #FF0000 corrisponde a quale cavo?", correct: "rosso" },
+    { text: "Codice esadecimale #0000FF corrisponde a quale cavo?", correct: "blu" },
+    { text: "Codice esadecimale #00FF00 corrisponde a quale cavo?", correct: "verde" },
+    { text: "Codice esadecimale #FFFF00 corrisponde a quale cavo?", correct: "giallo" },
+    { text: "Il cavo che rappresenta l'aria aperta e tersa.", correct: "blu" },
+    { text: "Il cavo che rappresenta la ruggine del ferro.", correct: "ross" }, // fallback a rosso gestito se serve
+    { text: "Il cavo che rappresenta l'energia nucleare nei fumetti.", correct: "verde" },
+    { text: "Il cavo che rappresenta il tuono e la luce del limone.", correct: "giallo" },
+    { text: "Disinnesco logico: Non sono freddo, non sono verde, non sono giallo.", correct: "rosso" },
+    { text: "Disinnesco logico: Sono l'unico cavo freddo tra rosso, giallo e blu.", correct: "blu" },
+    { text: "Quale filo ha lo stesso colore di una Ferrari classica?", correct: "rosso" },
+    { text: "Quale filo ha lo stesso colore di un taxi di New York?", correct: "giallo" },
+    { text: "Quale filo ha lo stesso colore delle divise della polizia postale?", correct: "blu" },
+    { text: "Quale filo ha lo stesso colore di un prato all'inglese?", correct: "verde" },
+    { text: "Ultimo test: Il codice della salvezza è il colore della rabbia.", correct: "rosso" },
+    { text: "Ultimo test: Il codice della salvezza è il colore della speranza.", correct: "verde" },
+    { text: "Ultimo test: Il codice della salvezza è il colore della gelosia.", correct: "giallo" }
+];
 
+// ==========================================
+// 🪢 3. DATABASE 50 PAROLE PER IMPICCATO
+// ==========================================
+const HANGMAN_WORDS = [
+    "DISCORD", "BOT", "PROGRAMMARE", "JAVASCRIPT", "GAMING", 
+    "COMPUTER", "TASTIERA", "SCHERMO", "INTERNET", "SERVER", 
+    "SVILUPPO", "CODICE", "FUNZIONE", "VARIABILE", "STRINGA", 
+    "BOOLEANO", "ARRAY", "OGGETTO", "MEMORIA", "PROCESSORE", 
+    "SCHEDA", "VIDEO", "AUDIO", "GIOCO", "SFIDA", 
+    "VITTORIA", "SCONFITTA", "LIVELLO", "ESPERIENZA", "MONETE", 
+    "INVENTARIO", "CRAFTING", "MINECRAFT", "PICCONE", "SPADA", 
+    "DIAMANTE", "PIETRA", "LEGNO", "METALLO", "MAGIA", 
+    "DRAGO", "CASTELLO", "EROE", "AVVENTURA", "MISSIONE", 
+    "TESORO", "BAULE", "PORTALE", "GALASSIA", "UNIVERSO"
+];
 
-// ============================
-// RANDOM QUIZ SYSTEM
-// ============================
+// ==========================================
+// FUNZIONI DEI MINIGIOCHI
+// ==========================================
 
+async function startQuiz(interaction) {
+    const userId = interaction.user.id;
+    const randomQ = QUIZ_QUESTIONS[Math.floor(Math.random() * QUIZ_QUESTIONS.length)];
+    
+    inventory.incrementStat(userId, "gamesPlayed");
 
-function getRandomQuiz(){
-
-
-    let available =
-    quizzes.filter(
-        q =>
-        !recentGames.quiz.includes(q.id)
-    );
-
-
-    if(available.length === 0){
-
-        recentGames.quiz = [];
-
-        available = quizzes;
-
-    }
-
-
-    const selected =
-    available[
-        Math.floor(
-            Math.random() *
-            available.length
+    const row = new ActionRowBuilder().addComponents(
+        randomQ.options.map(opt => 
+            new ButtonBuilder()
+                .setCustomId(`quiz_${opt === randomQ.answer ? 'correct' : 'wrong'}`)
+                .setLabel(opt)
+                .setStyle(ButtonStyle.Secondary)
         )
-    ];
-
-
-    recentGames.quiz.push(
-        selected.id
     );
-
-
-    if(recentGames.quiz.length > 10){
-
-        recentGames.quiz.shift();
-
-    }
-
-
-    return selected;
-
-}
-
-
-
-
-
-// ============================
-// XP SYSTEM
-// ============================
-
-
-function win(userId, xp){
-
-
-    gameSystem.addXP(
-        userId,
-        xp
-    );
-
-
-    return gameSystem.checkAchievements(
-        userId
-    );
-
-
-}
-
-
-
-function lose(userId){
-
-
-    gameSystem.addXP(
-        userId,
-        5
-    );
-
-
-}
-
-
-
-
-
-// ============================
-// COMMAND
-// ============================
-
-
-module.exports = {
-
-
-data:
-
-new SlashCommandBuilder()
-
-.setName("minigame")
-
-.setDescription(
-"Apri il Minigame Hub"
-),
-
-
-
-async execute(interaction){
-
-
-    if(
-        activeGames.has(
-            interaction.channel.id
-        )
-    ){
-
-        return interaction.reply({
-
-            content:
-            "⚠️ Un minigame è già attivo in questo canale!",
-
-            ephemeral:true
-
-        });
-
-    }
-
-
 
     const embed = new EmbedBuilder()
+        .setColor('#3498db')
+        .setTitle('🧠 Quiz Arcade (50+ Domande)')
+        .setDescription(`**${randomQ.q}**\n\nHai 15 secondi per rispondere!`);
 
-    .setTitle(
-        "🎮 Minigame Hub"
-    )
+    const msg = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
 
-    .setDescription(
+    const collector = msg.createMessageComponentCollector({ time: 15000 });
 
-`
-Scegli un minigame.
+    collector.on('collect', async i => {
+        if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", ephemeral: true });
 
-━━━━━━━━━━━━━━
+        if (i.customId === 'quiz_correct') {
+            inventory.addXP(userId, 80);
+            inventory.addCoins(userId, 40);
+            inventory.incrementStat(userId, "gamesWon");
+            inventory.incrementStat(userId, "quizzesWon");
 
-🎯 Indovina Numero
+            await achievements.checkAndNotify(userId, interaction.client);
 
-🧠 Quiz
-
-🧩 Memory
-
-🔤 Parola Misteriosa
-
-⚡ Reaction
-
-🪢 Impiccato
-
-━━━━━━━━━━━━━━
-
-⭐ XP
-🏆 Achievement
-🪙 Ricompense
-
-Buona fortuna!
-`
-
-    )
-
-    .setColor("Gold");
-
-
-
-
-
-    const row =
-    new ActionRowBuilder()
-
-    .addComponents(
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-            "game_quiz"
-        )
-
-        .setLabel(
-            "🧠 Quiz"
-        )
-
-        .setStyle(
-            ButtonStyle.Success
-        ),
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-            "game_memory"
-        )
-
-        .setLabel(
-            "🧩 Memory"
-        )
-
-        .setStyle(
-            ButtonStyle.Secondary
-        ),
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-            "game_word"
-        )
-
-        .setLabel(
-            "🔤 Parola"
-        )
-
-        .setStyle(
-            ButtonStyle.Primary
-        ),
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-            "game_reaction"
-        )
-
-        .setLabel(
-            "⚡ Reaction"
-        )
-
-        .setStyle(
-            ButtonStyle.Primary
-        ),
-
-
-
-        new ButtonBuilder()
-
-        .setCustomId(
-            "game_hangman"
-        )
-
-        .setLabel(
-            "🪢 Impiccato"
-        )
-
-        .setStyle(
-            ButtonStyle.Danger
-        )
-
-    );
-
-
-
-    await interaction.reply({
-
-        embeds:[
-            embed
-        ],
-
-        components:[
-            row
-        ]
-
+            await i.update({ content: "✅ **Risposta esatta!** +80 XP e +40 monete!", embeds: [], components: [] });
+        } else {
+            await i.update({ content: `❌ **Errata!** Era: **${randomQ.answer}**`, embeds: [], components: [] });
+        }
+        collector.stop();
     });
 
-
+    collector.on('end', async collected => {
+        if (collected.size === 0) await interaction.editReply({ content: "⏰ Tempo scaduto!", embeds: [], components: [] });
+    });
 }
 
+async function startBomb(interaction) {
+    const userId = interaction.user.id;
+    inventory.incrementStat(userId, "gamesPlayed");
 
+    const rawRiddle = BOMB_WIRES_POOL[Math.floor(Math.random() * BOMB_WIRES_POOL.length)];
+    // Normalizza la risposta corretta per evitare errori di battitura (es. ross -> rosso)
+    let correctWire = rawRiddle.correct.toLowerCase();
+    if (correctWire === "ross") correctWire = "rosso";
 
-};
+    const wires = ['rosso', 'blu', 'verde', 'giallo'];
+    const row = new ActionRowBuilder().addComponents(
+        wires.map(w => 
+            new ButtonBuilder()
+                .setCustomId(`bomb_${w}`)
+                .setLabel(`Taglia ${w.toUpperCase()}`)
+                .setStyle(ButtonStyle.Primary)
+        )
+    );
 
+    const embed = new EmbedBuilder()
+        .setColor('#e74c3c')
+        .setTitle('💣 Artificiere (50+ Indovinelli)')
+        .setDescription(`📜 **Indovinello:**\n"${rawRiddle.text}"\n\nTaglia il cavo giusto (10 secondi)!`);
 
+    const msg = await interaction.reply({ embeds: [embed], components: [row], fetchReply: true });
+    const collector = msg.createMessageComponentCollector({ time: 10000 });
 
+    collector.on('collect', async i => {
+        if (i.user.id !== userId) return i.reply({ content: "Non toccare la bomba altrui!", ephemeral: true });
 
+        const chosenWire = i.customId.replace('bomb_', '');
+        if (chosenWire === correctWire) {
+            inventory.addXP(userId, 150);
+            inventory.addCoins(userId, 75);
+            inventory.incrementStat(userId, "gamesWon");
+            inventory.incrementStat(userId, "bombsDefused");
 
-// ============================
-// QUIZ GAME
-// ============================
+            await achievements.checkAndNotify(userId, interaction.client);
+            await i.update({ content: `🎉 **BOOM EVITATO!** Cavo corretto (${correctWire}). +150 XP e +75 monete!`, embeds: [], components: [] });
+        } else {
+            await i.update({ content: `💥 **KABOOOM!** Hai tagliato il ${chosenWire}, ma era il ${correctWire}!`, embeds: [], components: [] });
+        }
+        collector.stop();
+    });
 
-
-async function quizGame(interaction){
-
-
-const quiz =
-getRandomQuiz();
-
-
-
-await interaction.channel.send({
-
-embeds:[
-
-new EmbedBuilder()
-
-.setTitle(
-"🧠 Quiz"
-)
-
-.setDescription(
-
-`
-${quiz.question}
-
-Hai **20 secondi**.
-
-Scrivi la risposta.
-`
-
-)
-
-.setColor("Blue")
-
-]
-
-});
-
-
-
-const msg =
-await collectMessage(
-interaction,
-20
-);
-
-
-
-if(!msg){
-
-return interaction.channel.send(
-"⏰ Tempo scaduto!"
-);
-
+    collector.on('end', async collected => {
+        if (collected.size === 0) await interaction.editReply({ content: "💥 **KABOOOM!** Tempo scaduto.", embeds: [], components: [] });
+    });
 }
 
-
-
-if(
-msg.content
-.toLowerCase()
-.trim()
-===
-quiz.answer
-){
-
-
-const achievements =
-win(
-msg.author.id,
-25
-);
-
-
-
-return interaction.channel.send(
-
-`
-🏆 Risposta corretta!
-
-⭐ +25 XP
-🪙 +50 monete
-
-${achievements.join("\n")}
-`
-
-);
-
-
-
-}
-
-
-
-lose(
-msg.author.id
-);
-
-
-
-interaction.channel.send(
-
-`
-❌ Risposta errata!
-
-Era:
-
-**${quiz.answer}**
-
-⭐ +5 XP
-`
-
-);
-
-
-}
-
-
-
-
-module.exports.quizGame =
-quizGame;
-
-
-
-
-function collectMessage(interaction,time){
-
-
-return interaction.channel.awaitMessages({
-
-filter:
-
-m =>
-!m.author.bot,
-
-
-max:1,
-
-
-time:
-time * 1000
-
-
-})
-
-.then(c => c.first())
-
-.catch(() => null);
-
-
-}
-
-// PARTE 2/2 - MINIGAME.JS
-// Memory
-// Parola Misteriosa
-// Reaction
-// Impiccato
-// Button handlers export
-
-
-// ============================
-// MEMORY GAME
-// ============================
-
-
-const memoryColors = [
-    "🔴",
-    "🔵",
-    "🟢",
-    "🟡",
-    "🟣",
-    "🟠"
-];
-
-
-
-function randomColors(){
-
-
-    const amount =
-    Math.floor(Math.random() * 3) + 4;
-
-
-    let result = [];
-
-
-    for(let i = 0; i < amount; i++){
-
-        result.push(
-            memoryColors[
-                Math.floor(
-                    Math.random() *
-                    memoryColors.length
-                )
-            ]
+async function startMemory(interaction) {
+    const userId = interaction.user.id;
+    inventory.incrementStat(userId, "gamesPlayed");
+
+    const sequence = Array.from({ length: 4 }, () => Math.floor(Math.random() * 4) + 1);
+    
+    await interaction.reply({ content: `🧠 **Memorizza la sequenza:**\n# ➡️ ${sequence.join(' - ')}`, ephemeral: true });
+
+    setTimeout(async () => {
+        const row = new ActionRowBuilder().addComponents(
+            [1, 2, 3, 4].map(n => new ButtonBuilder().setCustomId(`mem_${n}`).setLabel(n.toString()).setStyle(ButtonStyle.Secondary))
         );
 
-    }
+        let userGuess = [];
+        const msg = await interaction.followUp({ content: "Inserisci la sequenza esatta:", components: [row], ephemeral: true });
+        
+        const filter = i => i.user.id === userId;
+        const collector = msg.createMessageComponentCollector({ filter, time: 15000 });
 
+        collector.on('collect', async i => {
+            userGuess.push(parseInt(i.customId.replace('mem_', '')));
 
-    return result;
+            if (userGuess.length === sequence.length) {
+                collector.stop();
+                if (userGuess.every((val, idx) => val === sequence[idx])) {
+                    inventory.addXP(userId, 120);
+                    inventory.addCoins(userId, 60);
+                    inventory.incrementStat(userId, "gamesWon");
+                    inventory.incrementStat(userId, "memoryWon");
 
+                    await achievements.checkAndNotify(userId, interaction.client);
+                    await i.update({ content: "🏆 **Corretto!** +120 XP e +60 monete!", components: [] });
+                } else {
+                    await i.update({ content: `❌ **Errata!** Era: ${sequence.join(' - ')}`, components: [] });
+                }
+            } else {
+                await i.update({ content: `Inserito: ${userGuess.join(' - ')} ... Continua!`, components: [row] });
+            }
+        });
+    }, 4000);
 }
 
+async function startReaction(interaction) {
+    const userId = interaction.user.id;
+    inventory.incrementStat(userId, "gamesPlayed");
 
-
-
-async function memoryGame(interaction){
-
-
-    const sequence =
-    randomColors();
-
-
-
-    const msg =
-    await interaction.channel.send(
-
-`
-🧩 **MEMORY**
-
-Memorizza questa sequenza:
-
-${sequence.join(" ")}
-
-Hai **3 secondi**.
-`
-
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder().setCustomId('react_btn').setLabel('PREMI ORA!').setStyle(ButtonStyle.Danger).setDisabled(true)
     );
 
+    const msg = await interaction.reply({ content: "⚡ Preparati...", components: [row], fetchReply: true });
+    const randomDelay = Math.floor(Math.random() * 3000) + 2000;
 
-
-    await wait(3000);
-
-
-
-    await msg.edit(
-
-`
-🧩 **MEMORY**
-
-❌ Sequenza nascosta.
-
-Preparati...
-
-Distrazione:
-`
-
-    );
-
-
-
-    for(
-        let i = 5;
-        i > 0;
-        i--
-    ){
-
-        await msg.edit(
-
-`
-🧩 Distrazione...
-
-⏳ ${i}
-`
-
+    setTimeout(async () => {
+        const activeRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('react_btn_active').setLabel('PREMI ORA!').setStyle(ButtonStyle.Success)
         );
 
-        await wait(1000);
-
-    }
-
-
-
-    await msg.edit(
-
-`
-🧩 **MEMORY**
-
-Scrivi la sequenza corretta.
-
-Esempio:
-
-🔴 🔵 🟢
-`
-
-    );
-
-
-
-    const answer =
-    await collectMessage(
-        interaction,
-       20
-    );
-
-
-
-    if(!answer)
-    return;
-
-
-
-    const user =
-    answer.content
-    .trim();
-
-
-
-    const correct =
-    sequence.join("");
-
-
-
-    if(
-        user.replaceAll(" ","")
-        ===
-        correct
-    ){
-
-
-        const achievements =
-        win(
-            answer.author.id,
-            50
-        );
-
-
-        return interaction.channel.send(
-
-`
-🏆 Memory completato!
-
-⭐ +50 XP
-
-${achievements.join("\n")}
-`
-
-        );
-
-
-    }
-
-
-
-    lose(
-        answer.author.id
-    );
-
-
-    interaction.channel.send(
-
-`
-❌ Sequenza errata!
-
-Era:
-
-${sequence.join(" ")}
-
-⭐ +5 XP
-`
-
-    );
-
-
-}
-
-
-
-
-
-// ============================
-// PAROLA MISTERIOSA
-// ============================
-
-
-const mysteryWords = {
-
-
-facile:[
-
-"sole",
-"luna",
-"marte",
-"cane",
-"mare"
-
-],
-
-
-medio:[
-
-"galassia",
-"computer",
-"discord",
-"pianeta",
-"astronomia"
-
-],
-
-
-difficile:[
-
-"javascript",
-"costellazione",
-"programmazione",
-"universo"
-
-]
-
-
-};
-
-
-
-
-
-async function wordGame(interaction){
-
-
-const row =
-new ActionRowBuilder()
-
-.addComponents(
-
-
-new ButtonBuilder()
-
-.setCustomId(
-"word_easy"
-)
-
-.setLabel(
-"🟢 Facile"
-)
-
-.setStyle(
-ButtonStyle.Success
-),
-
-
-new ButtonBuilder()
-
-.setCustomId(
-"word_medium"
-)
-
-.setLabel(
-"🟡 Medio"
-)
-
-.setStyle(
-ButtonStyle.Primary
-),
-
-
-new ButtonBuilder()
-
-.setCustomId(
-"word_hard"
-)
-
-.setLabel(
-"🔴 Difficile"
-)
-
-.setStyle(
-ButtonStyle.Danger
-)
-
-
-);
-
-
-
-await interaction.channel.send({
-
-content:
-
-"🔤 Scegli difficoltà:",
-
-components:[row]
-
-});
-
-
-
-}
-
-
-
-
-async function startWordGame(
-interaction,
-difficulty
-){
-
-
-
-const list =
-mysteryWords[difficulty];
-
-
-
-const word =
-list[
-Math.floor(
-Math.random()*list.length
-)
-];
-
-
-
-await interaction.channel.send(
-
-`
-🔤 **PAROLA MISTERIOSA**
-
-Categoria:
-🌎 Generale
-
-Lettere:
-
-${word.length}
-
-Parola:
-
-${"_ ".repeat(word.length)}
-
-Hai 30 secondi.
-
-Scrivi la parola.
-`
-
-);
-
-
-
-const msg =
-await collectMessage(
-interaction,
-30
-);
-
-
-
-if(!msg)
-return;
-
-
-
-if(
-msg.content
-.toLowerCase()
-.trim()
-===
-word
-){
-
-
-
-const xp =
-difficulty==="facile"
-?
-20
-:
-difficulty==="medio"
-?
-40
-:
-70;
-
-
-
-const achievements =
-win(
-msg.author.id,
-xp
-);
-
-
-
-interaction.channel.send(
-
-`
-🏆 Parola trovata!
-
-⭐ +${xp} XP
-
-${achievements.join("\n")}
-`
-
-);
-
-
-
-}else{
-
-
-lose(
-msg.author.id
-);
-
-
-interaction.channel.send(
-
-`
-❌ Risposta errata!
-
-La parola era:
-
-**${word}**
-`
-
-);
-
-
-}
-
-
-}
-
-
-
-
-
-// ============================
-// REACTION GAME
-// ============================
-
-
-async function reactionGame(interaction){
-
-
-
-const messages = [
-
-"Preparati",
-
-"Concentrati",
-
-"Attendi"
-
-];
-
-
-
-for(
-const m of messages
-){
-
-const x =
-await interaction.channel.send(
-`⚡ ${m}`
-);
-
-await wait(2000);
-
-await x.delete()
-.catch(()=>{});
-
-}
-
-
-
-const places = [
-
-"titolo",
-"testo",
-"footer"
-
-];
-
-
-
-const position =
-places[
-Math.floor(
-Math.random()*places.length
-)
-];
-
-
-
-let embed =
-new EmbedBuilder()
-
-.setTitle(
-"⚡ Reaction"
-)
-
-.setDescription(
-"Trova 🟢"
-)
-
-.setColor("Green");
-
-
-
-if(position==="titolo")
-
-embed.setTitle(
-"🟢 Reaction"
-);
-
-
-
-if(position==="footer")
-
-embed.setFooter({
-
-text:
-"🟢"
-
-});
-
-
-
-const msg =
-await interaction.channel.send({
-
-embeds:[
-embed
-]
-
-});
-
-
-
-const start =
-Date.now();
-
-
-
-const answer =
-await msg.channel.awaitMessages({
-
-filter:
-
-m =>
-!m.author.bot &&
-m.content.includes("🟢"),
-
-
-max:1,
-
-time:10000
-
-})
-
-.catch(()=>null);
-
-
-
-if(!answer)
-return;
-
-
-
-const ms =
-Date.now()-start;
-
-
-
-const xp =
-Math.max(
-10,
-60 - Math.floor(ms/100)
-);
-
-
-
-const achievements =
-win(
-answer.first().author.id,
-xp
-);
-
-
-
-interaction.channel.send(
-
-`
-⚡ Reaction completata!
-
-Tempo:
-${ms}ms
-
-⭐ +${xp} XP
-
-${achievements.join("\n")}
-`
-
-);
-
-
-
-}
-
-
-
-
-
-// ============================
-// IMPICCATO
-// ============================
-
-
-const hangmanWords = [
-
-"javascript",
-"discord",
-"astronomia",
-"galassia",
-"computer"
-
-];
-
-
-
-const hangman = [
-
-"",
-" O ",
-" O\n |",
-" O\n/|",
-" O\n/|\\",
-" O\n/|\\\n/",
-" O\n/|\\\n/ \\"
-
-];
-
-
-
-
-
-async function hangmanGame(interaction){
-
-
-
-const word =
-hangman[
-Math.floor(
-Math.random()*hangmanWords.length
-)
-];
-
-
-
-let used = [];
-
-let errors = 0;
-
-
-
-while(errors < 6){
-
-
-
-const display =
-word
-.split("")
-.map(
-x =>
-used.includes(x)
-?
-x
-:
-"⬜"
-)
-.join(" ");
-
-
-
-const msg =
-await interaction.channel.send(
-
-`
-🪢 **IMPICCATO**
-
-${hangman[errors]}
-
-${display}
-
-Errori:
-${errors}/6
-
-Lettera:
-`
-
-);
-
-
-
-const answer =
-await collectMessage(
-interaction,
-60
-);
-
-
-
-if(!answer)
-return;
-
-
-
-const letter =
-answer.content
-.toLowerCase()
-.trim();
-
-
-
-if(
-letter.length!==1
-)
-continue;
-
-
-
-if(
-used.includes(letter)
-)
-continue;
-
-
-
-used.push(letter);
-
-
-
-if(
-!word.includes(letter)
-)
-errors++;
-
-
-
-if(
-word
-.split("")
-.every(
-x =>
-used.includes(x)
-)
-){
-
-
-const achievements =
-win(
-answer.author.id,
-60
-);
-
-
-
-return interaction.channel.send(
-
-`
-🏆 Hai vinto l'impiccato!
-
-Parola:
-**${word}**
-
-⭐ +60 XP
-
-${achievements.join("\n")}
-`
-
-);
-
-
-}
-
-
-}
-
-
-
-interaction.channel.send(
-
-`
-💀 Hai perso!
-
-La parola era:
-
-**${word}**
-`
-
-);
-
-
-
-}
-
-
-
-
-// ============================
-// EXPORT BUTTON FUNCTIONS
-// ============================
-
-
-module.exports.memoryGame =
-memoryGame;
-
-
-module.exports.wordGame =
-wordGame;
-
-
-module.exports.startWordGame =
-startWordGame;
-
-
-module.exports.reactionGame =
-reactionGame;
-
-
-module.exports.hangmanGame =
-hangmanGame;
-
-
-
-
-
-// ============================
-// UTILS
-// ============================
-
-
-function wait(ms){
-
-return new Promise(
-resolve =>
-setTimeout(
-resolve,
-ms
-)
-);
-
-    }
+        await interaction.editReply({ content: "🚨 **VIA! Premi il pulsante!**", components: [activeRow] });
+        const startTime = Date.now();
+
+        const collector = msg.createMessageComponentCollector({ time: 5000 });
+        collector.on('collect', async i => {
+            if (i.user.id !== userId) return i.reply({ content: "Non bruciare la mossa!", ephemeral: true });
+
+            const reactionTime = Date.now() - startTime;
+            collector.stop();
+
+            inventory.addXP(userId, 100);
+            inventory.addCoins(userId, 50);
+            inventory.incrementStat(userId, "gamesWon");
+            inventory.incrementStat(userId, "reactionWon");
+
+            await achievements.checkAndNotify(userId, interaction.client);
+            await i.update({ content: `⚡ **Fulmineo!** ${reactionTime}ms. +100 XP e +50 monete!`, components: [] });
+        });
+
+        collector.on('end', collected => {
+            if (collected.size === 0) interaction.editReply({ content: "🐢 Tempo scaduto!", components: [] });
+        });
+    }, randomDelay);
+                                             }

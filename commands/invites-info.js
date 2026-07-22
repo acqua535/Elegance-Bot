@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
-const { userInviteStats } = require("./invites");
+const { getInvitesData } = require("./invites"); // 👈 Importiamo la nuova funzione dal file invites
 
 const ALLOWED_CHANNEL_ID = "1528576171329982635";
 
@@ -23,8 +23,11 @@ module.exports = {
         }
 
         const target = interaction.options.getUser("utente") || interaction.user;
-        const stats = userInviteStats.get(target.id) || { total: 0, left: 0, fake: 0 };
-        const realInvites = Math.max(0, stats.total - stats.left - stats.fake);
+        
+        // 💾 Legge i dati permanenti dal file JSON anziché dalla memoria temporanea
+        const allStats = getInvitesData();
+        const stats = allStats[target.id] || { total: 0, left: 0, fake: 0 };
+        const realInvites = Math.max(0, stats.total - (stats.left || 0) - (stats.fake || 0));
 
         const embed = new EmbedBuilder()
             .setTitle(`📊 STATISTICHE INVITI ── ${target.username}`)
@@ -32,8 +35,8 @@ module.exports = {
             .setColor(0x00FF99)
             .addFields(
                 { name: "✉️ Inviti Effettivi", value: `**${realInvites}**`, inline: true },
-                { name: "📈 Totali Ingressi", value: `${stats.total}`, inline: true },
-                { name: "📉 Usciti / Fake", value: `${stats.left}`, inline: true }
+                { name: "📈 Totali Ingressi", value: `${stats.total || 0}`, inline: true },
+                { name: "📉 Usciti / Fake", value: `${(stats.left || 0) + (stats.fake || 0)}`, inline: true }
             )
             .setFooter({ text: "Elegance Sponsoring • Invite System" })
             .setTimestamp();

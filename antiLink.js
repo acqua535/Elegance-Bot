@@ -1,5 +1,5 @@
 const { EmbedBuilder } = require("discord.js");
-const warnings = require("./warnings"); // 📌 Richiamiamo direttamente il tuo warnings.js
+const moderation = require("./moderationSystem"); // 📌 Colleghiamo il sistema di moderazione centrale
 
 // 📌 ID DEL CANALE LOG PER L'ANTI-LINK
 const LOG_CHANNEL_ID = "1528576197741772902";
@@ -21,32 +21,13 @@ module.exports = (client) => {
             // 1. 🗑️ CANCELLAZIONE IMMEDIATA DEL MESSAGGIO
             await message.delete().catch(() => {});
 
-            // 2. ⚠️ REGISTRAZIONE DEL WARN TRAMITE IL TUO warnings.js
-            const guildId = message.guild.id;
-            const userId = message.author.id;
+            // 2. ⚠️ REGISTRAZIONE DEL WARN REALE TRAMITE moderationSystem.js
             const reason = "Invio di link non autorizzato (Anti-Link Automatico)";
-
-            let totalWarns = "N/D";
-
-            // Se warnings.js esporta una funzione per aggiungere warn (es. addWarn)
-            if (typeof warnings.addWarn === "function") {
-                totalWarns = warnings.addWarn(guildId, userId, reason, client.user.id);
-            } 
-            // Se warnings.js esporta un oggetto dati diretto
-            else if (typeof warnings === "object") {
-                if (!warnings[guildId]) warnings[guildId] = {};
-                if (!warnings[guildId][userId]) warnings[guildId][userId] = [];
-                
-                warnings[guildId][userId].push({
-                    id: Date.now().toString(),
-                    reason: reason,
-                    moderator: client.user.tag,
-                    moderatorId: client.user.id,
-                    date: new Date().toISOString()
-                });
-
-                totalWarns = warnings[guildId][userId].length;
-            }
+            const totalWarns = moderation.addWarning(
+                message.author.id,  // ID dell'utente
+                client.user.id,     // ID del Bot che esegue l'azione
+                reason
+            );
 
             // 3. 💬 AVVISO ALL'UTENTE NEL CANALE
             const alertMsg = await message.channel.send({
@@ -68,7 +49,7 @@ module.exports = (client) => {
                         { name: "📌 Canale", value: `${message.channel}`, inline: true },
                         { name: "📝 Contenuto Eliminato", value: `\`\`\`${content.length > 900 ? content.substring(0, 900) + "..." : content}\`\`\`` },
                         { name: "⚠️ Totale Warn Utente", value: `**${totalWarns}**`, inline: true },
-                        { name: "⚙️ Azione", value: "Messaggio eliminato & Warn registrato in warnings.js", inline: false }
+                        { name: "⚙️ Azione", value: "Messaggio eliminato & Warn registrato in moderationSystem.js", inline: false }
                     )
                     .setTimestamp();
 
@@ -80,4 +61,3 @@ module.exports = (client) => {
         }
     });
 };
-                          

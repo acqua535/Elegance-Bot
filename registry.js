@@ -1,22 +1,12 @@
+// ==========================================
+// FILE: registry.js
+// ==========================================
 const ticket = require("./ticket");
-const games = require("./minigame"); // Punta al nostro minigame.js aggiornato
+const games = require("./minigame");
 const verify = require("./verify");
 const entry = require("./entry");
 const invites = require("./invites");
 const apply = require("./apply");
-
-module.exports = async (interaction) => {
-    // 1. Intercetta il Menu a tendina dell'Hub dei minigiochi o altri select menu globali
-    if (interaction.isStringSelectMenu() && interaction.customId === 'game_hub_select') {
-        return await games.handleGameInteraction(interaction);
-    }
-
-    // Seleziona la rotta in base al customId del pulsante o menu standard
-    const handler = registryMap[interaction.customId];
-    if (handler) {
-        return await handler(interaction);
-    }
-};
 
 const registryMap = {
     // --- TICKET ---
@@ -51,4 +41,17 @@ const registryMap = {
     "apply_start_button": apply.buttonHandler,
     "apply_accept": apply.buttonHandler,
     "apply_reject": apply.buttonHandler
+};
+
+module.exports = async (interaction) => {
+    // Intercetta il menu dell'Hub minigiochi prima di cercare nella mappa statica
+    if (interaction.isStringSelectMenu() && interaction.customId === 'game_hub_select') {
+        return await games.handleGameInteraction(interaction);
+    }
+
+    // Cerca il gestore nella mappa statica dei pulsanti/menu
+    const handler = registryMap[interaction.customId];
+    if (handler) {
+        return await handler(interaction);
+    }
 };

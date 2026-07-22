@@ -7,10 +7,23 @@ const CATEGORY_ID = "1528582447443345560";
 const ALLOWED_CHANNEL_ID = "1528576161959907348";
 const LOG_CHANNEL_ID = "1528576197741772902";
 
-const getData = () => JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
+// 3 domande preliminari del supporto
+const TICKET_QUESTIONS = [
+    "1️⃣ Qual è il motivo principale dell'apertura del ticket?",
+    "2️⃣ Fornisci quanti più dettagli o prove possibili riguardo la tua richiesta:",
+    "3️⃣ C'è un membro dello staff specifico con cui eri già in contatto o un ulteriore appunto?"
+];
+
+const getData = () => {
+    try {
+        if (!fs.existsSync(DATA_PATH)) fs.writeFileSync(DATA_PATH, '{}');
+        return JSON.parse(fs.readFileSync(DATA_PATH, 'utf8') || '{}');
+    } catch {
+        return {};
+    }
+};
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
-// Funzione di utilità per inviare log ed eventuali file allegati nel canale dei log
 async function sendSystemLog(guild, embed, files = []) {
     try {
         const logChannel = await guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
@@ -66,6 +79,9 @@ module.exports = {
     },
 
     async categoryHandler(interaction) {
+        // Differiamo la risposta per evitare il timeout di Discord API
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
+
         const type = interaction.values[0];
         const channelName = `︲🎫〞﹒${type}-${interaction.user.username}`;
         
@@ -117,7 +133,64 @@ module.exports = {
 
         await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [welcomeEmbed], components: [row] });
 
-        return interaction.followUp({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}`, flags: MessageFlags.Ephemeral });
+        // Messaggio interattivo del Bot per l'avvio delle domande
+        await channel.send({
+            content: `🤖 **Assistente Elegance:** Ciao ${interaction.user}! Prima di collegarti con lo staff, devo portarti attraverso una breve procedura guidata (max 3 domande).\n\n👉 **Digita \`inizia\` in questa chat per avviare il questionario.**`
+        });
+
+        // Avvio gestore domande in background per questo canale
+        this.startQuestionnaire(channel, interaction.user.id);
+
+        return interaction.editReply({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}` });
+    },
+
+    async startQuestionnaire(channel, userId) {
+        const filter = m => m.author.id === userId;
+        const collector = channel.createMessageCollector({ filter, time: 600000 }); // 10 minuti di tempo max
+
+        let step = 0; // 0 = attesa di "inizia", 1..3 = domande
+        const answers = [];
+
+        collector.on('collect', async m => {
+            if (step === 0) {
+                if (m.content.trim().toLowerCase() === 'inizia') {
+                    step = 1;
+                    await channel.send({ content: `✅ **Ottimo! Iniziamo.**\n\n**Domanda 1/3:** ${TICKET_QUESTIONS[0]}` });
+                } else {
+                    await channel.send({
+                        content: `⚠️ **Attenzione:** Devi digitare esattamente \`inizia\` per far partire le domande guidate dell'assistenza!`
+                    });
+                }
+            } else if (step >= 1 && step <= 3) {
+                answers.push({ question: TICKET_QUESTIONS[step - 1], answer: m.content });
+                
+                if (step < 3) {
+                    step++;
+                    await channel.send({ content: `📝 Risposta registrata!\n\n**Domanda ${step}/3:** ${TICKET_QUESTIONS[step - 1]}` });
+                } else {
+                    collector.stop('completed');
+                }
+            }
+        });
+
+        collector.on('end', async (collected, reason) => {
+            if (reason === 'completed') {
+                const summaryEmbed = new EmbedBuilder()
+                    .setTitle("📋 RISPOSTE QUESTIONARIO INIZIALE")
+                    .setColor(0x3498db)
+                    .setFooter({ text: "Elegance Support Assistant" })
+                    .setTimestamp();
+
+                answers.forEach(item => {
+                    summaryEmbed.addFields({ name: item.question, value: item.answer || "*Nessuna risposta*" });
+                });
+
+                await channel.send({ 
+                    content: `✨ **Questionario completato!** Ho registrato le tue risposte e le ho inoltrate allo staff:`, 
+                    embeds: [summaryEmbed] 
+                });
+            }
+        });
     },
 
     async buttonHandler(interaction) {
@@ -198,7 +271,6 @@ module.exports = {
                 const transcript = messages.reverse().map(m => `[${new Date(m.createdTimestamp).toLocaleString()}] ${m.author.tag}: ${m.content}`).join('\n');
                 transcriptBuffer = Buffer.from(transcript, 'utf-8');
                 
-                // Invio in DM all'utente (se ha i DM aperti)
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     await ownerUser.send({
@@ -220,7 +292,6 @@ module.exports = {
                 .setColor(0xFF0000)
                 .setTimestamp();
 
-            // Inviamo il log testuale con allegato il file di transcript ufficiale!
             const logFiles = transcriptBuffer ? [{ attachment: transcriptBuffer, name: transcriptFileName }] : [];
             await sendSystemLog(interaction.guild, closeLogEmbed, logFiles);
 
@@ -241,7 +312,13 @@ module.exports = {
             ticket.status = 'closed';
             saveData(data);
 
-            setTimeout(() => interaction.channel.delete().catch(() => {}), 5000);
+            // FIX CRASH: Salvataggio riferimento canale prima del setTimeout
+            const targetChannel = interaction.channel;
+            if (targetChannel) {
+                setTimeout(() => {
+                    targetChannel.delete().catch(err => console.error("Impossibile eliminare canale ticket:", err));
+                }, 5000);
+            }
         }
     },
 
@@ -275,3 +352,4 @@ module.exports = {
         }
     }
 };
+                    

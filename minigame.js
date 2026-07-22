@@ -1,30 +1,128 @@
 // minigame.js
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder } = require('discord.js');
-const inventory = require('./inventory');
-const path = require('path');
-const achievements = require(path.join(__dirname, 'achievements.js'));
 
+// --- DATABASE 50+ QUIZ ---
 const QUIZ_QUESTIONS = [
     { q: "Qual è il pianeta più vicino al Sole?", options: ["Venere", "Mercurio", "Marte", "Terra"], answer: "Mercurio" },
     { q: "Chi ha dipinto la Gioconda?", options: ["Michelangelo", "Leonardo da Vinci", "Raffaello", "Donatello"], answer: "Leonardo da Vinci" },
     { q: "In quale anno è sbarcato l'uomo sulla Luna?", options: ["1965", "1969", "1972", "1980"], answer: "1969" },
     { q: "Qual è l'elemento chimico con simbolo 'Au'?", options: ["Argento", "Rame", "Oro", "Alluminio"], answer: "Oro" },
-    { q: "Quanti continenti ci sono sulla Terra?", options: ["5", "6", "7", "8"], answer: "7" }
+    { q: "Quanti continenti ci sono sulla Terra?", options: ["5", "6", "7", "8"], answer: "7" },
+    { q: "Qual è la capitale del Giappone?", options: ["Kyoto", "Tokyo", "Osaka", "Hiroshima"], answer: "Tokyo" },
+    { q: "Chi ha scritto la Divina Commedia?", options: ["Petrarca", "Boccaccio", "Dante Alighieri", "Manzoni"], answer: "Dante Alighieri" },
+    { q: "Qual è il monte più alto del mondo?", options: ["K2", "Everest", "Monte Bianco", "Kilimangiaro"], answer: "Everest" },
+    { q: "In che stato si trova la torre di Pisa?", options: ["Francia", "Spagna", "Italia", "Grecia"], answer: "Italia" },
+    { q: "Quale oceano è il più grande?", options: ["Atlantico", "Indiano", "Artico", "Pacifico"], answer: "Pacifico" },
+    { q: "Chi ha inventato il telefono?", options: ["Meucci", "Einstein", "Tesla", "Edison"], answer: "Meucci" },
+    { q: "Qual è l'animale terrestre più veloce?", options: ["Leone", "Ghepardo", "Tigre", "Cavallo"], answer: "Ghepardo" },
+    { q: "In quale paese si trovano le piramidi di Giza?", options: ["Messico", "Grecia", "Egitto", "Sudan"], answer: "Egitto" },
+    { q: "Qual è il metallo liquido a temperatura ambiente?", options: ["Ferro", "Mercurio", "Piombo", "Zinco"], answer: "Mercurio" },
+    { q: "Chi ha scoperto l'America?", options: ["Magellano", "Vasco da Gama", "Cristoforo Colombo", "Amerigo Vespucci"], answer: "Cristoforo Colombo" },
+    { q: "Qual è la lingua più parlata al mondo per madrelingua?", options: ["Inglese", "Spagnolo", "Mandarino", "Hindi"], answer: "Mandarino" },
+    { q: "Quanti bit ci sono in un byte?", options: ["4", "8", "16", "32"], answer: "8" },
+    { q: "In che anno è iniziata la Prima Guerra Mondiale?", options: ["1914", "1939", "1918", "1945"], answer: "1914" },
+    { q: "Qual è la capitale dell'Australia?", options: ["Sydney", "Melbourne", "Canberra", "Perth"], answer: "Canberra" },
+    { q: "Qual è il pianeta più grande del sistema solare?", options: ["Saturno", "Giove", "Nettuno", "Urano"], answer: "Giove" },
+    { q: "Chi ha formulato la teoria della relatività?", options: ["Newton", "Galilei", "Einstein", "Hawking"], answer: "Einstein" },
+    { q: "Qual è l'organo umano più esteso?", options: ["Fegato", "Cuore", "Pelle", "Polmoni"], answer: "Pelle" },
+    { q: "In quale continente si trova il deserto del Sahara?", options: ["Asia", "Africa", "Australia", "Sud America"], answer: "Africa" },
+    { q: "Qual è il simbolo chimico del ferro?", options: ["Fe", "Ir", "F", "Fr"], answer: "Fe" },
+    { q: "Chi scrisse 'I Promessi Sposi'?", options: ["Leopardi", "Manzoni", "Pascoli", "Verga"], answer: "Manzoni" },
+    { q: "Quanti tasti ha un pianoforte standard?", options: ["88", "64", "72", "96"], answer: "88" },
+    { q: "Qual è la valuta ufficiale del Regno Unito?", options: ["Euro", "Dollaro", "Sterlina", "Franco"], answer: "Sterlina" },
+    { q: "Quale gas compone la maggior parte dell'atmosfera terrestre?", options: ["Ossigeno", "Azoto", "Anidride carbonica", "Idrogeno"], answer: "Azoto" },
+    { q: "Chi dipinse la Cappella Sistina?", options: ["Raffaello", "Caravaggio", "Michelangelo", "Giotto"], answer: "Michelangelo" },
+    { q: "Qual è la catena montuosa più lunga del mondo?", options: ["Himalaya", "Ande", "Alpi", "Rocciose"], answer: "Ande" },
+    { q: "In che anno è caduto il Muro di Berlino?", options: ["1989", "1991", "1985", "1993"], answer: "1989" },
+    { q: "Qual è il fiume più lungo del mondo?", options: ["Rio delle Amazzoni", "Nilo", "Mississippi", "Yangtze"], answer: "Nilo" },
+    { q: "Quanti giocatori compongono una squadra di calcio in campo?", options: ["9", "10", "11", "12"], answer: "11" },
+    { q: "Qual è la capitale del Canada?", options: ["Toronto", "Vancouver", "Ottawa", "Montreal"], answer: "Ottawa" },
+    { q: "Quale fu il primo videogioco della storia (1958)?", options: ["Pong", "Tennis for Two", "Pac-Man", "Space Invaders"], answer: "Tennis for Two" },
+    { q: "Chi ha inventato la lampadina a incandescenza commerciale?", options: ["Tesla", "Edison", "Bell", "Marconi"], answer: "Edison" },
+    { q: "Qual è l'osso più lungo del corpo umano?", options: ["Omero", "Tibia", "Femore", "Radio"], answer: "Femore" },
+    { q: "In quale città si trova il Colosseo?", options: ["Napoli", "Milano", "Roma", "Firenze"], answer: "Roma" },
+    { q: "Qual è il simbolo chimico dell'acqua?", options: ["H2O", "CO2", "NaCl", "O2"], answer: "H2O" },
+    { q: "Chi ha scritto '1984'?", options: ["Aldous Huxley", "George Orwell", "Ray Bradbury", "J.K. Rowling"], answer: "George Orwell" },
+    { q: "Qual è il vulcano più alto d'Europa?", options: ["Vesuvio", "Etna", "Stromboli", "Hekla"], answer: "Etna" },
+    { q: "Qual è il paese con più superficie al mondo?", options: ["Cina", "USA", "Canada", "Russia"], answer: "Russia" },
+    { q: "Quale impero ha costruito il Colosseo?", options: ["Greco", "Romano", "Ottomano", "Persiano"], answer: "Romano" },
+    { q: "Quante facce ha un cubo?", options: ["4", "6", "8", "12"], answer: "6" },
+    { q: "Qual è la capitale della Germania?", options: ["Monaco", "Francoforte", "Berlino", "Amburgo"], answer: "Berlino" },
+    { q: "Chi ha scoperto la penisola antartica?", options: ["Cook", "Amundsen", "Scott", "Bellingshausen"], answer: "Bellingshausen" },
+    { q: "Qual è il mare più caldo del mondo?", options: ["Mar Rosso", "Mar Mediterraneo", "Mar Baltico", "Mar dei Caraibi"], answer: "Mar Rosso" },
+    { q: "In che anno l'uomo ha calpestato per l'ultima volta la Luna?", options: ["1969", "1972", "1975", "1980"], answer: "1972" },
+    { q: "Qual è il colore della bandiera della pace?", options: ["Bianca", "Arcobaleno", "Azzurra", "Verde"], answer: "Arcobaleno" },
+    { q: "Qual è la città dei canali per eccellenza in Italia?", options: ["Venezia", "Milano", "Torino", "Bologna"], answer: "Venezia" }
 ];
 
+// --- DATABASE 50+ INDOVINELLI BOMBA ---
 const BOMB_WIRES_POOL = [
     { text: "Sono il colore del sangue e del fuoco. Tagliami se hai coraggio.", correct: "rosso" },
     { text: "Rappresento l'oceano profondo e la calma gelida.", correct: "blu" },
     { text: "Nasco unendo la luce del sole e il cielo. Sono la vita nei campi.", correct: "verde" },
-    { text: "Sono l'oro dei folli e il colore del sole a mezzogiorno.", correct: "giallo" }
+    { text: "Sono l'oro dei folli e il colore del sole a mezzogiorno.", correct: "giallo" },
+    { text: "Il mio colore ricorda la notte senza stelle e il carbone.", correct: "nero" },
+    { text: "Rifletto la neve fresca e le nuvole nel cielo terso.", correct: "bianco" },
+    { text: "Son color della terra bagnata dopo un forte temporale.", correct: "marrone" },
+    { text: "Mi trovi nei tramonti infuocati e nei frutti succosi d'estate.", correct: "rosso" },
+    { text: "Ricordo i mirtilli maturi e il cielo poco prima della tempesta.", correct: "blu" },
+    { text: "Sono la freschezza di una foglia di menta appena colta.", correct: "verde" },
+    { text: "Splendo come un limone acerbo sotto i raggi cocenti.", correct: "giallo" },
+    { text: "Ricordo la grafite della matita sul foglio bianco.", correct: "nero" },
+    { text: "Sono il candore delle nuvole più alte e soffici.", correct: "bianco" },
+    { text: "Richiamo il legno antico delle vecchie porte di quercia.", correct: "marrone" },
+    { text: "Il mio colore è quello dei pomodori maturi pronti per la salsa.", correct: "rosso" },
+    { text: "Son l'azzurro intenso dei pavoni e delle pietre preziose.", correct: "blu" },
+    { text: "Rappresento i prati sconfinati in primavera.", correct: "verde" },
+    { text: "Brillo come il metallo prezioso dei faraoni egizi.", correct: "giallo" },
+    { text: "Sono l'oscurità che avvolge la stanza quando spegni la luce.", correct: "nero" },
+    { text: "Ricordo il latte fresco versato in una tazza di ceramica.", correct: "bianco" },
+    { text: "Il mio colore è quello della cannella e del cioccolato fondente.", correct: "marrone" },
+    { text: "Mi trovi nel cuore delle rose più belle e profumate.", correct: "rosso" },
+    { text: "Sono il colore dei grandi abissi marini inesplorati.", correct: "blu" },
+    { text: "Rappresento il muschio che cresce sul lato nord degli alberi.", correct: "verde" },
+    { text: "Son la tinta calda delle spighe di grano pronte per la mietitura.", correct: "giallo" },
+    { text: "Ricordo l'asfalto bagnato dalla pioggia estiva.", correct: "nero" },
+    { text: "Sono il colore della schiuma creata dalle onde sulla battigia.", correct: "bianco" },
+    { text: "Richiamo i castagni nei boschi durante la stagione autunnale.", correct: "marrone" },
+    { text: "Il mio colore è quello delle ciliegie dolci e succose.", correct: "rosso" },
+    { text: "Son l'infinito profondo dei cieli notturni estivi.", correct: "blu" },
+    { text: "Rappresento il germoglio che buca la terra dopo il gelo.", correct: "verde" },
+    { text: "Brillo nei girasoli che inseguono la luce del giorno.", correct: "giallo" },
+    { text: "Sono il colore della pece e delle ombre più profonde.", correct: "nero" },
+    { text: "Ricordo il sale marino sparso sulla roccia.", correct: "bianco" },
+    { text: "Son color cuoio, robusto e resistente nel tempo.", correct: "marrone" },
+    { text: "Mi trovi nel mantello delle coccinelle portafortuna.", correct: "rosso" },
+    { text: "Sono il colore dei fiordalisi che crescono tra i campi.", correct: "blu" },
+    { text: "Rappresento l'energia clorofilliana delle foreste pluviali.", correct: "verde" },
+    { text: "Son la luce calda che filtra attraverso le persiane chiuse.", correct: "giallo" },
+    { text: "Ricordo la roccia vulcanica dell'ossidiana tagliente.", correct: "nero" },
+    { text: "Sono il colore del cotone appena raccolto nei campi.", correct: "bianco" },
+    { text: "Richiamo il tronco nodoso di un ulivo millenario.", correct: "marrone" },
+    { text: "Il mio colore ricorda le fiamme vive di un caminetto acceso.", correct: "rosso" },
+    { text: "Son l'azzurro terso di un ghiacciaio millenario.", correct: "blu" },
+    { text: "Rappresento il tè matcha servito nelle cerimonie tradizionali.", correct: "verde" },
+    { text: "Brillo come lo zolfo puro estratto dalle viscere della terra.", correct: "giallo" },
+    { text: "Sono l'assenza totale di luce in una grotta sotterranea.", correct: "nero" },
+    { text: "Ricordo la porcellana fine dipinta a mano.", correct: "bianco" },
+    { text: "Son color tabacco stagionato nelle antiche cantine.", correct: "marrone" },
+    { text: "Mi trovi nel colore delle vesti dei pompieri in azione.", correct: "rosso" }
 ];
 
-const HANGMAN_WORDS = ["DISCORD", "BOT", "PROGRAMMARE", "JAVASCRIPT", "GAMING", "COMPUTER", "SERVER", "CODICE"];
+// --- DATABASE 50+ PAROLE IMPICCATO ---
+const HANGMAN_WORDS = [
+    "DISCORD", "BOT", "PROGRAMMARE", "JAVASCRIPT", "GAMING", "COMPUTER", "SERVER", "CODICE",
+    "SVILUPPATORE", "TASTIERA", "SCHERMO", "INTERNET", "FUNZIONE", "VARIABILE", "STRINGA",
+    "ARRAY", "OGGETTO", "DATABASE", "MODULO", "CLIENT", "CANALE", "MESSAGGIO", "RUOLO",
+    "PERMESSO", "COMANDO", "INTERAZIONE", "EMBED", "PULSANTE", "MENU", "SICUREZZA",
+    "PROMETEO", "ALGORITMO", "SISTEMA", "PROGETTO", "ARCHIVIO", "RETRO", "FUTURO", "DIGITALE",
+    "TECNOLOGIA", "HARDWARE", "SOFTWARE", "MEMORIA", "PROCESSORE", "SCHEDA", "RETE", "FIREWALL",
+    "CRITTOGRAFIA", "BACKUP", "UPDATE", "TERMINALE", "CONSOLE", "STREAMING", "VIRTUALE", "GIGAHERTZ"
+];
 
 async function startQuiz(interaction) {
     const userId = interaction.user.id;
     const randomQ = QUIZ_QUESTIONS[Math.floor(Math.random() * QUIZ_QUESTIONS.length)];
-    inventory.incrementStat(userId, "gamesPlayed");
 
     const row = new ActionRowBuilder().addComponents(
         randomQ.options.map(opt => 
@@ -47,12 +145,7 @@ async function startQuiz(interaction) {
         if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", ephemeral: true });
 
         if (i.customId === 'quiz_correct') {
-            inventory.addXP(userId, 80);
-            inventory.addCoins(userId, 40);
-            inventory.incrementStat(userId, "gamesWon");
-            inventory.incrementStat(userId, "quizzesWon");
-            await achievements.checkAndNotify(userId, interaction.client);
-            await i.update({ content: "✅ **Risposta esatta!** +80 XP e +40 monete!", embeds: [], components: [] });
+            await i.update({ content: "✅ **Risposta esatta!** Complimenti!", embeds: [], components: [] });
         } else {
             await i.update({ content: `❌ **Errata!** Era: **${randomQ.answer}**`, embeds: [], components: [] });
         }
@@ -66,8 +159,6 @@ async function startQuiz(interaction) {
 
 async function startBomb(interaction) {
     const userId = interaction.user.id;
-    inventory.incrementStat(userId, "gamesPlayed");
-
     const rawRiddle = BOMB_WIRES_POOL[Math.floor(Math.random() * BOMB_WIRES_POOL.length)];
     const correctWire = rawRiddle.correct.toLowerCase();
 
@@ -94,12 +185,7 @@ async function startBomb(interaction) {
 
         const chosenWire = i.customId.replace('bomb_', '');
         if (chosenWire === correctWire) {
-            inventory.addXP(userId, 150);
-            inventory.addCoins(userId, 75);
-            inventory.incrementStat(userId, "gamesWon");
-            inventory.incrementStat(userId, "bombsDefused");
-            await achievements.checkAndNotify(userId, interaction.client);
-            await i.update({ content: `🎉 **BOOM EVITATO!** Cavo corretto (${correctWire}). +150 XP e +75 monete!`, embeds: [], components: [] });
+            await i.update({ content: `🎉 **BOOM EVITATO!** Cavo corretto (${correctWire}). Ottimo lavoro!`, embeds: [], components: [] });
         } else {
             await i.update({ content: `💥 **KABOOOM!** Hai tagliato il ${chosenWire}, ma era il ${correctWire}!`, embeds: [], components: [] });
         }
@@ -113,8 +199,6 @@ async function startBomb(interaction) {
 
 async function startMemory(interaction) {
     const userId = interaction.user.id;
-    inventory.incrementStat(userId, "gamesPlayed");
-
     const sequence = Array.from({ length: 4 }, () => Math.floor(Math.random() * 4) + 1);
     await interaction.reply({ content: `🧠 **Memorizza la sequenza:**\n# ➡️ ${sequence.join(' - ')}`, ephemeral: true });
 
@@ -135,12 +219,7 @@ async function startMemory(interaction) {
             if (userGuess.length === sequence.length) {
                 collector.stop();
                 if (userGuess.every((val, idx) => val === sequence[idx])) {
-                    inventory.addXP(userId, 120);
-                    inventory.addCoins(userId, 60);
-                    inventory.incrementStat(userId, "gamesWon");
-                    inventory.incrementStat(userId, "memoryWon");
-                    await achievements.checkAndNotify(userId, interaction.client);
-                    await i.update({ content: "🏆 **Corretto!** +120 XP e +60 monete!", components: [] });
+                    await i.update({ content: "🏆 **Corretto! Memoria di ferro!**", components: [] });
                 } else {
                     await i.update({ content: `❌ **Errata!** Era: ${sequence.join(' - ')}`, components: [] });
                 }
@@ -153,8 +232,6 @@ async function startMemory(interaction) {
 
 async function startReaction(interaction) {
     const userId = interaction.user.id;
-    inventory.incrementStat(userId, "gamesPlayed");
-
     const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder().setCustomId('react_btn').setLabel('PREMI ORA!').setStyle(ButtonStyle.Danger).setDisabled(true)
     );
@@ -177,12 +254,7 @@ async function startReaction(interaction) {
             const reactionTime = Date.now() - startTime;
             collector.stop();
 
-            inventory.addXP(userId, 100);
-            inventory.addCoins(userId, 50);
-            inventory.incrementStat(userId, "gamesWon");
-            inventory.incrementStat(userId, "reactionWon");
-            await achievements.checkAndNotify(userId, interaction.client);
-            await i.update({ content: `⚡ **Fulmineo!** ${reactionTime}ms. +100 XP e +50 monete!`, components: [] });
+            await i.update({ content: `⚡ **Fulmineo!** Tempo di reazione: ${reactionTime}ms!`, components: [] });
         });
 
         collector.on('end', collected => {
@@ -193,8 +265,6 @@ async function startReaction(interaction) {
 
 async function startHangman(interaction) {
     const userId = interaction.user.id;
-    inventory.incrementStat(userId, "gamesPlayed");
-
     const word = HANGMAN_WORDS[Math.floor(Math.random() * HANGMAN_WORDS.length)];
     let guessedLetters = [];
     let errors = 0;
@@ -231,63 +301,10 @@ async function startHangman(interaction) {
 
         if (won) {
             collector.stop();
-            inventory.addXP(userId, 150);
-            inventory.addCoins(userId, 70);
-            inventory.incrementStat(userId, "gamesWon");
-            inventory.incrementStat(userId, "hangmanWon");
-            await achievements.checkAndNotify(userId, interaction.client);
-            await i.update({ content: `🎉 **Vittoria!** Parola: **${word}**. +150 XP e +70 monete!`, embeds: [], components: [] });
+            await i.update({ content: `🎉 **Vittoria!** La parola era **${word}**!`, embeds: [], components: [] });
         } else if (lost) {
             collector.stop();
-            await i.update({ content: `💀 **Game Over!** Parola: **${word}**.`, embeds: [], components: [] });
+            await i.update({ content: `💀 **Game Over!** La parola era **${word}**.`, embeds: [], components: [] });
         } else {
             const updatedEmbed = new EmbedBuilder()
-                .setColor('#f1c40f')
-                .setTitle('🪢 Impiccato')
-                .setDescription(`Parola:\n# ${getWordDisplay()}\n\nLettere: ${guessedLetters.join(', ')}\nErrori: ${errors}/${maxErrors}`);
-            
-            await i.update({ embeds: [updatedEmbed], components: [getRow()] });
-        }
-    });
-}
-
-async function startWheel(interaction) {
-    const userId = interaction.user.id;
-    inventory.incrementStat(userId, "gamesPlayed");
-
-    const outcomes = [
-        { name: "Sfortuna (0 monete)", coins: 0, xp: 10, jackpot: false },
-        { name: "Piccola Vincita", coins: 30, xp: 40, jackpot: false },
-        { name: "Media Vincita", coins: 100, xp: 80, jackpot: false },
-        { name: "GRANDE JACKPOT! 🎰", coins: 500, xp: 300, jackpot: true }
-    ];
-
-    const result = outcomes[Math.floor(Math.random() * outcomes.length)];
-    inventory.addCoins(userId, result.coins);
-    inventory.addXP(userId, result.xp);
-
-    if (result.jackpot) {
-        inventory.incrementStat(userId, "jackpots");
-        inventory.incrementStat(userId, "gamesWon");
-        await achievements.checkAndNotify(userId, interaction.client);
-    } else if (result.coins > 0) {
-        inventory.incrementStat(userId, "gamesWon");
-    }
-
-    const embed = new EmbedBuilder()
-        .setColor(result.jackpot ? '#e67e22' : '#2ecc71')
-        .setTitle('🎰 Ruota della Fortuna')
-        .setDescription(`La ruota gira...\n\nRisultato: **${result.name}**\nHai vinto: +${result.coins} monete e +${result.xp} XP!`);
-
-    await interaction.reply({ embeds: [embed] });
-}
-
-module.exports = {
-    startQuiz,
-    startBomb,
-    startMemory,
-    startReaction,
-    startHangman,
-    startWheel
-};
             

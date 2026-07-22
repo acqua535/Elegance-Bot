@@ -1,8 +1,7 @@
 // ==========================================
-// FILE: registry.js
+// FILE: registry.js (MAPPA COMPLETA)
 // ==========================================
 const ticket = require("./ticket");
-const games = require("./minigame");
 const verify = require("./verify");
 const entry = require("./entry");
 const invites = require("./invites");
@@ -43,15 +42,4 @@ const registryMap = {
     "apply_reject": apply.buttonHandler
 };
 
-module.exports = async (interaction) => {
-    // Intercetta il menu dell'Hub minigiochi prima di cercare nella mappa statica
-    if (interaction.isStringSelectMenu() && interaction.customId === 'game_hub_select') {
-        return await games.handleGameInteraction(interaction);
-    }
-
-    // Cerca il gestore nella mappa statica dei pulsanti/menu
-    const handler = registryMap[interaction.customId];
-    if (handler) {
-        return await handler(interaction);
-    }
-};
+module.exports = registryMap;

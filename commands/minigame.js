@@ -51,7 +51,7 @@ const QUIZ_QUESTIONS = [
     { q: "Quanti bit ci sono in un byte?", options: ["4", "8", "16", "32"], answer: "8" },
     { q: "Qual è il colore della bandiera delle Nazioni Unite?", options: ["Rosso", "Verde", "Blu", "Giallo"], answer: "Blu" },
     { q: "Chi ha dipinto 'La Notte Stellata'?", options: ["Monet", "Van Gogh", "Picasso", "Cézanne"], answer: "Van Gogh" },
-    { q: "Qual è il pianeta conosciuto come il Pianeta Rosso?", options: ["Marte", "Venere", "Giove", "Saturno"], answer: "Marte"],
+    { q: "Qual è il pianeta conosciuto come il Pianeta Rosso?", options: ["Marte", "Venere", "Giove", "Saturno"], answer: "Marte" },
     { q: "Qual è il nome del cane di Topolino?", options: ["Snoopy", "Pluto", "Goofy", "Bolt"], answer: "Pluto" },
     { q: "In quale sport si usa un anello e un pallone arancione?", options: ["Calcio", "Basket", "Tennis", "Rugby"], answer: "Basket" },
     { q: "Qual è la capitale della Spagna?", options: ["Barcellona", "Valencia", "Madrid", "Siviglia"], answer: "Madrid" },
@@ -90,7 +90,7 @@ const BOMB_WIRES_POOL = [
     { text: "Quale cavo ha il minor numero di lettere nel nome?", correct: "blu" },
     { text: "Quale cavo ha il maggior numero di lettere nel nome tra rosso, blu, verde, giallo?", correct: "giallo" },
     { text: "Se mescoli giallo e blu, ottieni me.", correct: "verde" },
-    { text: "Se rimuovi il blu dal ciano, ottieni me (rosso primario sottrattivo).", correct: "verde" }, // (Semplificato)
+    { text: "Se rimuovi il blu dal ciano, ottieni me (rosso primario sottrattivo).", correct: "verde" },
     { text: "Taglia il cavo del colore del deserto sabbioso.", correct: "giallo" },
     { text: "Taglia il cavo del colore del cielo notturno sereno.", correct: "blu" },
     { text: "Taglia il cavo del colore di una fragola matura.", correct: "rosso" },
@@ -101,7 +101,7 @@ const BOMB_WIRES_POOL = [
     { text: "Codice esadecimale #00FF00 corrisponde a quale cavo?", correct: "verde" },
     { text: "Codice esadecimale #FFFF00 corrisponde a quale cavo?", correct: "giallo" },
     { text: "Il cavo che rappresenta l'aria aperta e tersa.", correct: "blu" },
-    { text: "Il cavo che rappresenta la ruggine del ferro.", correct: "ross" }, // fallback a rosso gestito se serve
+    { text: "Il cavo che rappresenta la ruggine del ferro.", correct: "rosso" },
     { text: "Il cavo che rappresenta l'energia nucleare nei fumetti.", correct: "verde" },
     { text: "Il cavo che rappresenta il tuono e la luce del limone.", correct: "giallo" },
     { text: "Disinnesco logico: Non sono freddo, non sono verde, non sono giallo.", correct: "rosso" },
@@ -187,7 +187,6 @@ async function startBomb(interaction) {
     inventory.incrementStat(userId, "gamesPlayed");
 
     const rawRiddle = BOMB_WIRES_POOL[Math.floor(Math.random() * BOMB_WIRES_POOL.length)];
-    // Normalizza la risposta corretta per evitare errori di battitura (es. ross -> rosso)
     let correctWire = rawRiddle.correct.toLowerCase();
     if (correctWire === "ross") correctWire = "rosso";
 
@@ -313,4 +312,10 @@ async function startReaction(interaction) {
             if (collected.size === 0) interaction.editReply({ content: "🐢 Tempo scaduto!", components: [] });
         });
     }, randomDelay);
-                                             }
+}
+
+async function startHangman(interaction) {
+    const userId = interaction.user.id;
+    inventory.incrementStat(userId, "gamesPlayed");
+
+    co

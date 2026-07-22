@@ -30,7 +30,6 @@ const ACHIEVEMENTS = {
     "time_to_mine": { 
         title: "⛏️ Time to Mine!", 
         desc: "Hai craftato un Piccone. Ora si scava sul serio!", 
-        // Controlla se l'utente ha almeno un piccone nell'inventario
         req: (stats, user) => (user.items["Piccone di Ferro"] || 0) >= 1 
     },
     "time_to_strike": { 
@@ -77,29 +76,45 @@ const ACHIEVEMENTS = {
     "sbancatore": { title: "🎰 Jackpot!", desc: "Hai sbancato vincendo il Jackpot massimo alla Ruota!", req: (stats) => stats.jackpots >= 1 }
 };
 
+const CHANNEL_ID = "1528576173972521012";
+
 /**
- * Controlla gli achievement di un utente e restituisce quelli appena sbloccati
+ * Controlla gli achievement e invia la notifica nel canale designato
+ * @param {string} userId 
+ * @param {import('discord.js').Client} client 
  */
-function check(userId) {
+async function checkAndNotify(userId, client) {
     const user = inventory.getUser(userId);
     const unlockedNow = [];
 
     for (const [id, ach] of Object.entries(ACHIEVEMENTS)) {
         if (!user.achievements.includes(id)) {
-            // Passiamo sia stats che l'oggetto user intero, così possiamo leggere l'inventario (user.items)
             if (ach.req(user.stats, user)) {
                 inventory.unlockAchievement(userId, id);
-                unlockedNow.push(`**${ach.title}**\n*${ach.desc}*`);
+                unlockedNow.push(`🏆 **${ach.title}**\n*${ach.desc}*`);
                 
-                // Ricompensa per ogni achievement sbloccato
+                // Ricompensa automatica per l'achievement
                 inventory.addCoins(userId, 50); 
                 inventory.addXP(userId, 100);
             }
         }
     }
 
+    // Se ha sbloccato qualcosa, invia il messaggio nel canale specifico
+    if (unlockedNow.length > 0 && client) {
+        try {
+            const channel = await client.channels.fetch(CHANNEL_ID);
+            if (channel && channel.isTextBased()) {
+                const userMention = `<@${userId}>`;
+                await channel.send(`🎉 Complimenti ${userMention}! Ha sbloccato nuovi traguardi:\n\n${unlockedNow.join("\n\n")}`);
+            }
+        } catch (err) {
+            console.error("Impossibile inviare l'achievement nel canale:", err);
+        }
+    }
+
     return unlockedNow;
 }
 
-module.exports = { check, ACHIEVEMENTS };
-        
+module.exports = { checkAndNotify, ACHIEVEMENTS };
+            

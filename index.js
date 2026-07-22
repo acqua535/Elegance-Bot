@@ -6,7 +6,8 @@ const deployCommands = require("./deployCommand");
 const buttonHandler = require("./buttonHandler");
 const entry = require("./entry");
 const invites = require("./invites");
-const logSystem = require("./logSystem"); // Sistema di log unico senza JSON
+const logSystem = require("./logSystem"); // Sistema di log unico
+const countingSystem = require("./countingSystem"); // 1. Importiamo il file qui in alto!
 
 const client = new Client({
     intents: [
@@ -14,7 +15,7 @@ const client = new Client({
         GatewayIntentBits.GuildMessages,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildInvites,
-        GatewayIntentBits.MessageContent,   // Legge il contenuto per i log eliminati/modificati
+        GatewayIntentBits.MessageContent,   // Legge il contenuto dei messaggi per i numeri del Counting e i Log
         GatewayIntentBits.GuildVoiceStates, // Traccia entrate/uscite/spostamenti nelle vocali
         GatewayIntentBits.GuildBans         // Traccia i ban degli utenti
     ],
@@ -39,8 +40,9 @@ client.once("ready", async () => {
     await deployCommands();
     loadCommands(client);
 
-    // Inizializzazione del sistema dei Log
+    // Inizializzazione dei sistemi di eventi
     logSystem(client);
+    countingSystem(client); // 2. Lo attiviamo QUI dove 'client' esiste già!
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
@@ -112,4 +114,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
-            
+                

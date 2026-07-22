@@ -7,12 +7,29 @@ const CATEGORY_ID = "1528582447443345560";
 const ALLOWED_CHANNEL_ID = "1528576161959907348";
 const LOG_CHANNEL_ID = "1528576197741772902";
 
-// 3 domande preliminari del supporto
-const TICKET_QUESTIONS = [
-    "1️⃣ Qual è il motivo principale dell'apertura del ticket?",
-    "2️⃣ Fornisci quanti più dettagli o prove possibili riguardo la tua richiesta:",
-    "3️⃣ C'è un membro dello staff specifico con cui eri già in contatto o un ulteriore appunto?"
-];
+// 🎯 DOMANDE SPECIFICHE PER OGNI CATEGORIA
+const CATEGORY_QUESTIONS = {
+    servizi: [
+        "1️⃣ Quale servizio o pacchetto VIP necessita di assistenza?",
+        "2️⃣ Descrivi nei dettagli la richiesta o il problema riscontrato:",
+        "3️⃣ Hai già effettuato un pagamento o possiedi una ricevuta/ID transazione?"
+    ],
+    partner: [
+        "1️⃣ Per quale brand, community o progetto stai richiedendo una collaborazione?",
+        "2️⃣ Quali sono i tuoi numeri attuali e i link ai tuoi canali/piattaforme principali?",
+        "3️⃣ Qual è la tua proposta di partnership e cosa metti a disposizione?"
+    ],
+    bug: [
+        "1️⃣ Quale errore tecnico o bug si è verificato e in quale piattaforma/sezione?",
+        "2️⃣ Quali sono i passaggi esatti per riprodurre il problema?",
+        "3️⃣ Puoi fornire uno screenshot, un video o il testo esatto dell'errore?"
+    ],
+    report: [
+        "1️⃣ Chi intendi segnalare (Tag o ID Utente) e dove si è verificato l'evento?",
+        "2️⃣ Quale norma del regolamento è stata violata e cosa è accaduto nel dettaglio?",
+        "3️⃣ Possiedi prove trasparenti (screenshot non modificati o registrazioni video)?"
+    ]
+};
 
 const getData = () => {
     try {
@@ -46,21 +63,43 @@ module.exports = {
             return interaction.reply({ content: "❌ **Accesso Negato:** Questo comando non può essere eseguito in questo canale.", flags: MessageFlags.Ephemeral });
         }
 
+        // 🌟 EMBED PRINCIPALE (/ticket) MOLTO ARRICCHITO
         const embed = new EmbedBuilder()
             .setTitle("🛡️ ELEGANCE SPONSORING ── CENTER ASSISTANCE")
             .setDescription(
-                "Benvenuto nel sistema ufficiale di supporto di **Elegance Sponsoring**.\n\n" +
-                "Il nostro team di esperti è pronto a fornirti assistenza dedicata per qualsiasi esigenza. Seleziona attentamente la categoria di tuo interesse dal menu interattivo sottostante per aprire un canale riservato.\n\n" +
-                "⚠️ *Ti invitiamo ad aprire un ticket solo se strettamente necessario per evitare sanzioni.*"
+                "👑 **Benvenuto nel Centro Assistenza Ufficiale di Elegance Sponsoring!**\n\n" +
+                "Il nostro team di supporto è a tua completa disposizione per fornirti un'assistenza rapida, professionale e su misura. " +
+                "Per permetterci di gestire al meglio la tua richiesta, ti invitiamo a selezionare dal menu sottostante la categoria che meglio descrive la tua esigenza.\n\n" +
+                "⚙️ **Informativa & Linee Guida dell'Assistenza:**\n" +
+                "• ⏱️ **Tempi di Risposta:** L'assistenza viene fornita in base alla disponibilità del nostro Staff. Ti preghiamo di portare pazienza.\n" +
+                "• 🎯 **Domande Automatizzate:** Una volta aperto il ticket, ti verrà richiesta una rapida compilazione di 3 domande per inquadrare subito il problema.\n" +
+                "• ⚠️ **Uso Responsabile:** Aprire ticket inutili, goliardici o privi di senso porterà a sanzioni disciplinari o al blacklist dal supporto."
             )
             .addFields(
-                { name: "💎 Servizi & VIP", value: "Assistenza dedicata sui servizi offerti e gestione privilegi.", inline: false },
-                { name: "🤝 Partnership & Sponsor", value: "Gestione collaborazioni, accordi commerciali e sponsorizzazioni.", inline: false },
-                { name: "🐛 Bug & Errori", value: "Segnalazione di malfunzionamenti, bug tecnici o problemi di sistema.", inline: false },
-                { name: "🚨 Segnalazioni", value: "Report su utenti, comportamenti scorretti o violazioni del regolamento.", inline: false }
+                { 
+                    name: "💎 ── Servizi & Pass VIP", 
+                    value: "📊 *Richiedi informazioni sui nostri servizi esclusivi, attivazione pacchetti VIP o assistenza sui pagamenti effettuati.*", 
+                    inline: false 
+                },
+                { 
+                    name: "🤝 ── Partnership & Sponsoring", 
+                    value: "📈 *Invia le tue proposte commerciali, accordi di collaborazione o richieste di sponsorship per la tua community/brand.*", 
+                    inline: false 
+                },
+                { 
+                    name: "🐛 ── Bug & Problemi Tecnici", 
+                    value: "🔧 *Segnala errori di sistema, malfunzionamenti dei bot o problematiche tecniche riscontrate nei nostri canali.*", 
+                    inline: false 
+                },
+                { 
+                    name: "🚨 ── Segnalazioni & Report Staff", 
+                    value: "🛡️ *Invia segnalazioni riservate riguardanti utenti scorretti, tentativi di truffa o violazioni del regolamento.*", 
+                    inline: false 
+                }
             )
             .setColor(0x2f3136)
-            .setFooter({ text: "Elegance Sponsoring • Secure Ticket System", iconURL: interaction.guild.iconURL() })
+            .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+            .setFooter({ text: "Elegance Sponsoring • Sistema di Supporto Automatizzato v2.0", iconURL: interaction.guild.iconURL() })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
@@ -68,10 +107,10 @@ module.exports = {
                 .setCustomId('ticket_category')
                 .setPlaceholder('📂 Seleziona il dipartimento di supporto...')
                 .addOptions([
-                    new StringSelectMenuOptionBuilder().setLabel('Servizi & VIP').setValue('servizi').setDescription('Assistenza dedicata sui servizi offerti').setEmoji('💎'),
-                    new StringSelectMenuOptionBuilder().setLabel('Partnership & Sponsor').setValue('partner').setDescription('Gestione collaborazioni e accordi commerciali').setEmoji('🤝'),
-                    new StringSelectMenuOptionBuilder().setLabel('Bug & Errori').setValue('bug').setDescription('Segnala malfunzionamenti o problemi tecnici').setEmoji('🐛'),
-                    new StringSelectMenuOptionBuilder().setLabel('Segnalazioni').setValue('report').setDescription('Segnala infrazioni o problemi gravi').setEmoji('🚨')
+                    new StringSelectMenuOptionBuilder().setLabel('Servizi & VIP').setValue('servizi').setDescription('Richiedi supporto su servizi e abbonamenti VIP').setEmoji('💎'),
+                    new StringSelectMenuOptionBuilder().setLabel('Partnership & Sponsor').setValue('partner').setDescription('Proponi collaborazioni o sponsorship').setEmoji('🤝'),
+                    new StringSelectMenuOptionBuilder().setLabel('Bug & Errori').setValue('bug').setDescription('Segnala malfunzionamenti o anomalie tecniche').setEmoji('🐛'),
+                    new StringSelectMenuOptionBuilder().setLabel('Segnalazioni').setValue('report').setDescription('Segnala violazioni di utenti o comportamenti scorretti').setEmoji('🚨')
                 ])
         );
 
@@ -79,7 +118,6 @@ module.exports = {
     },
 
     async categoryHandler(interaction) {
-        // Differiamo la risposta per evitare il timeout di Discord API
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
         const type = interaction.values[0];
@@ -96,8 +134,19 @@ module.exports = {
             ]
         });
 
+        // Salvataggio metadati
         const data = getData();
-        data[channel.id] = { owner: interaction.user.id, status: 'open', lastMessage: Date.now(), type, claimedBy: null };
+        data[channel.id] = { 
+            owner: interaction.user.id, 
+            status: 'open', 
+            lastMessage: Date.now(), 
+            type, 
+            claimedBy: null,
+            questionnaire: {
+                step: 0,
+                answers: []
+            }
+        };
         saveData(data);
 
         const openLogEmbed = new EmbedBuilder()
@@ -112,17 +161,26 @@ module.exports = {
             .setTimestamp();
         await sendSystemLog(interaction.guild, openLogEmbed);
 
+        // 🌟 EMBED BENVENUTO NEL CANALE TICKET MOLTO ARRICCHITO
         const welcomeEmbed = new EmbedBuilder()
-            .setTitle(`🎫 TICKET APERTO ── [${type.toUpperCase()}]`)
+            .setTitle(`🎫 BENVENUTO NEL SUPPORTO ── [${type.toUpperCase()}]`)
             .setDescription(
-                `Gentile ${interaction.user}, grazie per aver aperto un ticket.\n\n` +
-                "Il nostro team di supporto è stato allertato e prenderà in carico la tua richiesta nel minor tempo possibile.\n\n" +
-                "📌 **Regole del canale:**\n" +
-                "• Descrivi dettagliatamente il tuo problema.\n" +
-                "• Evita di pingare inutilmente lo staff.\n" +
-                "• Mantieni un linguaggio consono e rispettoso."
+                `Gentile ${interaction.user},\n\n` +
+                `Grazie per aver aperto una richiesta di assistenza nel reparto **${type.toUpperCase()}**.\n` +
+                "Un membro del nostro Staff prende in carico le richieste nell'ordine di arrivo. Nel frattempo, segui le istruzioni sottostanti per velocizzare l'operazione.\n\n" +
+                "📜 **Regolamento del Canale di Assistenza:**\n" +
+                "1️⃣ **Non Pingare lo Staff:** I solleciti continui rallentano il supporto. Utilizza il pulsante `📢 Notifica Staff` solo se strettamente necessario.\n" +
+                "2️⃣ **Sii Dettagliato:** Fornisci subito tutte le informazioni necessarie (screenshot, video o ID) senza attendere che ti vengano chieste.\n" +
+                "3️⃣ **Rispetto ed Educazione:** Mantiensiti educato. L'uso di un linguaggio offensivo comporterà la chiusura immediata del ticket e provvedimenti disciplinari."
+            )
+            .addFields(
+                { name: "👤 Richiedente", value: `${interaction.user}`, inline: true },
+                { name: "📂 Dipartimento", value: `\`${type.toUpperCase()}\``, inline: true },
+                { name: "🔒 Stato Canale", value: "`Aperto & Riservato`", inline: true }
             )
             .setColor(0x00FF99)
+            .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+            .setFooter({ text: "Elegance Sponsoring • Centro Supporto", iconURL: interaction.guild.iconURL() })
             .setTimestamp();
 
         const row = new ActionRowBuilder().addComponents(
@@ -133,64 +191,78 @@ module.exports = {
 
         await channel.send({ content: `${interaction.user} | <@&${STAFF_ROLE_ID}>`, embeds: [welcomeEmbed], components: [row] });
 
-        // Messaggio interattivo del Bot per l'avvio delle domande
+        // Messaggio guidato del Bot
         await channel.send({
-            content: `🤖 **Assistente Elegance:** Ciao ${interaction.user}! Prima di collegarti con lo staff, devo portarti attraverso una breve procedura guidata (max 3 domande).\n\n👉 **Digita \`inizia\` in questa chat per avviare il questionario.**`
+            content: `🤖 **Assistente Virtuale Elegance:**\nCiao ${interaction.user}! Per permettere allo Staff di aiutarti nel minor tempo possibile, abbiamo avviato un rapido questionario di 3 domande specifiche per la categoria **${type.toUpperCase()}**.\n\n👉 **Digita \`inizia\` qui sotto in chat per avviare le domande.**`
         });
 
-        // Avvio gestore domande in background per questo canale
-        this.startQuestionnaire(channel, interaction.user.id);
-
-        return interaction.editReply({ content: `✅ **Ticket creato con successo!** Clicca qui per accedere: ${channel}` });
+        // 🎯 RISPOSTA RICHIESTA: Ticket creato: #ticket
+        return interaction.editReply({ content: `Ticket creato: ${channel}` });
     },
 
-    async startQuestionnaire(channel, userId) {
-        const filter = m => m.author.id === userId;
-        const collector = channel.createMessageCollector({ filter, time: 600000 }); // 10 minuti di tempo max
+    async handleMessage(message) {
+        if (message.author.bot) return;
 
-        let step = 0; // 0 = attesa di "inizia", 1..3 = domande
-        const answers = [];
+        const data = getData();
+        const ticket = data[message.channel.id];
 
-        collector.on('collect', async m => {
-            if (step === 0) {
-                if (m.content.trim().toLowerCase() === 'inizia') {
-                    step = 1;
-                    await channel.send({ content: `✅ **Ottimo! Iniziamo.**\n\n**Domanda 1/3:** ${TICKET_QUESTIONS[0]}` });
+        if (!ticket) return;
+
+        ticket.lastMessage = Date.now();
+
+        // Se il questionario è attivo ed è l'utente del ticket a scrivere
+        if (ticket.questionnaire && ticket.owner === message.author.id && ticket.questionnaire.step !== -1) {
+            const q = ticket.questionnaire;
+            const questions = CATEGORY_QUESTIONS[ticket.type] || CATEGORY_QUESTIONS['servizi'];
+
+            // Step 0: Attesa di "inizia"
+            if (q.step === 0) {
+                if (message.content.trim().toLowerCase() === 'inizia') {
+                    q.step = 1;
+                    saveData(data);
+                    await message.channel.send({ content: `✅ **Procedura Avviata!**\n\n**Domanda 1/3:** ${questions[0]}` });
                 } else {
-                    await channel.send({
+                    await message.channel.send({
                         content: `⚠️ **Attenzione:** Devi digitare esattamente \`inizia\` per far partire le domande guidate dell'assistenza!`
                     });
                 }
-            } else if (step >= 1 && step <= 3) {
-                answers.push({ question: TICKET_QUESTIONS[step - 1], answer: m.content });
-                
-                if (step < 3) {
-                    step++;
-                    await channel.send({ content: `📝 Risposta registrata!\n\n**Domanda ${step}/3:** ${TICKET_QUESTIONS[step - 1]}` });
+                return;
+            }
+
+            // Step 1..3: Raccolta risposte
+            if (q.step >= 1 && q.step <= 3) {
+                q.answers.push({ question: questions[q.step - 1], answer: message.content });
+
+                if (q.step < 3) {
+                    q.step++;
+                    saveData(data);
+                    await message.channel.send({ content: `📝 **Risposta registrata!**\n\n**Domanda ${q.step}/3:** ${questions[q.step - 1]}` });
                 } else {
-                    collector.stop('completed');
+                    // Questionario Completato
+                    q.step = -1;
+                    saveData(data);
+
+                    const summaryEmbed = new EmbedBuilder()
+                        .setTitle(`📋 DATI RACCOLTI SUPPORTO ── [${ticket.type.toUpperCase()}]`)
+                        .setDescription(`Di seguito sono riassunte le informazioni fornite dall'utente ${message.author}:`)
+                        .setColor(0x3498db)
+                        .setFooter({ text: "Elegance Support Assistant • Modulo compilato" })
+                        .setTimestamp();
+
+                    q.answers.forEach(item => {
+                        summaryEmbed.addFields({ name: `❓ ${item.question}`, value: `💬 ${item.answer || "*Nessuna risposta*"}` });
+                    });
+
+                    await message.channel.send({ 
+                        content: `✨ **Questionario completato con successo!** Le tue risposte sono state registrate e trasmesse allo staff. A breve un operatore prenderà in carico la richiesta.`, 
+                        embeds: [summaryEmbed] 
+                    });
                 }
+                return;
             }
-        });
+        }
 
-        collector.on('end', async (collected, reason) => {
-            if (reason === 'completed') {
-                const summaryEmbed = new EmbedBuilder()
-                    .setTitle("📋 RISPOSTE QUESTIONARIO INIZIALE")
-                    .setColor(0x3498db)
-                    .setFooter({ text: "Elegance Support Assistant" })
-                    .setTimestamp();
-
-                answers.forEach(item => {
-                    summaryEmbed.addFields({ name: item.question, value: item.answer || "*Nessuna risposta*" });
-                });
-
-                await channel.send({ 
-                    content: `✨ **Questionario completato!** Ho registrato le tue risposte e le ho inoltrate allo staff:`, 
-                    embeds: [summaryEmbed] 
-                });
-            }
-        });
+        saveData(data);
     },
 
     async buttonHandler(interaction) {
@@ -214,7 +286,7 @@ module.exports = {
             saveData(data);
             
             await interaction.channel.send({ 
-                content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento immediato dello staff in questo canale!` 
+                content: `📢 <@&${STAFF_ROLE_ID}> • L'utente **${interaction.user.username}** richiede l'intervento dello staff in questo canale!` 
             });
 
             const pingLogEmbed = new EmbedBuilder()
@@ -290,66 +362,4 @@ module.exports = {
                     { name: "Creatore", value: `<@${ticket.owner}>`, inline: true }
                 )
                 .setColor(0xFF0000)
-                .setTimestamp();
-
-            const logFiles = transcriptBuffer ? [{ attachment: transcriptBuffer, name: transcriptFileName }] : [];
-            await sendSystemLog(interaction.guild, closeLogEmbed, logFiles);
-
-            const ratingEmbed = new EmbedBuilder()
-                .setTitle("⭐ VALUTAZIONE DEL SUPPORTO")
-                .setDescription("Il ticket è stato chiuso con successo. Per aiutarci a migliorare la qualità dei nostri servizi, ti invitiamo a valutare l'assistenza ricevuta cliccando su uno dei pulsanti sottostanti:")
-                .setColor(0xFFD700)
-                .setTimestamp();
-
-            const ratingRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('rate_good').setLabel('⭐ Ottimo').setStyle(ButtonStyle.Success),
-                new ButtonBuilder().setCustomId('rate_mid').setLabel('⭐ Medio').setStyle(ButtonStyle.Secondary),
-                new ButtonBuilder().setCustomId('rate_bad').setLabel('⭐ Scadente').setStyle(ButtonStyle.Danger)
-            );
-
-            await interaction.channel.send({ embeds: [ratingEmbed], components: [ratingRow] }).catch(() => {});
-
-            ticket.status = 'closed';
-            saveData(data);
-
-            // FIX CRASH: Salvataggio riferimento canale prima del setTimeout
-            const targetChannel = interaction.channel;
-            if (targetChannel) {
-                setTimeout(() => {
-                    targetChannel.delete().catch(err => console.error("Impossibile eliminare canale ticket:", err));
-                }, 5000);
-            }
-        }
-    },
-
-    async ratingHandler(interaction) {
-        const ratingType = interaction.customId.replace('rate_', '').toUpperCase();
-        
-        const ratingLogEmbed = new EmbedBuilder()
-            .setTitle("⭐ VALUTAZIONE RICEVUTA")
-            .setDescription(`Un utente ha lasciato un feedback per il supporto nel canale \`#${interaction.channel.name}\``)
-            .addFields(
-                { name: "Utente", value: `${interaction.user} (${interaction.user.tag})`, inline: true },
-                { name: "Valutazione", value: `**${ratingType}**`, inline: true }
-            )
-            .setColor(0xFFD700)
-            .setTimestamp();
-        await sendSystemLog(interaction.guild, ratingLogEmbed);
-
-        const content = `⭐ **Feedback Registrato con Successo!** La ringraziamo per aver valutato il supporto di Elegance Sponsoring.`;
-        
-        if (interaction.deferred || interaction.replied) {
-            return interaction.editReply({ content });
-        }
-        return interaction.reply({ content, flags: MessageFlags.Ephemeral });
-    },
-
-    async handleMessage(message) {
-        const data = getData();
-        if (data[message.channel.id]) {
-            data[message.channel.id].lastMessage = Date.now();
-            saveData(data);
-        }
-    }
-};
-                    
+                .s

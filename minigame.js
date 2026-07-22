@@ -1,4 +1,6 @@
-// minigame.js - PARTE 1
+// ==========================================
+// FILE: minigame.js - PARTE 1
+// ==========================================
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, SlashCommandBuilder, MessageFlags } = require('discord.js');
 
 // Mappa globale per l'Anti-Spam (traccia i giochi attivi degli utenti)
@@ -62,7 +64,7 @@ const QUIZ_QUESTIONS = [
 const BOMB_WIRES_POOL = [
     { text: "Sono il colore del sangue e del fuoco. Tagliami se hai coraggio.", correct: "rosso" },
     { text: "Rappresento l'oceano profondo e la calma gelida.", correct: "blu" },
-    { text: "Nasco unendo la luce del sole e il cielo. Sono la vita nei campi.", correct: "verde" },
+    { text: "Nasco unendo la luz del sole e il cielo. Sono la vita nei campi.", correct: "verde" },
     { text: "Sono l'oro dei folli e il colore del sole a mezzogiorno.", correct: "giallo" },
     { text: "Il mio colore ricorda la notte senza stelle e il carbone.", correct: "nero" },
     { text: "Rifletto la neve fresca e le nuvole nel cielo terso.", correct: "bianco" },
@@ -134,7 +136,7 @@ module.exports = {
         if (activeGames.has(userId)) {
             return interaction.reply({ 
                 content: "⚠️ **Hai già un minigioco in corso!** Termina quello attuale prima di aprirne un altro.", 
-                flags: [MessageFlags.Ephemeral] 
+                flags: 64 
             });
         }
 
@@ -157,7 +159,6 @@ module.exports = {
             .setTitle('🎮 Arcade & Minigames Hub')
             .setDescription('Benvenuto nel centro giochi ufficiale! Seleziona dal menu a tendina qui sotto il minigioco a cui vuoi giocare.\n\n*Nota: Puoi giocare a un gioco alla volta!*');
 
-        // VISIBILE A TUTTI NEL CANALE (Niente Ephemeral)
         await interaction.reply({ embeds: [embed], components: [row] });
     },
 
@@ -191,7 +192,9 @@ module.exports = {
     }
 };
 
-// minigame.js - PARTE 2
+// ==========================================
+// FILE: minigame.js - PARTE 2
+// ==========================================
 
 async function startQuiz(interaction) {
     const userId = interaction.user.id;
@@ -216,7 +219,7 @@ async function startQuiz(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 15000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", ephemeral: true });
+        if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", flags: 64 });
 
         activeGames.delete(userId);
         if (i.customId === 'quiz_correct') {
@@ -260,7 +263,7 @@ async function startBomb(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 10000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Non toccare la bomba altrui!", ephemeral: true });
+        if (i.user.id !== userId) return i.reply({ content: "Non toccare la bomba altrui!", flags: 64 });
 
         activeGames.delete(userId);
         const chosenWire = i.customId.replace('bomb_', '');
@@ -343,7 +346,7 @@ async function startReaction(interaction) {
 
         const collector = msg.createMessageComponentCollector({ time: 5000 });
         collector.on('collect', async i => {
-            if (i.user.id !== userId) return i.reply({ content: "Non bruciare la mossa!", ephemeral: true });
+            if (i.user.id !== userId) return i.reply({ content: "Non bruciare la mossa!", flags: 64 });
 
             activeGames.delete(userId);
             const reactionTime = Date.now() - startTime;
@@ -389,7 +392,7 @@ async function startHangman(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 30000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Non è il tuo turno!", ephemeral: true });
+        if (i.user.id !== userId) return i.reply({ content: "Non è il tuo turno!", flags: 64 });
 
         const letter = i.values[0];
         if (!guessedLetters.includes(letter)) guessedLetters.push(letter);
@@ -442,4 +445,5 @@ async function startWheel(interaction) {
 
     activeGames.delete(userId);
     await interaction.update({ content: null, embeds: [embed], components: [] });
-}
+                                    }
+        

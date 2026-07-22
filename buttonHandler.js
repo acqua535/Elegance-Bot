@@ -1,11 +1,11 @@
 const registry = require("./registry");
 const apply = require("./apply");
-const games = require("./minigame");
+const games = require("./minigame"); // <--- Importante: importa il file dei minigiochi
 
 module.exports = async (interaction) => {
     const customId = interaction.customId;
 
-    // Gestione speciale per i menu a tendina dell'Hub minigiochi
+    // 1. INTERCETTA SUBITO IL MENU A TENDINA DELL'HUB MINIGIOCHI
     if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
         return await games.handleGameInteraction(interaction);
     }

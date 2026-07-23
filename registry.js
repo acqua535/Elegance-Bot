@@ -8,13 +8,15 @@ const invites = require("./invites");
 const apply = require("./apply");
 
 const registryMap = {
-    // --- TICKET ---
+    // --- TICKET: SELETTORI & MENU A TENDINA ---
     "ticket_category": ticket.categoryHandler,
-    "ticket_manage": ticket.buttonHandler,
-    "claim_ticket": ticket.buttonHandler,
-    "close_ticket": ticket.buttonHandler,
-    "ping_staff": ticket.buttonHandler,
-    
+    "ticket_manage_menu": ticket.manageMenuHandler,
+    "ticket_transfer_select": ticket.transferHandler,
+
+    // --- TICKET: MODALI (Aggiungi / Rimuovi Utente) ---
+    "ticket_modal_adduser": ticket.modalHandler,
+    "ticket_modal_removeuser": ticket.modalHandler,
+
     // --- RATING TICKET ---
     "rate_good": ticket.ratingHandler,
     "rate_mid": ticket.ratingHandler,

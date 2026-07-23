@@ -59,6 +59,7 @@ client.on("interactionCreate", async (interaction) => {
             return;
         }
 
+        // GESTIONE MODULI POP-UP (MODALS)
         if (interaction.isModalSubmit()) {
             if (interaction.customId.startsWith("verify_modal_")) {
                 const verifyCmd = client.commands.get("verify");
@@ -73,9 +74,17 @@ client.on("interactionCreate", async (interaction) => {
                     return await applyCmd.modalHandler(interaction);
                 }
             }
+
+            // 🎫 Gestione Moduli Pop-up dei Ticket
+            if (interaction.customId.startsWith("ticket_modal_")) {
+                const ticketCmd = client.commands.get("ticket");
+                if (ticketCmd && ticketCmd.modalHandler) {
+                    return await ticketCmd.modalHandler(interaction);
+                }
+            }
         }
 
-        // Gestisce pulsanti e menu a tendina (incluso il nuovo hub dei minigiochi)
+        // Gestisce pulsanti e menu a tendina
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;

@@ -1,91 +1,46 @@
 // ==========================================
-// FILE: buttonHandler.js (UNIVERSALE)
+// FILE: buttonHandler.js
 // ==========================================
-const registry = require("./registry");
-const games = require("./minigame");
-const apply = require("./apply");
+const registryMap = require('./registry');
 
 module.exports = async (interaction) => {
-    // Accetta sia pulsanti che menu a tendina
-    if (!interaction.isButton() && !interaction.isStringSelectMenu()) return;
+    // Gestione unificata per Bottoni, Select Menu e Modali
+    if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
 
     const customId = interaction.customId;
 
-    // ---------------------------------------------------------
-    // 0. GESTIONE SPECIALE TICKET (Menu, Pulsanti, Rating)
-    // ---------------------------------------------------------
-    const ticketCmd = interaction.client.commands.get('ticket');
-
-    // Menu a tendina dei ticket
-    if (interaction.isStringSelectMenu() && customId === 'ticket_category') {
-        if (ticketCmd && ticketCmd.categoryHandler) {
-            return await ticketCmd.categoryHandler(interaction);
-        }
-    }
-
-    // Pulsanti interni dei ticket
-    if (['claim_ticket', 'ping_staff', 'close_ticket'].includes(customId)) {
-        if (ticketCmd && ticketCmd.buttonHandler) {
-            return await ticketCmd.buttonHandler(interaction);
-        }
-    }
-
-    // Valutazione / Rating del ticket
-    if (customId.startsWith('rate_')) {
-        if (ticketCmd && ticketCmd.ratingHandler) {
-            return await ticketCmd.ratingHandler(interaction);
-        }
-    }
-    // ---------------------------------------------------------
-
-    // 1. Gestione speciale per i minigiochi (Hub e menu interno dell'impiccato)
-    if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
-        return await games.handleGameInteraction(interaction);
-    }
-
-    if (customId === 'hangman_letter') {
-        // I minigiochi gestiscono i loro componenti tramite i propri collector locali, quindi ignoriamo qui
-        return;
-    }
-
-    // 2. Ignora i bottoni interni dei minigiochi che usano collector locali
-    if (
-        customId.startsWith('mem_') || 
-        customId.startsWith('quiz_') || 
-        customId.startsWith('bomb_') || 
-        customId.startsWith('react_')
-    ) {
-        return; 
-    }
-
-    // 3. Gestione speciale per candidature con ID dinamico (es: apply_accept_IDutente)
-    if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {
-        return await apply.buttonHandler(interaction);
-    }
-
-    // 4. Ricerca nel registry per TUTTI gli altri bottoni del bot (Verifica, Inviti, Setup vari)
-    const handler = registry[customId];
+    // Recupera l'handler mappato nel registry
+    const handler = registryMap[customId];
 
     if (!handler) {
-        console.warn(`⚠️ Nessun handler registrato per il componente: ${customId}`);
+        // Se non trova un handler diretto nel registry, controlla se è un bottone dinamico con prefisso (es: candidatura)
+        if (interaction.isButton()) {
+            if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {
+                const apply = require("./apply");
+                return await apply.buttonHandler(interaction);
+            }
+        }
+
         if (!interaction.replied && !interaction.deferred) {
             return interaction.reply({
-                content: "❌ Azione non riconosciuta o pulsante scaduto.",
-                flags: 64
+                content: "❌ **Azione non riconosciuta o interazione scaduta.**",
+                flags: 64 // MessageFlags.Ephemeral
             }).catch(() => {});
         }
         return;
     }
 
+    // Esegue la funzione corrispondente presa dal registry
     try {
         await handler(interaction);
     } catch (error) {
-        console.error(`🚨 Errore durante l'esecuzione del componente ${customId}:`, error);
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({
-                content: "❌ Si è verificato un errore durante l'elaborazione.",
-                flags: 64
-            }).catch(() => {});
+        console.error(`🚨 Errore durante la gestione dell'interazione [${customId}]:`, error);
+        
+        const errorMessage = "❌ Si è verificato un errore durante l'esecuzione dell'azione.";
+        if (interaction.replied || interaction.deferred) {
+            await interaction.followUp({ content: errorMessage, flags: 64 }).catch(() => {});
+        } else {
+            await interaction.reply({ content: errorMessage, flags: 64 }).catch(() => {});
         }
     }
 };

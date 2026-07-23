@@ -4,7 +4,7 @@
 const ticket = require("./ticket");
 const verify = require("./verify");
 const entry = require("./entry");
-const invites = require("./invites");
+const invites = require("./commands/invites");
 const apply = require("./apply");
 
 const registryMap = {

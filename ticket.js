@@ -129,7 +129,7 @@ module.exports = {
         await interaction.showModal(modal);
     },
 
-        async modalHandler(interaction) {
+    async modalHandler(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
         const type = interaction.customId.replace('ticket_modal_', '');
@@ -188,7 +188,9 @@ module.exports = {
                 "┣ 📢 **Pulsante Notifica:** Usa il pulsante solo in caso di urgenza (max 1/24h).\n" +
                 "┗ 🤝 **Linguaggio:** Mantieni sempre un tono idoneo ed educato.\n\n" +
                 "╭━━━ 📝 **DATI RICHIESTA INIZIALE**\n" +
-                `┗ ```\n${userAnswer}\n```
+                "┗ ```\n" +
+                `${userAnswer}\n` +
+                "```"
             )
             .addFields(
                 { name: "👤 **Richiedente**", value: `${interaction.user}`, inline: true },
@@ -384,3 +386,4 @@ module.exports = {
         return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }
 };
+                

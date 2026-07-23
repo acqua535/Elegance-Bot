@@ -11,6 +11,33 @@ module.exports = async (interaction) => {
 
     const customId = interaction.customId;
 
+    // ---------------------------------------------------------
+    // 0. GESTIONE SPECIALE TICKET (Menu, Pulsanti, Rating)
+    // ---------------------------------------------------------
+    const ticketCmd = interaction.client.commands.get('ticket');
+
+    // Menu a tendina dei ticket
+    if (interaction.isStringSelectMenu() && customId === 'ticket_category') {
+        if (ticketCmd && ticketCmd.categoryHandler) {
+            return await ticketCmd.categoryHandler(interaction);
+        }
+    }
+
+    // Pulsanti interni dei ticket
+    if (['claim_ticket', 'ping_staff', 'close_ticket'].includes(customId)) {
+        if (ticketCmd && ticketCmd.buttonHandler) {
+            return await ticketCmd.buttonHandler(interaction);
+        }
+    }
+
+    // Valutazione / Rating del ticket
+    if (customId.startsWith('rate_')) {
+        if (ticketCmd && ticketCmd.ratingHandler) {
+            return await ticketCmd.ratingHandler(interaction);
+        }
+    }
+    // ---------------------------------------------------------
+
     // 1. Gestione speciale per i minigiochi (Hub e menu interno dell'impiccato)
     if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
         return await games.handleGameInteraction(interaction);
@@ -36,7 +63,7 @@ module.exports = async (interaction) => {
         return await apply.buttonHandler(interaction);
     }
 
-    // 4. Ricerca nel registry per TUTTI gli altri bottoni del bot (Verifica, Ticket, Inviti, Setup vari)
+    // 4. Ricerca nel registry per TUTTI gli altri bottoni del bot (Verifica, Inviti, Setup vari)
     const handler = registry[customId];
 
     if (!handler) {

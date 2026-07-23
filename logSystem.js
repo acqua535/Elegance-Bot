@@ -4,7 +4,7 @@ const path = require("path");
 
 const SETUPS_PATH = path.join(__dirname, "setups.json");
 
-// Helper per leggere e scrivere sul file setups.json
+// Helper per leggere dal file setups.json
 const getSetups = () => {
     if (!fs.existsSync(SETUPS_PATH)) return {};
     try {
@@ -14,13 +14,17 @@ const getSetups = () => {
     }
 };
 
+// Salva la configurazione dei log PRESERVANDO entry, apply, invites e gli altri setup
 const saveSetup = (guildId, channelId, userId) => {
     const setups = getSetups();
+    
     setups[guildId] = {
+        ...setups[guildId], // 👈 Mantiene intatti entry, apply, invites e qualsiasi altro setup salvato!
         logChannelId: channelId,
-        configuredBy: userId,
-        updatedAt: new Date().toISOString()
+        logConfiguredBy: userId,
+        logUpdatedAt: new Date().toISOString()
     };
+    
     fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
 };
 
@@ -60,7 +64,7 @@ module.exports = (client) => {
             const channel = interaction.options.getChannel("canale");
             
             try {
-                // Salviamo il canale nel file setups.json
+                // Salviamo il canale nel file setups.json senza intaccare gli altri setup
                 saveSetup(interaction.guild.id, channel.id, interaction.user.id);
 
                 const embed = new EmbedBuilder()
@@ -371,11 +375,4 @@ module.exports = (client) => {
             const logChannel = getLogChannel(ban?.guild);
             if (!logChannel) return;
             const embed = new EmbedBuilder().setTitle("🔨 Utente Bannato").setColor(0xED4245)
-                .addFields({ name: "👤 Utente", value: `${ban.user?.tag ?? "Sconosciuto"} (\`${ban.user?.id ?? "N/D"}\`)`, inline: true }, { name: "📝 Motivo", value: ban.reason || "Nessun motivo" }).setTimestamp();
-            logChannel.send({ embeds: [embed] }).catch(() => {});
-        } catch (err) { console.error(err); }
-    });
-
-    client.on("guildBanRemove", async (ban) => {
-        try {
-            const logChannel = getLogCh
+                .addFields({ name: "👤 Utente", value: `${ban.user?.tag ?? "Sconosciuto"} (\`${ban.user?.id ?? "N/D"}\`)`, inline: true }, { name: "📝 Motivo", value: ban.reason || "Nessun motivo" }).setTimest

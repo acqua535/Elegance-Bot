@@ -188,7 +188,7 @@ module.exports = {
                 "┣ 📢 **Pulsante Notifica:** Usa il pulsante solo in caso di urgenza (max 1/24h).\n" +
                 "┗ 🤝 **Linguaggio:** Mantieni sempre un tono idoneo ed educato.\n\n" +
                 "╭━━━ 📝 **DATI RICHIESTA INIZIALE**\n" +
-                `┗ ```\n${userAnswer}\n````
+                `┗ ```\n${userAnswer}\n```
             )
             .addFields(
                 { name: "👤 **Richiedente**", value: `${interaction.user}`, inline: true },

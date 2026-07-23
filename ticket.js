@@ -102,16 +102,16 @@ module.exports = {
         let placeholderText = "";
 
         if (type === 'servizi') {
-            questionLabel = "Di quale supporto o pacchetto VIP hai bisogno?";
+            questionLabel = "Di quale supporto / VIP hai bisogno?";
             placeholderText = "Specifica la tua richiesta o l'assistenza desiderata...";
         } else if (type === 'partner') {
             questionLabel = "Descrizione del server / progetto:";
             placeholderText = "Inserisci link, numero membri e dettagli della collaborazione...";
         } else if (type === 'bug') {
-            questionLabel = "Descrivi il bug o il problema riscontrato:";
+            questionLabel = "Descrivi il bug riscontrato:";
             placeholderText = "Spiega in dettaglio cosa è successo e come si verifica...";
         } else if (type === 'report') {
-            questionLabel = "Stai segnalando un utente o un server? Spiega:";
+            questionLabel = "Dettagli della segnalazione:";
             placeholderText = "Inserisci Tag/ID e i dettagli della segnalazione...";
         }
 
@@ -120,7 +120,7 @@ module.exports = {
             .setLabel(questionLabel)
             .setStyle(TextInputStyle.Paragraph)
             .setRequired(true)
-            .setMaxLength(1000)
+            .setMaxLength(2000)
             .setPlaceholder(placeholderText);
 
         const row = new ActionRowBuilder().addComponents(input);
@@ -386,4 +386,4 @@ module.exports = {
         return interaction.reply({ content, flags: MessageFlags.Ephemeral });
     }
 };
-                 
+                

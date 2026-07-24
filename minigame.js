@@ -1,11 +1,8 @@
-// ==========================================
-// FILE: minigame.js - PARTE 1 (FIXXATA)
-// ==========================================
 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, StringSelectMenuBuilder, SlashCommandBuilder } = require('discord.js');
 
 const activeGames = new Map();
 
-// Helper per i premi estetici
+// Helper per le ricompense casuali
 function getRandomReward(minCoins = 10, maxCoins = 50, minXp = 20, maxXp = 100) {
     const coins = Math.floor(Math.random() * (maxCoins - minCoins + 1)) + minCoins;
     const xp = Math.floor(Math.random() * (maxXp - minXp + 1)) + minXp;
@@ -106,6 +103,25 @@ const BOMB_WIRES_POOL = [
     { text: "Illumino la notte quando guardi la Luna, e formo il verde se entro nel blu.", correct: "giallo" }
 ];
 
+// --- DATABASE IMPICCATO (CON INDIZI) ---
+const HANGMAN_WORDS = [
+    { word: "DISCORD", hint: "La piattaforma VoIP su cui ci troviamo adesso" },
+    { word: "JAVASCRIPT", hint: "Il linguaggio di programmazione usato per questo bot" },
+    { word: "PYTHON", hint: "Linguaggio famoso per la sua sintassi semplice e il logo a serpente" },
+    { word: "DATABASE", hint: "Archivio strutturato dove si salvano i dati permanentemente" },
+    { word: "ALGORITMO", hint: "Sequenza finita di istruzioni per risolvere un problema" },
+    { word: "HARDWARE", hint: "La componente fisica e tangibile di un computer" },
+    { word: "SOFTWARE", hint: "I programmi e le applicazioni che girano sul computer" },
+    { word: "BACKEND", hint: "La parte del codice che gestisce la logica lato server" },
+    { word: "FRONTEND", hint: "L'interfaccia grafica con cui l'utente interagisce direttamente" },
+    { word: "FIREWALL", hint: "Sistema di sicurezza che controlla il traffico di rete" },
+    { word: "INTERNET", hint: "La rete globale di calcolatori interconnessi" },
+    { word: "TASTIERA", hint: "Periferica di input usata per digitare" },
+    { word: "PROCESSORE", hint: "Il 'cervello' principale del computer (CPU)" },
+    { word: "MEMORIA", hint: "Spazio di archiviazione temporaneo o permanente" },
+    { word: "SERVER", hint: "Elaboratore che fornisce servizi ad altri computer chiamati client" }
+];
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('minigame')
@@ -117,7 +133,7 @@ module.exports = {
         if (activeGames.has(userId)) {
             return interaction.reply({ 
                 content: "⚠️ **Hai già un minigioco in corso!** Termina quello attuale prima di aprirne un altro.", 
-                flags: 64 
+                ephemeral: true 
             });
         }
 
@@ -150,10 +166,9 @@ module.exports = {
         const choice = interaction.values[0];
 
         if (activeGames.has(userId)) {
-            return interaction.update({ 
+            return interaction.reply({ 
                 content: "⚠️ **Hai già un minigioco in corso!** Termina quello attuale.", 
-                embeds: [], 
-                components: [] 
+                ephemeral: true 
             });
         }
 
@@ -170,14 +185,14 @@ module.exports = {
             console.error("Errore nell'avvio del minigioco:", error);
             activeGames.delete(userId);
             if (!interaction.replied && !interaction.deferred) {
-                await interaction.reply({ content: "❌ Si è verificato un errore nell'avviare il gioco.", flags: 64 }).catch(() => {});
+                await interaction.reply({ content: "❌ Si è verificato un errore nell'avviare il gioco.", ephemeral: true }).catch(() => {});
             }
         }
     }
 };
 
 // ==========================================
-// FUNZIONI DEI MINIGIOCHI (PARTE 1)
+// FUNZIONI DEI MINIGIOCHI
 // ==========================================
 
 async function startQuiz(interaction) {
@@ -203,7 +218,7 @@ async function startQuiz(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 15000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", flags: 64 });
+        if (i.user.id !== userId) return i.reply({ content: "Questo minigioco non è per te!", ephemeral: true });
 
         activeGames.delete(userId);
         if (i.customId.startsWith('quiz_correct')) {
@@ -228,10 +243,8 @@ async function startBomb(interaction) {
     const rawRiddle = BOMB_WIRES_POOL[Math.floor(Math.random() * BOMB_WIRES_POOL.length)];
     const correctWire = rawRiddle.correct.toLowerCase();
 
-    // RIGOROSAMENTE I 4 COLORI
     const wires = ['rosso', 'blu', 'verde', 'giallo'];
     
-    // Mappatura stili estetici dei pulsanti Discord
     const buttonStyles = {
         rosso: ButtonStyle.Danger,
         blu: ButtonStyle.Primary,
@@ -258,7 +271,7 @@ async function startBomb(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 12000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Non toccare la bomba altrui!", flags: 64 });
+        if (i.user.id !== userId) return i.reply({ content: "Non toccare la bomba altrui!", ephemeral: true });
 
         activeGames.delete(userId);
         const chosenWire = i.customId.replace('bomb_', '');
@@ -277,34 +290,10 @@ async function startBomb(interaction) {
             await interaction.editReply({ content: "💥 **KABOOOM!** Tempo scaduto, la bomba è esplosa!", embeds: [], components: [] }).catch(() => {});
         }
     });
-     }
-
-// ==========================================
-// FILE: minigame.js - PARTE 2
-// ==========================================
-
-// --- DATABASE IMPICCATO (CON INDIZI) ---
-const HANGMAN_WORDS = [
-    { word: "DISCORD", hint: "La piattaforma VoIP su cui ci troviamo adesso" },
-    { word: "JAVASCRIPT", hint: "Il linguaggio di programmazione usato per questo bot" },
-    { word: "PYTHON", hint: "Linguaggio famoso per la sua sintassi semplice e il logo a serpente" },
-    { word: "DATABASE", hint: "Archivio strutturato dove si salvano i dati permanentemente" },
-    { word: "ALGORITMO", hint: "Sequenza finita di istruzioni per risolvere un problema" },
-    { word: "HARDWARE", hint: "La componente fisica e tangibile di un computer" },
-    { word: "SOFTWARE", hint: "I programmi e le applicazioni che girano sul computer" },
-    { word: "BACKEND", hint: "La parte del codice che gestisce la logica lato server" },
-    { word: "FRONTEND", hint: "L'interfaccia grafica con cui l'utente interagisce direttamente" },
-    { word: "FIREWALL", hint: "Sistema di sicurezza che controlla il traffico di rete" },
-    { word: "INTERNET", hint: "La rete globale di calcolatori interconnessi" },
-    { word: "TASTIERA", hint: "Periferica di input usata per digitare" },
-    { word: "PROCESSORE", hint: "Il 'cervello' principale del computer (CPU)" },
-    { word: "MEMORIA", hint: "Spazio di archiviazione temporaneo o permanente" },
-    { word: "SERVER", hint: "Elaboratore che fornisce servizi ad altri computer chiamati client" }
-];
+}
 
 async function startMemory(interaction) {
     const userId = interaction.user.id;
-    // Genera una sequenza casuale di 5 numeri da 1 a 5
     const sequence = Array.from({ length: 5 }, () => Math.floor(Math.random() * 5) + 1);
     
     await interaction.update({ 
@@ -371,7 +360,7 @@ async function startReaction(interaction) {
 
         const collector = msg.createMessageComponentCollector({ time: 5000 });
         collector.on('collect', async i => {
-            if (i.user.id !== userId) return i.reply({ content: "Non bruciare la mossa!", flags: 64 });
+            if (i.user.id !== userId) return i.reply({ content: "Non bruciare la mossa!", ephemeral: true });
 
             activeGames.delete(userId);
             const reactionTime = Date.now() - startTime;
@@ -432,7 +421,7 @@ async function startHangman(interaction) {
     const collector = msg.createMessageComponentCollector({ time: 90000 });
 
     collector.on('collect', async i => {
-        if (i.user.id !== userId) return i.reply({ content: "Non è il tuo turno!", flags: 64 });
+        if (i.user.id !== userId) return i.reply({ content: "Non è il tuo turno!", ephemeral: true });
 
         const letter = i.values[0];
         if (!guessedLetters.includes(letter)) guessedLetters.push(letter);
@@ -494,4 +483,5 @@ async function startWheel(interaction) {
 
     activeGames.delete(userId);
     await interaction.update({ content: null, embeds: [embed], components: [] });
-        }
+                            }
+        

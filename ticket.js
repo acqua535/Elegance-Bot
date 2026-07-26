@@ -127,7 +127,7 @@ module.exports = {
         };
         saveData(data);
 
-        // LOG DI APERTURA (Pulito e Serio)
+        // LOG DI APERTURA
         const openLogEmbed = new EmbedBuilder()
             .setTitle("✦ NUOVA RICHIESTA APERTA ✦")
             .setDescription(
@@ -180,6 +180,7 @@ module.exports = {
         });
 
         return interaction.editReply({ content: `✅ **Canale creato:** ${channel}` });
+    },
 
         // 3️⃣ GESTIONE SELEZIONI DAL MENU PRINCIPALE TICKET
     async manageMenuHandler(interaction) {
@@ -235,7 +236,6 @@ module.exports = {
                 });
             }
 
-            const oldOperator = ticket.claimedBy;
             ticket.claimedBy = null;
             saveData(data);
 
@@ -335,7 +335,7 @@ module.exports = {
 
                 transcriptBuffer = Buffer.from(transcript, 'utf-8');
 
-                // Invio Transcript in DM (Stile Elegance)
+                // Invio Transcript in DM
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     const dmEmbed = new EmbedBuilder()
@@ -439,9 +439,10 @@ module.exports = {
                 return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
             }
 
-            await interaction.channel.permissionOverwrites.delete(targetMember.id);
-            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato rimosso dalla sessione.` });
+            await interaction.channel.permissionOverwrites.delete(targetMember.id).catch(() => {});
+
+            return interaction.reply({ content: `✅ Accesso rimosso per l'utente ${targetMember}.` });
         }
     }
 };
-            
+                

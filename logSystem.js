@@ -78,7 +78,7 @@ module.exports = (client) => {
     });
 
     // ====================================================
-    // 📊 PARTE 1 - MEMBRI, MESSAGGI, REAZIONI, VOCALI
+    // 📊 PARTE 1 - EVENTI MEMBRI, MESSAGGI, REAZIONI, VOCALI
     // ====================================================
 
     // 📁 CATEGORIA 1: UTENTE ENTRATO
@@ -114,7 +114,9 @@ module.exports = (client) => {
                     executor = kickLog.executor;
                     reason = kickLog.reason;
                 }
-            } catch {}
+            } catch (err) {
+                // Gestione permessi audit log mancanti
+            }
             const user = member.user;
             const isKick = Boolean(executor);
             const embed = new EmbedBuilder()
@@ -133,7 +135,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 3: AGGIORNAMENTO MEMBRO (Timeout, Nickname, Ruoli, Boost)
+    // 📁 CATEGORIA 3: AGGIORNAMENTO MEMBRO
     client.on("guildMemberUpdate", async (oldMember, newMember) => {
         try {
             const logChannel = getLogChannel(newMember?.guild);
@@ -270,7 +272,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 6: REAZIONI & SONDAGGI
+    // 📁 CATEGORIA 6: REAZIONI
     client.on("messageReactionAdd", async (reaction, user) => {
         try {
             if (reaction.partial) { try { await reaction.fetch(); } catch { return; } }
@@ -291,7 +293,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 7: VOCALI & STREAMING
+    // 📁 CATEGORIA 7: VOCALI
     client.on("voiceStateUpdate", async (oldState, newState) => {
         try {
             const guild = newState?.guild || oldState?.guild;
@@ -317,12 +319,12 @@ module.exports = (client) => {
             }
         } catch (err) { console.error(err); }
     });
-                            
-    // ====================================================
+
+        // ====================================================
     // 📊 PARTE 2 - CANALI, RUOLI, BAN, INVITI, THREAD
     // ====================================================
 
-    // 📁 CATEGORIA 8: GESTIONE CANALI (Creazione / Eliminazione)
+    // 📁 CATEGORIA 8: GESTIONE CANALI
     client.on("channelCreate", async (channel) => {
         try {
             if (!channel.guild) return;
@@ -355,7 +357,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 9: GESTIONE RUOLI (Creazione / Eliminazione)
+    // 📁 CATEGORIA 9: GESTIONE RUOLI
     client.on("roleCreate", async (role) => {
         try {
             const logChannel = getLogChannel(role.guild);
@@ -413,7 +415,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 11: INVITI (Creazione / Eliminazione)
+    // 📁 CATEGORIA 11: INVITI
     client.on("inviteCreate", async (invite) => {
         try {
             if (!invite.guild) return;
@@ -445,7 +447,7 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
 
-    // 📁 CATEGORIA 12: THREAD (Creazione / Eliminazione)
+    // 📁 CATEGORIA 12: THREAD
     client.on("threadCreate", async (thread) => {
         try {
             const logChannel = getLogChannel(thread.guild);

@@ -180,7 +180,6 @@ module.exports = {
         });
 
         return interaction.editReply({ content: `✅ **Canale creato:** ${channel}` });
-    }
 
         // 3️⃣ GESTIONE SELEZIONI DAL MENU PRINCIPALE TICKET
     async manageMenuHandler(interaction) {

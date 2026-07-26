@@ -318,3 +318,159 @@ module.exports = (client) => {
         } catch (err) { console.error(err); }
     });
                             
+    // ====================================================
+    // 📊 PARTE 2 - CANALI, RUOLI, BAN, INVITI, THREAD
+    // ====================================================
+
+    // 📁 CATEGORIA 8: GESTIONE CANALI (Creazione / Eliminazione)
+    client.on("channelCreate", async (channel) => {
+        try {
+            if (!channel.guild) return;
+            const logChannel = getLogChannel(channel.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("📁 Canale Creato")
+                .setColor(0x57F287)
+                .addFields(
+                    { name: "📌 Canale", value: `${channel} (\`${channel.id}\`)`, inline: true },
+                    { name: "🏷️ Tipo", value: `\`${channel.type}\``, inline: true }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    client.on("channelDelete", async (channel) => {
+        try {
+            if (!channel.guild) return;
+            const logChannel = getLogChannel(channel.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🗑️ Canale Eliminato")
+                .setColor(0xED4245)
+                .addFields(
+                    { name: "📌 Nome Canale", value: `#${channel.name} (\`${channel.id}\`)`, inline: true },
+                    { name: "🏷️ Tipo", value: `\`${channel.type}\``, inline: true }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    // 📁 CATEGORIA 9: GESTIONE RUOLI (Creazione / Eliminazione)
+    client.on("roleCreate", async (role) => {
+        try {
+            const logChannel = getLogChannel(role.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🛡️ Ruolo Creato")
+                .setColor(0x57F287)
+                .addFields(
+                    { name: "📌 Ruolo", value: `${role} (\`${role.id}\`)`, inline: true },
+                    { name: "🎨 Colore", value: `\`${role.hexColor}\``, inline: true }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    client.on("roleDelete", async (role) => {
+        try {
+            const logChannel = getLogChannel(role.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🗑️ Ruolo Eliminato")
+                .setColor(0xED4245)
+                .addFields({ name: "📌 Nome Ruolo", value: `@${role.name} (\`${role.id}\`)`, inline: true })
+                .setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    // 📁 CATEGORIA 10: BAN & UNBAN
+    client.on("guildBanAdd", async (ban) => {
+        try {
+            const logChannel = getLogChannel(ban.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🔨 Utente Bannato")
+                .setColor(0xED4245)
+                .addFields(
+                    { name: "👤 Utente", value: `${ban.user.tag} (\`${ban.user.id}\`)`, inline: true },
+                    { name: "📝 Motivo", value: ban.reason || "Nessun motivo specificato", inline: false }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    client.on("guildBanRemove", async (ban) => {
+        try {
+            const logChannel = getLogChannel(ban.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🔓 Utente Sbananto")
+                .setColor(0x57F287)
+                .addFields({ name: "👤 Utente", value: `${ban.user.tag} (\`${ban.user.id}\`)`, inline: true })
+                .setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    // 📁 CATEGORIA 11: INVITI (Creazione / Eliminazione)
+    client.on("inviteCreate", async (invite) => {
+        try {
+            if (!invite.guild) return;
+            const logChannel = getLogChannel(invite.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("✉️ Invito Creato")
+                .setColor(0x57F287)
+                .addFields(
+                    { name: "🔗 Codice", value: `\`${invite.code}\``, inline: true },
+                    { name: "👤 Creato da", value: invite.inviter ? `${invite.inviter}` : "Sconosciuto", inline: true },
+                    { name: "📌 Canale", value: `${invite.channel}`, inline: true }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    client.on("inviteDelete", async (invite) => {
+        try {
+            if (!invite.guild) return;
+            const logChannel = getLogChannel(invite.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🗑️ Invito Eliminato")
+                .setColor(0xED4245)
+                .addFields({ name: "🔗 Codice", value: `\`${invite.code}\``, inline: true })
+                .setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    // 📁 CATEGORIA 12: THREAD (Creazione / Eliminazione)
+    client.on("threadCreate", async (thread) => {
+        try {
+            const logChannel = getLogChannel(thread.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🧵 Thread / Discussione Creata")
+                .setColor(0x57F287)
+                .addFields(
+                    { name: "📌 Thread", value: `${thread} (\`${thread.id}\`)`, inline: true },
+                    { name: "📁 Canale Padre", value: `<#${thread.parentId}>`, inline: true }
+                ).setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+
+    client.on("threadDelete", async (thread) => {
+        try {
+            const logChannel = getLogChannel(thread.guild);
+            if (!logChannel) return;
+            const embed = new EmbedBuilder()
+                .setTitle("🗑️ Thread Eliminato")
+                .setColor(0xED4245)
+                .addFields({ name: "📌 Nome Thread", value: `#${thread.name} (\`${thread.id}\`)`, inline: true })
+                .setTimestamp();
+            logChannel.send({ embeds: [embed] }).catch(() => {});
+        } catch (err) { console.error(err); }
+    });
+};

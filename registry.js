@@ -6,6 +6,7 @@ const verify = require("./verify");
 const entry = require("./entry");
 const invites = require("./invites");
 const apply = require("./apply");
+const logSystem = require("./logSystem");
 
 const registryMap = {
     // --- TICKET: SELETTORI & MENU A TENDINA ---
@@ -41,7 +42,11 @@ const registryMap = {
     "apply_set_channel_id": apply.buttonHandler,
     "apply_start_button": apply.buttonHandler,
     "apply_accept": apply.buttonHandler,
-    "apply_reject": apply.buttonHandler
+    "apply_reject": apply.buttonHandler,
+
+    // --- LOG SYSTEM ---
+    "log_toggle": logSystem.buttonHandler,
+    "log_set_channel": logSystem.buttonHandler
 };
 
 module.exports = registryMap;

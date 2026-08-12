@@ -39,8 +39,14 @@ client.once("ready", async () => {
     await deployCommands();
     loadCommands(client);
 
-    logSystem(client);
-    countingSystem(client);
+    // Inizializza gli eventi dei log (senza farlo come funzione semplice)
+    if (logSystem && typeof logSystem.initEvents === "function") {
+        logSystem.initEvents(client);
+    }
+    
+    if (typeof countingSystem === "function") {
+        countingSystem(client);
+    }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
@@ -84,7 +90,14 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // Gestisce pulsanti e menu a tendina
+        // Gestisce i pulsanti del pannello LOG
+        if (interaction.isButton() && interaction.customId.startsWith("log_")) {
+            if (logSystem && typeof logSystem.buttonHandler === "function") {
+                return await logSystem.buttonHandler(interaction);
+            }
+        }
+
+        // Gestisce tutti gli altri pulsanti e menu a tendina
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
@@ -120,3 +133,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
+            

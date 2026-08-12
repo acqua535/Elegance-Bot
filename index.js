@@ -32,14 +32,18 @@ client.commands = new Collection();
 client.once("ready", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
+    // Inizializza gli inviti per ogni gilda
     client.guilds.cache.forEach(guild => {
-        invites.initInvites(guild);
+        if (invites && typeof invites.initInvites === "function") {
+            invites.initInvites(guild);
+        }
     });
 
+    // Deploy e caricamento comandi
     await deployCommands();
     loadCommands(client);
 
-    // Inizializza gli eventi dei log (senza farlo come funzione semplice)
+    // Inizializzazione eventi di Log e Counting
     if (logSystem && typeof logSystem.initEvents === "function") {
         logSystem.initEvents(client);
     }
@@ -53,7 +57,13 @@ client.once("ready", async () => {
 
 client.on("interactionCreate", async (interaction) => {
     try {
+        // 1. GESTIONE SLASH COMMANDS
         if (interaction.isChatInputCommand()) {
+            // Intercettazione diretta per /log-setup
+            if (interaction.commandName === "log-setup") {
+                return await logSystem.execute(interaction);
+            }
+
             const command = client.commands.get(interaction.commandName);
             if (!command) {
                 return interaction.reply({
@@ -65,7 +75,7 @@ client.on("interactionCreate", async (interaction) => {
             return;
         }
 
-        // GESTIONE MODULI POP-UP (MODALS)
+        // 2. GESTIONE MODULI POP-UP (MODALS)
         if (interaction.isModalSubmit()) {
             if (interaction.customId.startsWith("verify_modal_")) {
                 const verifyCmd = client.commands.get("verify");
@@ -90,14 +100,12 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // Gestisce i pulsanti del pannello LOG
+        // 3. GESTIONE PULSANTI LOG-SETUP
         if (interaction.isButton() && interaction.customId.startsWith("log_")) {
-            if (logSystem && typeof logSystem.buttonHandler === "function") {
-                return await logSystem.buttonHandler(interaction);
-            }
+            return await logSystem.buttonHandler(interaction);
         }
 
-        // Gestisce tutti gli altri pulsanti e menu a tendina
+        // 4. GESTIONE DI TUTTI GLI ALTRI PULSANTI E MENU A TENDINA
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
@@ -114,10 +122,11 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
+// EVENTI ENTRATA ED USCITA UTENTI
 client.on("guildMemberAdd", async (member) => {
     try {
-        await entry.handleMemberAdd(member);
-        await invites.handleMemberAdd(member);
+        if (entry && typeof entry.handleMemberAdd === "function") await entry.handleMemberAdd(member);
+        if (invites && typeof invites.handleMemberAdd === "function") await invites.handleMemberAdd(member);
     } catch (error) {
         console.error("❌ Errore durante l'evento guildMemberAdd:", error);
     }
@@ -125,12 +134,12 @@ client.on("guildMemberAdd", async (member) => {
 
 client.on("guildMemberRemove", async (member) => {
     try {
-        await entry.handleMemberRemove(member);
-        await invites.handleMemberRemove(member);
+        if (entry && typeof entry.handleMemberRemove === "function") await entry.handleMemberRemove(member);
+        if (invites && typeof invites.handleMemberRemove === "function") await invites.handleMemberRemove(member);
     } catch (error) {
         console.error("❌ Errore durante l'evento guildMemberRemove:", error);
     }
 });
 
 client.login(process.env.TOKEN);
-            
+                

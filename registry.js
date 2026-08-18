@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: registry.js (MAPPA COMPLETA)
-// ==========================================
 const ticket = require("./ticket");
 const verify = require("./verify");
 const entry = require("./entry");
@@ -10,16 +7,12 @@ const logSystem = require("./logSystem");
 const antiLink = require("./antiLink");
 
 const registryMap = {
-    // --- TICKET: SELETTORI & MENU A TENDINA ---
+    // --- TICKET ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage_menu": ticket.manageMenuHandler,
     "ticket_transfer_select": ticket.transferHandler,
-
-    // --- TICKET: MODALI (Aggiungi / Rimuovi Utente) ---
     "ticket_modal_adduser": ticket.modalHandler,
     "ticket_modal_removeuser": ticket.modalHandler,
-
-    // --- RATING TICKET ---
     "rate_good": ticket.ratingHandler,
     "rate_mid": ticket.ratingHandler,
     "rate_bad": ticket.ratingHandler,

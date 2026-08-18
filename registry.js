@@ -1,10 +1,10 @@
-const ticket = require("./ticket");
-const verify = require("./verify");
-const entry = require("./entry");
-const invites = require("./invites");
-const apply = require("./apply");
-const logSystem = require("./logSystem");
-const antiLink = require("./antiLink");
+const ticket = require("./commands/ticket");
+const verify = require("./commands/verify");
+const entry = require("./commands/entry");
+const invites = require("./commands/invites");
+const apply = require("./commands/apply");
+const logSystem = require("./commands/logSystem");
+const antiLink = require("./commands/antiLink");
 
 const registryMap = {
     // --- TICKET ---

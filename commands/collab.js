@@ -45,10 +45,9 @@ module.exports = {
 
         const richiesta = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
-        const rawDescrizione = interaction.options.getString("descrizione");
-
-        // Rimuove la chiocciola da @everyone e @here per evitare il ping di massa
-        const descrizione = rawDescrizione
+        
+        // Tglie semplicemente i ping @everyone e @here dal testo
+        const descrizione = interaction.options.getString("descrizione")
             .replace(/@everyone/g, "everyone")
             .replace(/@here/g, "here");
 
@@ -62,11 +61,8 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita con blocco notifiche API
-        await collabChannel.send({ 
-            content: descrizione,
-            allowedMentions: { parse: [] } 
-        });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita
+        await collabChannel.send({ content: descrizione });
 
         // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `✨ **ELEGANCE SPONSORING ── COLLABORAZIONE**\n` +
@@ -101,3 +97,4 @@ module.exports = {
         });
     }
 };
+                     

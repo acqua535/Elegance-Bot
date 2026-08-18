@@ -68,7 +68,6 @@ module.exports = {
                 { name: "🤝 Partnership", value: "Valutazione proposte commerciali e collaborazioni.", inline: false },
                 { name: "💻 Supporto Tecnico", value: "Assistenza per malfunzionamenti, bug ed errori.", inline: false },
                 { name: "🔒 Segnalazioni", value: "Modulo di report riservato per la sicurezza del server.", inline: false },
-                { name: "📌 Regolamento", value: "Non aprire ticket multipli per lo stesso motivo e descrivi subito la tua richiesta.", inline: false }
             )
             .setColor(0x00C8FF)
             .setThumbnail(interaction.guild.iconURL({ dynamic: true }))

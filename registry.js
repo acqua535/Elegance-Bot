@@ -21,8 +21,12 @@ const entry = loadSafe("./entry");
 const apply = loadSafe("./apply");
 const logSystem = loadSafe("./logSystem");
 const antiLink = loadSafe("./antiLink");
+const minigame = loadSafe("./minigame"); // Carica il minigioco
 
 const registryMap = {
+    // --- MINIGAME HUB ---
+    "game_hub_select": minigame.handleGameInteraction,
+
     // --- TICKET ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage_menu": ticket.manageMenuHandler,

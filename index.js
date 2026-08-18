@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: index.js (VERSIONE COMPLETA E AGGIORNATA)
+// FILE: index.js (VERSIONE COMPLETA ED INTEGRATA)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
@@ -36,18 +36,18 @@ client.commands = new Collection();
 client.once("ready", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
-    // Inizializza gli inviti per ogni gilda
+    // Inizializza il tracciamento inviti per ogni gilda
     client.guilds.cache.forEach(guild => {
         if (invites && typeof invites.initInvites === "function") {
             invites.initInvites(guild);
         }
     });
 
-    // Deploy e caricamento comandi
+    // Deploy delle API Discord e caricamento dinamico dei comandi
     await deployCommands();
     loadCommands(client);
 
-    // Inizializzazione eventi di Log, Counting e Anti-Link
+    // Inizializzazione degli eventi per i vari moduli di sistema
     if (logSystem && typeof logSystem.initEvents === "function") {
         logSystem.initEvents(client);
     }
@@ -94,7 +94,7 @@ client.on("interactionCreate", async (interaction) => {
                 }
             }
 
-            // 🎫 Gestione Moduli Pop-up dei Ticket
+            // Gestione Moduli Pop-up dei Ticket
             if (interaction.customId.startsWith("ticket_modal_")) {
                 const ticketCmd = client.commands.get("ticket");
                 if (ticketCmd && ticketCmd.modalHandler) {
@@ -103,7 +103,7 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // 3. GESTIONE DI TUTTI I PULSANTI E MENU A TENDINA (PULITA TRAMITE REGISTRY)
+        // 3. GESTIONE PULSANTI E MENU A TENDINA (PULITA TRAMITE REGISTRY)
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
@@ -111,7 +111,7 @@ client.on("interactionCreate", async (interaction) => {
 
     } catch (error) {
         console.error("🚨 ERRORE INTERAZIONE:", error);
-        const errorMessage = "❌ Si è verificato un errore imprevisto.";
+        const errorMessage = "❌ Si è verificato un errore imprevisto durante l'esecuzione.";
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         } else {
@@ -140,3 +140,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
+    

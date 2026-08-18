@@ -1,10 +1,10 @@
-const ticket = require("./commands/ticket");
+const ticket = require("./ticket");
 const verify = require("./commands/verify");
 const entry = require("./commands/entry");
 console.log("--> CARICAMENTO REGISTRY DA:", __filename);
 const apply = require("./commands/apply");
 const logSystem = require("./commands/logSystem");
-const antiLink = require("./commands/antiLink");
+const antiLink = require("./antiLink");
 
 const registryMap = {
     // --- TICKET ---

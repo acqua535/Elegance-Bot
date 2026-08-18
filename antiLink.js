@@ -13,7 +13,7 @@ const ALLOWED_CHANNELS = [
     "1528576179177787642"
 ];
 
-// Legge il file setups.json
+// Helper lettura setups.json
 const getSetups = () => {
     if (!fs.existsSync(SETUPS_PATH)) return {};
     try {
@@ -23,7 +23,7 @@ const getSetups = () => {
     }
 };
 
-// Salva la configurazione dell'anti-link
+// Helper salvataggio setups.json
 const saveAntiLinkSetup = (guildId, data) => {
     const setups = getSetups();
     setups[guildId] = {
@@ -43,8 +43,9 @@ const getGuildConfig = (guildId) => {
 };
 
 module.exports = {
+    // 📌 NOME COMANDO SLASH SU DISCORD: /antilink
     data: new SlashCommandBuilder()
-        .setName("set-antilink")
+        .setName("antilink")
         .setDescription("Gestisci il sistema Anti-Link e imposta il canale di log"),
 
     async execute(interaction) {
@@ -189,4 +190,3 @@ module.exports = {
         });
     }
 };
-            

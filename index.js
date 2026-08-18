@@ -1,10 +1,10 @@
 // ==========================================
-// FILE: index.js (VERSIONE COMPLETA ED INTEGRATA CON LOAD SAFE)
+// FILE: index.js (PULITO SENZA INVITES)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
-// Helper per caricare i moduli in modo sicuro senza far mai crashare il bot
+// Helper per caricare i moduli in modo sicuro
 function loadSafe(path) {
     try {
         return require(path);
@@ -13,17 +13,16 @@ function loadSafe(path) {
             return require(`./commands/${path.replace('./', '')}`);
         } catch (err) {
             console.warn(`[INDEX] Modulo opzionale non trovato: ${path}`);
-            return {}; // Ritorna un oggetto vuoto se il file non esiste
+            return {};
         }
     }
 }
 
-// Caricamento sicuro dei file di sistema
+// Caricamento sicuro dei moduli di sistema
 const loadCommands = loadSafe("./commandHandler");
 const deployCommands = loadSafe("./deployCommand");
 const buttonHandler = loadSafe("./buttonHandler");
 const entry = loadSafe("./entry");
-const invites = loadSafe("./invites");
 const logSystem = loadSafe("./logSystem"); 
 const countingSystem = loadSafe("./countingSystem"); 
 const antiLink = loadSafe("./antiLink");
@@ -51,13 +50,6 @@ client.commands = new Collection();
 client.once("ready", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
-    // Inizializza il tracciamento inviti per ogni gilda
-    client.guilds.cache.forEach(guild => {
-        if (invites && typeof invites.initInvites === "function") {
-            invites.initInvites(guild);
-        }
-    });
-
     // Deploy delle API Discord e caricamento dinamico dei comandi
     if (typeof deployCommands === "function") {
         await deployCommands();
@@ -66,7 +58,7 @@ client.once("ready", async () => {
         loadCommands(client);
     }
 
-    // Inizializzazione degli eventi per i vari moduli di sistema
+    // Inizializzazione degli eventi per i vari moduli
     if (logSystem && typeof logSystem.initEvents === "function") {
         logSystem.initEvents(client);
     }
@@ -113,7 +105,6 @@ client.on("interactionCreate", async (interaction) => {
                 }
             }
 
-            // Gestione Moduli Pop-up dei Ticket
             if (interaction.customId.startsWith("ticket_modal_")) {
                 const ticketCmd = client.commands.get("ticket");
                 if (ticketCmd && ticketCmd.modalHandler) {
@@ -122,7 +113,7 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // 3. GESTIONE PULSANTI E MENU A TENDINA (PULITA TRAMITE REGISTRY)
+        // 3. GESTIONE PULSANTI E MENU A TENDINA TRAMITE REGISTRY
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             if (typeof buttonHandler === "function") {
                 await buttonHandler(interaction);
@@ -145,7 +136,6 @@ client.on("interactionCreate", async (interaction) => {
 client.on("guildMemberAdd", async (member) => {
     try {
         if (entry && typeof entry.handleMemberAdd === "function") await entry.handleMemberAdd(member);
-        if (invites && typeof invites.handleMemberAdd === "function") await invites.handleMemberAdd(member);
     } catch (error) {
         console.error("❌ Errore durante l'evento guildMemberAdd:", error);
     }
@@ -154,11 +144,9 @@ client.on("guildMemberAdd", async (member) => {
 client.on("guildMemberRemove", async (member) => {
     try {
         if (entry && typeof entry.handleMemberRemove === "function") await entry.handleMemberRemove(member);
-        if (invites && typeof invites.handleMemberRemove === "function") await invites.handleMemberRemove(member);
     } catch (error) {
         console.error("❌ Errore durante l'evento guildMemberRemove:", error);
     }
 });
 
 client.login(process.env.TOKEN);
-            

@@ -9,13 +9,37 @@ const {
     TextInputStyle,
     MessageFlags
 } = require("discord.js");
+const fs = require("fs");
+const path = require("path");
 
 const STAFF_ROLE_ID = "1528576014446231683";
+const SETUPS_PATH = path.join(__dirname, "setups.json");
 
-// Configurazione globale
-global.applyConfig = global.applyConfig || {
-    targetChannel: null,
-    enabled: true
+const getSetups = () => {
+    if (!fs.existsSync(SETUPS_PATH)) return {};
+    try {
+        return JSON.parse(fs.readFileSync(SETUPS_PATH, "utf8"));
+    } catch {
+        return {};
+    }
+};
+
+const saveApplySetup = (guildId, data) => {
+    const setups = getSetups();
+    setups[guildId] = {
+        ...setups[guildId],
+        applyTargetChannel: data.targetChannel !== undefined ? data.targetChannel : (setups[guildId]?.applyTargetChannel || null),
+        applyEnabled: data.enabled !== undefined ? data.enabled : (setups[guildId]?.applyEnabled ?? true)
+    };
+    fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
+};
+
+const getGuildApplyConfig = (guildId) => {
+    const setups = getSetups();
+    return {
+        targetChannel: setups[guildId]?.applyTargetChannel || null,
+        enabled: setups[guildId]?.applyEnabled ?? true
+    };
 };
 
 module.exports = {
@@ -38,14 +62,15 @@ module.exports = {
         }
 
         const subcommand = interaction.options.getSubcommand();
+        const config = getGuildApplyConfig(interaction.guild.id);
 
         if (subcommand === "panel") {
             const embed = new EmbedBuilder()
                 .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
                 .setDescription(
                     "Da questo pannello puoi attivare/disattivare il sistema e impostare il canale dove lo Staff riceverà le candidature inoltrate.\n\n" +
-                    `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
-                    `• **Stato Candidature:** ${global.applyConfig.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
+                    `📌 **Canale Ricezione Moduli:** ${config.targetChannel ? `<#${config.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
+                    `• **Stato Candidature:** ${config.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
                 )
                 .setColor(0x00FF99)
                 .setFooter({ text: "Elegance Sponsoring • Apply Control" })
@@ -54,8 +79,8 @@ module.exports = {
             const row = new ActionRowBuilder().addComponents(
                 new ButtonBuilder()
                     .setCustomId("apply_toggle")
-                    .setLabel(global.applyConfig.enabled ? "Chiudi Candidature" : "Apri Candidature")
-                    .setStyle(global.applyConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+                    .setLabel(config.enabled ? "Chiudi Candidature" : "Apri Candidature")
+                    .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
                 new ButtonBuilder()
                     .setCustomId("apply_set_channel")
@@ -105,29 +130,26 @@ module.exports = {
         }
     },
 
-    // Gestore Bottoni
     async buttonHandler(interaction) {
         const { customId, channel, guild, user } = interaction;
+        const config = getGuildApplyConfig(guild.id);
 
-        // Toggle Apertura/Chiusura
         if (customId === "apply_toggle") {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
             }
-            global.applyConfig.enabled = !global.applyConfig.enabled;
+            saveApplySetup(guild.id, { enabled: !config.enabled });
             return module.exports.updatePanelMessage(interaction);
         }
 
-        // Imposta Canale Corrente
         if (customId === "apply_set_channel") {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
             }
-            global.applyConfig.targetChannel = channel.id;
+            saveApplySetup(guild.id, { targetChannel: channel.id });
             return module.exports.updatePanelMessage(interaction);
         }
 
-        // Imposta ID Canale tramite Popup (Modal)
         if (customId === "apply_set_channel_id") {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
@@ -148,9 +170,8 @@ module.exports = {
             return await interaction.showModal(modal);
         }
 
-        // Clic su "Candidati Ora" (Apre la Modal delle domande)
         if (customId === "apply_start_button") {
-            if (!global.applyConfig.enabled) {
+            if (!config.enabled) {
                 return interaction.reply({
                     content: "🔒 **Candidature Chiuse:** Al momento le candidature Staff sono temporaneamente sospese.",
                     flags: MessageFlags.Ephemeral
@@ -185,17 +206,23 @@ module.exports = {
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true);
 
+            const q5 = new TextInputBuilder()
+                .setCustomId("apply_q5")
+                .setLabel("Quali sono i tuoi punti di forza e debolezza?")
+                .setStyle(TextInputStyle.Paragraph)
+                .setRequired(true);
+
             modal.addComponents(
                 new ActionRowBuilder().addComponents(q1),
                 new ActionRowBuilder().addComponents(q2),
                 new ActionRowBuilder().addComponents(q3),
-                new ActionRowBuilder().addComponents(q4)
+                new ActionRowBuilder().addComponents(q4),
+                new ActionRowBuilder().addComponents(q5)
             );
 
             return await interaction.showModal(modal);
         }
 
-        // Gestione Azioni Staff (Accetta / Rifiuta)
         if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Non hai i permessi per gestire questa candidatura.", flags: MessageFlags.Ephemeral });
@@ -232,11 +259,10 @@ module.exports = {
         }
     },
 
-    // Gestore Invio Modal
     async modalHandler(interaction) {
         const { customId, guild, user } = interaction;
+        const config = getGuildApplyConfig(guild.id);
 
-        // Modal per Salvare l'ID del Canale
         if (customId === "apply_channel_id_modal") {
             const inputId = interaction.fields.getTextInputValue("channel_id_input").trim();
             const targetChan = guild.channels.cache.get(inputId);
@@ -248,25 +274,25 @@ module.exports = {
                 });
             }
 
-            global.applyConfig.targetChannel = inputId;
+            saveApplySetup(guild.id, { targetChannel: inputId });
             return module.exports.updatePanelMessage(interaction);
         }
 
-        // Modal Form Risposte Candidatura
         if (customId === "apply_form_modal") {
             const ans1 = interaction.fields.getTextInputValue("apply_q1");
             const ans2 = interaction.fields.getTextInputValue("apply_q2");
             const ans3 = interaction.fields.getTextInputValue("apply_q3");
             const ans4 = interaction.fields.getTextInputValue("apply_q4");
+            const ans5 = interaction.fields.getTextInputValue("apply_q5");
 
-            if (!global.applyConfig.targetChannel) {
+            if (!config.targetChannel) {
                 return interaction.reply({
                     content: "❌ **Errore di Configurazione:** Il canale per ricevere le risposte non è stato impostato! Avvisa gli Admin di usare `/apply panel`.",
                     flags: MessageFlags.Ephemeral
                 });
             }
 
-            const targetChannel = guild.channels.cache.get(global.applyConfig.targetChannel);
+            const targetChannel = guild.channels.cache.get(config.targetChannel);
 
             if (!targetChannel) {
                 return interaction.reply({
@@ -288,7 +314,8 @@ module.exports = {
                     { name: "📌 1. Età e Disponibilità", value: ans1 },
                     { name: "📌 2. Esperienze Pregresse", value: ans2 },
                     { name: "📌 3. Motivazione", value: ans3 },
-                    { name: "📌 4. Gestione Conflitti / Troll", value: ans4 }
+                    { name: "📌 4. Gestione Conflitti / Troll", value: ans4 },
+                    { name: "📌 5. Punti di forza e debolezza", value: ans5 }
                 )
                 .setFooter({ text: "Elegance Sponsoring • Modulo Ricevuto" })
                 .setTimestamp();
@@ -313,22 +340,23 @@ module.exports = {
         }
     },
 
-    // Helper per aggiornare il pannello
     async updatePanelMessage(interaction) {
+        const config = getGuildApplyConfig(interaction.guild.id);
+
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
             .setDescription(
                 "Configurazione aggiornata con successo!\n\n" +
-                `📌 **Canale Ricezione Moduli:** ${global.applyConfig.targetChannel ? `<#${global.applyConfig.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
-                `• **Stato Candidature:** ${global.applyConfig.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
+                `📌 **Canale Ricezione Moduli:** ${config.targetChannel ? `<#${config.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
+                `• **Stato Candidature:** ${config.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
             )
             .setColor(0x00FF99);
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("apply_toggle")
-                .setLabel(global.applyConfig.enabled ? "Chiudi Candidature" : "Apri Candidature")
-                .setStyle(global.applyConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+                .setLabel(config.enabled ? "Chiudi Candidature" : "Apri Candidature")
+                .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
             new ButtonBuilder()
                 .setCustomId("apply_set_channel")
@@ -348,4 +376,4 @@ module.exports = {
         }
     }
 };
-                
+            

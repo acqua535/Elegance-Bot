@@ -1,17 +1,32 @@
 // ==========================================
-// FILE: index.js (VERSIONE COMPLETA ED INTEGRATA)
+// FILE: index.js (VERSIONE COMPLETA ED INTEGRATA CON LOAD SAFE)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
-const loadCommands = require("./commandHandler");
-const deployCommands = require("./deployCommand");
-const buttonHandler = require("./buttonHandler");
-const entry = require("./entry");
-const invites = require("./invites");
-const logSystem = require("./logSystem"); 
-const countingSystem = require("./countingSystem"); 
-const antiLink = require("./antiLink");
+// Helper per caricare i moduli in modo sicuro senza far mai crashare il bot
+function loadSafe(path) {
+    try {
+        return require(path);
+    } catch (e) {
+        try {
+            return require(`./commands/${path.replace('./', '')}`);
+        } catch (err) {
+            console.warn(`[INDEX] Modulo opzionale non trovato: ${path}`);
+            return {}; // Ritorna un oggetto vuoto se il file non esiste
+        }
+    }
+}
+
+// Caricamento sicuro dei file di sistema
+const loadCommands = loadSafe("./commandHandler");
+const deployCommands = loadSafe("./deployCommand");
+const buttonHandler = loadSafe("./buttonHandler");
+const entry = loadSafe("./entry");
+const invites = loadSafe("./invites");
+const logSystem = loadSafe("./logSystem"); 
+const countingSystem = loadSafe("./countingSystem"); 
+const antiLink = loadSafe("./antiLink");
 
 const client = new Client({
     intents: [
@@ -44,8 +59,12 @@ client.once("ready", async () => {
     });
 
     // Deploy delle API Discord e caricamento dinamico dei comandi
-    await deployCommands();
-    loadCommands(client);
+    if (typeof deployCommands === "function") {
+        await deployCommands();
+    }
+    if (typeof loadCommands === "function") {
+        loadCommands(client);
+    }
 
     // Inizializzazione degli eventi per i vari moduli di sistema
     if (logSystem && typeof logSystem.initEvents === "function") {
@@ -105,7 +124,9 @@ client.on("interactionCreate", async (interaction) => {
 
         // 3. GESTIONE PULSANTI E MENU A TENDINA (PULITA TRAMITE REGISTRY)
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
-            await buttonHandler(interaction);
+            if (typeof buttonHandler === "function") {
+                await buttonHandler(interaction);
+            }
             return;
         }
 
@@ -140,4 +161,4 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
-    
+            

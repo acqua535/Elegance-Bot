@@ -1,4 +1,10 @@
 const ticket = require("./ticket");
+const fs = require('fs');
+const path = require('path');
+
+const targetPath = path.join(__dirname, 'commands', 'verify.js');
+console.log("--> ESISTE IL FILE?", fs.existsSync(targetPath));
+
 const verify = require("./commands/verify");
 const entry = require("./commands/entry");
 console.log("--> CARICAMENTO REGISTRY DA:", __filename);

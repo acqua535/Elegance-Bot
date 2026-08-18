@@ -1,14 +1,16 @@
-// Helper per caricare i moduli in modo sicuro senza far mai crashare il bot
+// ==========================================
+// FILE: registry.js (PULITO SENZA INVITES)
+// ==========================================
+
 function loadSafe(path) {
     try {
         return require(path);
     } catch (e) {
-        // Se non lo trova qui, prova nella cartella commands
         try {
             return require(`./commands/${path.replace('./', '')}`);
         } catch (err) {
             console.warn(`[REGISTRY] Modulo non trovato: ${path}`);
-            return {}; // Ritorna un oggetto vuoto se non esiste
+            return {};
         }
     }
 }
@@ -16,7 +18,6 @@ function loadSafe(path) {
 const ticket = loadSafe("./ticket");
 const verify = loadSafe("./verify");
 const entry = loadSafe("./entry");
-const invites = loadSafe("./invites");
 const apply = loadSafe("./apply");
 const logSystem = loadSafe("./logSystem");
 const antiLink = loadSafe("./antiLink");
@@ -40,10 +41,6 @@ const registryMap = {
     "entry_toggle_welcome": entry.buttonHandler,
     "entry_toggle_leave": entry.buttonHandler,
     "entry_set_channel": entry.buttonHandler,
-
-    // --- INVITES SYSTEM ---
-    "invites_toggle": invites.buttonHandler,
-    "invites_set_channel": invites.buttonHandler,
 
     // --- CANDIDATURE (APPLY) ---
     "apply_toggle": apply.buttonHandler,

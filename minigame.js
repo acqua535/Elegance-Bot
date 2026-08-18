@@ -72,30 +72,26 @@ const QUIZ_QUESTIONS = [
     { q: "Come si chiama la mascotte originale di SEGA?", options: ["Sonic", "Alex Kidd", "Tails", "Shinobi"], answer: "Alex Kidd" }
 ];
 
-// --- DATABASE INDOVINELLI BOMBA (SOLO: ROSSO, BLU, VERDE, GIALLO) ---
+// --- DATABASE INDOVINELLI BOMBA ---
 const BOMB_WIRES_POOL = [
-    // ROSSI
     { text: "Sono il fuoco, il pericolo sul semaforo e la passione nel cuore. Non bruciarti.", correct: "rosso" },
     { text: "Il pianeta desolato porta il mio nome, così come il primo colore dell'arcobaleno.", correct: "rosso" },
     { text: "Mi trovi nel rubino e nelle fragole mature, ma sono anche il colore della rabbia.", correct: "rosso" },
     { text: "Ho la stessa tinta del sangue, del magma in eruzione e del cavallo Ferrari.", correct: "rosso" },
     { text: "Se mi unisci al blu formo il viola, ma da solo rappresento l'allarme generale.", correct: "rosso" },
 
-    // BLU
     { text: "Rappresento l'oceano profondo, la calma gelida e il cielo sereno di giorno.", correct: "blu" },
     { text: "I nobili si vantano di avermi nelle vene, e gli zaffiri ne vanno fieri.", correct: "blu" },
     { text: "Uniscimi al giallo se desideri la vegetazione, ma da solo rimango freddo come il ghiaccio.", correct: "blu" },
     { text: "Sono il colore della notte profonda prima del buio e del gigante d'acqua Neptune.", correct: "blu" },
     { text: "Mi vedi sui tasti dei social networks più famosi e nella maglia della nazionale italiana.", correct: "blu" },
 
-    // VERDI
     { text: "Nasco unendo la luce del sole (giallo) al mare profondo (blu). Sono la vita nei campi.", correct: "verde" },
     { text: "Sono lo smeraldo prezioso, l'invidia che brucia e il via sul semaforo.", correct: "verde" },
     { text: "Tutti gli alberi della foresta indossano il mio abito a primavera.", correct: "verde" },
     { text: "Il veleno nelle storie ha spesso la mia sfumatura, così come le lucertole e i rospi.", correct: "verde" },
     { text: "Se mi cerchi sulla terra, guarda la raganella, la menta e i quadrifogli porta fortuna.", correct: "verde" },
 
-    // GIALLI
     { text: "Sono l'oro dei folli, il colore del sole a mezzogiorno e dei girasoli estivi.", correct: "giallo" },
     { text: "Sotto la mia luce il limone inasprisce e le api portano le loro strisce nere.", correct: "giallo" },
     { text: "Mettimi tra il rosso e il verde al semaforo: ti avverto che devi rallentare!", correct: "giallo" },
@@ -103,7 +99,7 @@ const BOMB_WIRES_POOL = [
     { text: "Illumino la notte quando guardi la Luna, e formo il verde se entro nel blu.", correct: "giallo" }
 ];
 
-// --- DATABASE IMPICCATO (CON INDIZI) ---
+// --- DATABASE IMPICCATO ---
 const HANGMAN_WORDS = [
     { word: "DISCORD", hint: "La piattaforma VoIP su cui ci troviamo adesso" },
     { word: "JAVASCRIPT", hint: "Il linguaggio di programmazione usato per questo bot" },
@@ -192,7 +188,7 @@ module.exports = {
 };
 
 // ==========================================
-// FUNZIONI DEI MINIGIOCHI
+// FUNZIONI DEI MINIGIOCHI (PARTE 1)
 // ==========================================
 
 async function startQuiz(interaction) {
@@ -290,7 +286,11 @@ async function startBomb(interaction) {
             await interaction.editReply({ content: "💥 **KABOOOM!** Tempo scaduto, la bomba è esplosa!", embeds: [], components: [] }).catch(() => {});
         }
     });
-}
+            }
+
+// ==========================================
+// FUNZIONI DEI MINIGIOCHI (PARTE 2)
+// ==========================================
 
 async function startMemory(interaction) {
     const userId = interaction.user.id;
@@ -308,35 +308,42 @@ async function startMemory(interaction) {
         );
 
         let userGuess = [];
-        await interaction.editReply({ content: "🔢 **Tocca a te!** Inserisci la sequenza esatta premendo i tasti:", components: [row] }).catch(() => {});
+        await interaction.editReply({ content: "🔢 **Tocca a te!** Inserisci la sequenza esatta premendo i tasti:\n\nProgresso: `[ ? ? ? ? ? ]`", components: [row] }).catch(() => {});
+
         const msg = await interaction.fetchReply();
-        
-        const filter = i => i.user.id === userId;
-        const collector = msg.createMessageComponentCollector({ filter, time: 20000 });
+        const collector = msg.createMessageComponentCollector({ time: 15000 });
 
         collector.on('collect', async i => {
-            userGuess.push(parseInt(i.customId.replace('mem_', '')));
+            if (i.user.id !== userId) return i.reply({ content: "Non toccare la tastiera!", ephemeral: true });
 
-            if (userGuess.length === sequence.length) {
-                collector.stop();
-                activeGames.delete(userId);
-                if (userGuess.every((val, idx) => val === sequence[idx])) {
-                    const reward = getRandomReward(35, 75, 50, 150);
-                    await i.update({ content: `🏆 **Corretto! Memoria di ferro!**${reward}`, components: [] });
-                } else {
-                    await i.update({ content: `❌ **Errata!** La sequenza corretta era: **${sequence.join(' - ')}**`, components: [] });
-                }
+            const num = parseInt(i.customId.replace('mem_', ''));
+            userGuess.push(num);
+
+            const display = userGuess.map(n => n.toString()).concat(Array(5 - userGuess.length).fill('?')).join(' ');
+
+            if (userGuess.length < 5) {
+                await i.update({ content: `🔢 **Tocca a te!** Inserisci la sequenza esatta:\n\nProgresso: \`[ ${display} ]\`` });
             } else {
-                await i.update({ content: `🔢 Sequenza inserita: **${userGuess.join(' - ')}** ... Continua!`, components: [row] });
+                activeGames.delete(userId);
+                collector.stop();
+
+                const isCorrect = userGuess.every((val, index) => val === sequence[index]);
+                if (isCorrect) {
+                    const reward = getRandomReward(30, 70, 50, 150);
+                    await i.update({ content: `🎉 **Memoria di ferro!** Hai inserito la sequenza corretta (**${sequence.join(' - ')}**)!${reward}`, components: [] });
+                } else {
+                    await i.update({ content: `❌ **Errato!** Hai inserito \`${userGuess.join(' - ')}\`, ma la sequenza era **${sequence.join(' - ')}**.`, components: [] });
+                }
             }
         });
 
-        collector.on('end', collected => {
-            if (collected.size === 0) {
+        collector.on('end', async (collected, reason) => {
+            if (userGuess.length < 5) {
                 activeGames.delete(userId);
-                interaction.editReply({ content: "⏰ **Tempo scaduto!**", components: [] }).catch(() => {});
+                await interaction.editReply({ content: "⏰ **Tempo scaduto!** Sei stato troppo lento.", components: [] }).catch(() => {});
             }
         });
+
     }, 4000);
 }
 
@@ -483,5 +490,4 @@ async function startWheel(interaction) {
 
     activeGames.delete(userId);
     await interaction.update({ content: null, embeds: [embed], components: [] });
-                            }
-        
+}

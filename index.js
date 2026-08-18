@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: index.js (PULITO SENZA INVITES)
+// FILE: index.js (BLINDATO & ANTI-CRASH)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
@@ -47,7 +47,8 @@ const client = new Client({
 
 client.commands = new Collection();
 
-client.once("ready", async () => {
+// Evento Ready aggiornato per evitare warning di deprecazione
+client.once("clientReady", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
     // Deploy delle API Discord e caricamento dinamico dei comandi
@@ -113,8 +114,8 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // 3. GESTIONE PULSANTI E MENU A TENDINA TRAMITE REGISTRY
-        if (interaction.isButton() || interaction.isStringSelectMenu()) {
+        // 3. GESTIONE PULSANTI, MENU A TENDINA E MODALI GENERICI TRAMITE REGISTRY
+        if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
             if (typeof buttonHandler === "function") {
                 await buttonHandler(interaction);
             }
@@ -149,4 +150,16 @@ client.on("guildMemberRemove", async (member) => {
     }
 });
 
+// ==========================================
+// SCUDO PROTEZIONE ANTI-CRASH GLOBALE
+// ==========================================
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("⚠️ [PREVENITO CRASH] Unhandled Rejection detectata:", reason);
+});
+
+process.on("uncaughtException", (err, origin) => {
+    console.error("⚠️ [PREVENITO CRASH] Uncaught Exception detectata:", err);
+});
+
 client.login(process.env.TOKEN);
+            

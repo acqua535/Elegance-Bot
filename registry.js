@@ -7,6 +7,7 @@ const entry = require("./entry");
 const invites = require("./invites");
 const apply = require("./apply");
 const logSystem = require("./logSystem");
+const antiLink = require("./antiLink");
 
 const registryMap = {
     // --- TICKET: SELETTORI & MENU A TENDINA ---
@@ -46,7 +47,11 @@ const registryMap = {
 
     // --- LOG SYSTEM ---
     "log_toggle": logSystem.buttonHandler,
-    "log_set_channel": logSystem.buttonHandler
+    "log_set_channel": logSystem.buttonHandler,
+
+    // --- ANTI-LINK SYSTEM ---
+    "antilink_toggle": antiLink.buttonHandler,
+    "antilink_set_channel": antiLink.buttonHandler
 };
 
 module.exports = registryMap;

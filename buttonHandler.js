@@ -9,6 +9,24 @@ module.exports = async (interaction) => {
 
     const customId = interaction.customId;
 
+    // ---------------------------------------------------------
+    // 1. GESTIONE MINIGIOCHI (Inizio fix)
+    // ---------------------------------------------------------
+    // Se è la tendina per far partire il minigioco:
+    if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
+        const minigameCmd = interaction.client.commands.get('minigame');
+        if (minigameCmd && minigameCmd.handleGameInteraction) {
+            return await minigameCmd.handleGameInteraction(interaction);
+        }
+    }
+
+    // Se sono i bottoni/menu INTERNI ai minigiochi (gestiti dai collector):
+    const minigamePrefixes = ['quiz_', 'bomb_', 'mem_', 'react_', 'hangman_'];
+    if (minigamePrefixes.some(prefix => customId.startsWith(prefix))) {
+        return; // Esce e lascia lavorare i collector senza inviare errori
+    }
+    // ---------------------------------------------------------
+
     // Recupera l'handler mappato nel registry
     const handler = registryMap[customId];
 

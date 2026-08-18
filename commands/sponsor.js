@@ -21,10 +21,10 @@ module.exports = {
                 .setDescription("Pacchetto / Tipologia della sponsorizzazione")
                 .setRequired(true)
                 .addChoices(
-                    { name: "✧ ʙᴀsɪᴄ (24h Annunci)", value: "✧ ʙᴀsɪᴄ ─── Sponsorizzazione in evidenza nel canale annunci per 24 ore." },
-                    { name: "✧ sᴛᴀɴᴅᴀʀᴅ (Ping @everyone / @here + 3 giorni)", value: "✧ sᴛᴀɴᴅᴀʀᴅ ─── Ping generale (@everyone / @here) + sponsorizzazione fissata per 3 giorni." },
-                    { name: "✧ ᴘʀᴇᴍɪᴜM (Ping + 1 Settimana + Banner)", value: "✧ ᴘʀᴇᴍɪᴜM ─── Pacchetto completo: ping generale, sponsorizzazione fissata per 1 settimana + banner." },
-                    { name: "✧ ᴄᴜsᴛᴏᴍ (Soluzione personalizzata)", value: "✧ ᴄᴜsᴛᴏᴍ ─── Soluzioni personalizzate a lungo termine." }
+                    { name: "Basic (24h Annunci)", value: "Basic - Sponsorizzazione in evidenza nel canale annunci per 24 ore." },
+                    { name: "Standard (Ping + 3 giorni)", value: "Standard - Ping generale + sponsorizzazione fissata per 3 giorni." },
+                    { name: "Premium (Ping + 1 Settimana + Banner)", value: "Premium - Pacchetto completo: ping generale, sponsorizzazione fissata per 1 settimana e banner." },
+                    { name: "Custom", value: "Custom - Soluzioni personalizzate." }
                 )
         )
         .addStringOption(option =>
@@ -45,7 +45,12 @@ module.exports = {
 
         const sponsorizzato = interaction.options.getUser("sponsorizzato");
         const tipoSponsor = interaction.options.getString("tipo_sponsor");
-        const descrizione = interaction.options.getString("descrizione");
+        const rawDescrizione = interaction.options.getString("descrizione");
+
+        // Rimuove i ping di massa
+        const descrizione = rawDescrizione
+            .replace(/@everyone/g, "everyone")
+            .replace(/@here/g, "here");
 
         const sponsorChannel = interaction.guild.channels.cache.get(SPONSOR_CHANNEL_ID);
         const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
@@ -57,10 +62,13 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pura
-        await sponsorChannel.send({ content: descrizione });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita (blocco ping API)
+        await sponsorChannel.send({ 
+            content: descrizione,
+            allowedMentions: { parse: [] } 
+        });
 
-        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
+        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli essenziali
         const infoMessage = `💎 **ELEGANCE SPONSORING ── SPONSORSHIP**\n` +
                             `⭐ **Pacchetto Sponsor:** \`${tipoSponsor}\`\n` +
                             `📌 **Sponsorizzato:** ${sponsorizzato}\n` +
@@ -93,3 +101,4 @@ module.exports = {
         });
     }
 };
+    

@@ -7,15 +7,40 @@ const {
     MessageFlags,
     Collection
 } = require("discord.js");
+const fs = require("fs");
+const path = require("path");
 
 const STAFF_ROLE_ID = "1528576014446231683";
+const SETUPS_PATH = path.join(__dirname, "setups.json");
 
 const guildInvites = new Map();
 const userInviteStats = new Map();
 
-const invitesConfig = {
-    logChannel: null,
-    enabled: true
+const getSetups = () => {
+    if (!fs.existsSync(SETUPS_PATH)) return {};
+    try {
+        return JSON.parse(fs.readFileSync(SETUPS_PATH, "utf8"));
+    } catch {
+        return {};
+    }
+};
+
+const saveInvitesSetup = (guildId, data) => {
+    const setups = getSetups();
+    setups[guildId] = {
+        ...setups[guildId],
+        invitesLogChannel: data.logChannel !== undefined ? data.logChannel : (setups[guildId]?.invitesLogChannel || null),
+        invitesEnabled: data.enabled !== undefined ? data.enabled : (setups[guildId]?.invitesEnabled ?? true)
+    };
+    fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
+};
+
+const getGuildInvitesConfig = (guildId) => {
+    const setups = getSetups();
+    return {
+        logChannel: setups[guildId]?.invitesLogChannel || null,
+        enabled: setups[guildId]?.invitesEnabled ?? true
+    };
 };
 
 module.exports = {
@@ -23,7 +48,6 @@ module.exports = {
         .setName("invites")
         .setDescription("Apre il pannello di controllo della gestione inviti"),
 
-    // Esponiamo le statistiche per essere usate da invites-info.js
     userInviteStats,
 
     async execute(interaction) {
@@ -34,12 +58,14 @@ module.exports = {
             });
         }
 
+        const config = getGuildInvitesConfig(interaction.guild.id);
+
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO INVITI")
             .setDescription(
                 "Da questo pannello puoi attivare/disattivare il log degli inviti e impostare il canale di notifica.\n\n" +
-                `📌 **Canale Log Inviti:** ${invitesConfig.logChannel ? `<#${invitesConfig.logChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
-                `• **Stato Tracciamento:** ${invitesConfig.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
+                `📌 **Canale Log Inviti:** ${config.logChannel ? `<#${config.logChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
+                `• **Stato Tracciamento:** ${config.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
             .setColor(0x00FF99)
             .setFooter({ text: "Elegance Sponsoring • System Control" })
@@ -48,8 +74,8 @@ module.exports = {
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("invites_toggle")
-                .setLabel(invitesConfig.enabled ? "Disattiva Log" : "Attiva Log")
-                .setStyle(invitesConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+                .setLabel(config.enabled ? "Disattiva Log" : "Attiva Log")
+                .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
             new ButtonBuilder()
                 .setCustomId("invites_set_channel")
@@ -68,28 +94,32 @@ module.exports = {
             });
         }
 
-        const { customId, channel } = interaction;
+        const { customId, channel, guild } = interaction;
+        let config = getGuildInvitesConfig(guild.id);
 
         if (customId === "invites_toggle") {
-            invitesConfig.enabled = !invitesConfig.enabled;
+            const newStatus = !config.enabled;
+            saveInvitesSetup(guild.id, { enabled: newStatus });
+            config.enabled = newStatus;
         } else if (customId === "invites_set_channel") {
-            invitesConfig.logChannel = channel.id;
+            saveInvitesSetup(guild.id, { logChannel: channel.id });
+            config.logChannel = channel.id;
         }
 
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO INVITI")
             .setDescription(
                 "Configurazione aggiornata con successo!\n\n" +
-                `📌 **Canale Log Inviti:** <#${invitesConfig.logChannel || channel.id}>\n` +
-                `• **Stato Tracciamento:** ${invitesConfig.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
+                `📌 **Canale Log Inviti:** <#${config.logChannel || channel.id}>\n` +
+                `• **Stato Tracciamento:** ${config.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
             .setColor(0x00FF99);
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("invites_toggle")
-                .setLabel(invitesConfig.enabled ? "Disattiva Log" : "Attiva Log")
-                .setStyle(invitesConfig.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+                .setLabel(config.enabled ? "Disattiva Log" : "Attiva Log")
+                .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
             new ButtonBuilder()
                 .setCustomId("invites_set_channel")
@@ -112,9 +142,10 @@ module.exports = {
     },
 
     async handleMemberAdd(member) {
-        if (!invitesConfig.enabled) return;
-
         const { guild } = member;
+        const config = getGuildInvitesConfig(guild.id);
+        if (!config.enabled) return;
+
         const cachedInvites = guildInvites.get(guild.id) || new Collection();
         
         let inviter = null;
@@ -137,7 +168,7 @@ module.exports = {
             console.error("Errore nel tracciamento invito:", error);
         }
 
-        const channelId = invitesConfig.logChannel || guild.systemChannelId;
+        const channelId = config.logChannel || guild.systemChannelId;
         const channel = guild.channels.cache.get(channelId);
         if (!channel) return;
 
@@ -170,3 +201,4 @@ module.exports = {
         // Logica per aggiornare inviti uscite se necessario
     }
 };
+                            

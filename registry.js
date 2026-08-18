@@ -1,52 +1,26 @@
-const fs = require('fs');
-const path = require('path');
-
-// Mappa la struttura dei file per debug
-console.log("📂 FILE NELLA ROOT:", fs.readdirSync(__dirname));
-const items = fs.readdirSync(__dirname);
-items.forEach(item => {
-    const fullPath = path.join(__dirname, item);
-    if (fs.statSync(fullPath).isDirectory() && item !== 'node_modules' && !item.startsWith('.')) {
-        console.log(`📁 CONTENUTO DI '${item}':`, fs.readdirSync(fullPath));
-    }
-});
-
-// Funzione intelligente per caricare i moduli ovunque si trovino
-function safeRequire(fileName) {
-    const possiblePaths = [
-        `./${fileName}`,
-        `./commands/${fileName}`,
-        `./src/${fileName}`,
-        `./handlers/${fileName}`
-    ];
-
-    for (const p of possiblePaths) {
+// Helper per caricare i moduli in modo sicuro senza far mai crashare il bot
+function loadSafe(path) {
+    try {
+        return require(path);
+    } catch (e) {
+        // Se non lo trova qui, prova nella cartella commands
         try {
-            const mod = require(p);
-            console.log(`✅ MODULO CARICATO: ${fileName} (da '${p}')`);
-            return mod;
+            return require(`./commands/${path.replace('./', '')}`);
         } catch (err) {
-            // Se l'errore NON è "file non trovato", significa che c'è un errore di sintassi dentro il file stesso!
-            if (err.code !== 'MODULE_NOT_FOUND' || !err.message.includes(p)) {
-                console.log(`❌ ERRORE DI CODICE IN ${fileName} ('${p}'):`, err.message);
-                return {};
-            }
+            console.warn(`[REGISTRY] Modulo non trovato: ${path}`);
+            return {}; // Ritorna un oggetto vuoto se non esiste
         }
     }
-    console.log(`⚠️ IMPOSSIBILE TROVARE IL FILE: ${fileName}`);
-    return {};
 }
 
-// Caricamento sicuro dei moduli
-const ticket = safeRequire("ticket");
-const verify = safeRequire("verify");
-const entry = safeRequire("entry");
-const invites = safeRequire("invites");
-const apply = safeRequire("apply");
-const logSystem = safeRequire("logSystem");
-const antiLink = safeRequire("antiLink");
+const ticket = loadSafe("./ticket");
+const verify = loadSafe("./verify");
+const entry = loadSafe("./entry");
+const invites = loadSafe("./invites");
+const apply = loadSafe("./apply");
+const logSystem = loadSafe("./logSystem");
+const antiLink = loadSafe("./antiLink");
 
-// Registro completo di tutti i bottoni e interazioni
 const registryMap = {
     // --- TICKET ---
     "ticket_category": ticket.categoryHandler,

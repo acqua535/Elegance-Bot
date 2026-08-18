@@ -12,6 +12,7 @@ if (fs.existsSync(commandsPath)) {
 const verify = require("./commands/verify");
 const entry = require("./commands/entry");
 console.log("--> CARICAMENTO REGISTRY DA:", __filename);
+const invites = require("./commands/invites");
 const apply = require("./commands/apply");
 const logSystem = require("./commands/logSystem");
 const antiLink = require("./antiLink");

@@ -2,8 +2,12 @@ const ticket = require("./ticket");
 const fs = require('fs');
 const path = require('path');
 
-const targetPath = path.join(__dirname, 'commands', 'verify.js');
-console.log("--> ESISTE IL FILE?", fs.existsSync(targetPath));
+const commandsPath = path.join(__dirname, 'commands');
+if (fs.existsSync(commandsPath)) {
+    console.log("📂 CONTENUTO CARTELLA COMMANDS:", fs.readdirSync(commandsPath));
+} else {
+    console.log("❌ LA CARTELLA 'commands' NON ESISTE PROPRIO QUI!");
+}
 
 const verify = require("./commands/verify");
 const entry = require("./commands/entry");

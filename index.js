@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: index.js (VERSIONE COMPLETA E AGGIORNATA)
+// ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
 
@@ -8,6 +11,7 @@ const entry = require("./entry");
 const invites = require("./invites");
 const logSystem = require("./logSystem"); 
 const countingSystem = require("./countingSystem"); 
+const antiLink = require("./antiLink");
 
 const client = new Client({
     intents: [
@@ -43,13 +47,17 @@ client.once("ready", async () => {
     await deployCommands();
     loadCommands(client);
 
-    // Inizializzazione eventi di Log e Counting
+    // Inizializzazione eventi di Log, Counting e Anti-Link
     if (logSystem && typeof logSystem.initEvents === "function") {
         logSystem.initEvents(client);
     }
     
     if (typeof countingSystem === "function") {
         countingSystem(client);
+    }
+
+    if (antiLink && typeof antiLink.initEvents === "function") {
+        antiLink.initEvents(client);
     }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
@@ -59,11 +67,6 @@ client.on("interactionCreate", async (interaction) => {
     try {
         // 1. GESTIONE SLASH COMMANDS
         if (interaction.isChatInputCommand()) {
-            // Intercettazione diretta per /log-setup
-            if (interaction.commandName === "log-setup") {
-                return await logSystem.execute(interaction);
-            }
-
             const command = client.commands.get(interaction.commandName);
             if (!command) {
                 return interaction.reply({
@@ -100,12 +103,7 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
-        // 3. GESTIONE PULSANTI LOG-SETUP
-        if (interaction.isButton() && interaction.customId.startsWith("log_")) {
-            return await logSystem.buttonHandler(interaction);
-        }
-
-        // 4. GESTIONE DI TUTTI GLI ALTRI PULSANTI E MENU A TENDINA
+        // 3. GESTIONE DI TUTTI I PULSANTI E MENU A TENDINA (PULITA TRAMITE REGISTRY)
         if (interaction.isButton() || interaction.isStringSelectMenu()) {
             await buttonHandler(interaction);
             return;
@@ -142,4 +140,3 @@ client.on("guildMemberRemove", async (member) => {
 });
 
 client.login(process.env.TOKEN);
-                

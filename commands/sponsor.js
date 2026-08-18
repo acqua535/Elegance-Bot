@@ -24,7 +24,7 @@ module.exports = {
                     { name: "Basic (24h Annunci)", value: "Basic - Sponsorizzazione in evidenza nel canale annunci per 24 ore." },
                     { name: "Standard (Ping + 3 giorni)", value: "Standard - Ping generale + sponsorizzazione fissata per 3 giorni." },
                     { name: "Premium (Ping + 1 Settimana + Banner)", value: "Premium - Pacchetto completo: ping generale, sponsorizzazione fissata per 1 settimana e banner." },
-                    { name: "Custom", value: "Custom - Soluzioni personalizzate." }
+                    { name: "Custom (Soluzione personalizzata)", value: "Custom - Soluzioni personalizzate a lungo termine." }
                 )
         )
         .addStringOption(option =>
@@ -45,10 +45,9 @@ module.exports = {
 
         const sponsorizzato = interaction.options.getUser("sponsorizzato");
         const tipoSponsor = interaction.options.getString("tipo_sponsor");
-        const rawDescrizione = interaction.options.getString("descrizione");
 
-        // Rimuove i ping di massa
-        const descrizione = rawDescrizione
+        // Toglie semplicemente i ping @everyone e @here dal testo
+        const descrizione = interaction.options.getString("descrizione")
             .replace(/@everyone/g, "everyone")
             .replace(/@here/g, "here");
 
@@ -62,13 +61,10 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita (blocco ping API)
-        await sponsorChannel.send({ 
-            content: descrizione,
-            allowedMentions: { parse: [] } 
-        });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita
+        await sponsorChannel.send({ content: descrizione });
 
-        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli essenziali
+        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `💎 **ELEGANCE SPONSORING ── SPONSORSHIP**\n` +
                             `⭐ **Pacchetto Sponsor:** \`${tipoSponsor}\`\n` +
                             `📌 **Sponsorizzato:** ${sponsorizzato}\n` +
@@ -101,4 +97,3 @@ module.exports = {
         });
     }
 };
-    

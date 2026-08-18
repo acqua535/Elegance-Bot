@@ -24,8 +24,7 @@ module.exports = {
                     { name: "🌐 Community", value: "🌐 Community" },
                     { name: "🎮 Gaming", value: "🎮 Gaming" },
                     { name: "🎭 Roleplay", value: "🎭 Roleplay" },
-                    { name: "🚗 FiveM", value: "🚗 FiveM" },
-                    { name: "📢 Media / Content Creator", value: "📢 Media / Content Creator" }
+                    { name: "🚗 FiveM", value: "🚗 FiveM" }
                 )
         )
         .addStringOption(option =>
@@ -46,7 +45,12 @@ module.exports = {
 
         const richiesta = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
-        const descrizione = interaction.options.getString("descrizione");
+        const rawDescrizione = interaction.options.getString("descrizione");
+
+        // Rimuove la chiocciola da @everyone e @here per evitare il ping di massa
+        const descrizione = rawDescrizione
+            .replace(/@everyone/g, "everyone")
+            .replace(/@here/g, "here");
 
         const collabChannel = interaction.guild.channels.cache.get(COLLAB_CHANNEL_ID);
         const logChannel = interaction.guild.channels.cache.get(LOG_CHANNEL_ID);
@@ -58,8 +62,11 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pura
-        await collabChannel.send({ content: descrizione });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita con blocco notifiche API
+        await collabChannel.send({ 
+            content: descrizione,
+            allowedMentions: { parse: [] } 
+        });
 
         // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `✨ **ELEGANCE SPONSORING ── COLLABORAZIONE**\n` +

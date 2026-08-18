@@ -66,9 +66,9 @@ module.exports = {
 
         if (subcommand === "panel") {
             const embed = new EmbedBuilder()
-                .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
+                .setTitle("⚙️ ELEGANCE SPONSORING - CONFIGURAZIONE CANDIDATURE")
                 .setDescription(
-                    "Da questo pannello puoi attivare/disattivare il sistema e impostare il canale dove lo Staff riceverà le candidature inoltrate.\n\n" +
+                    "Da questo pannello puoi attivare o disattivare il sistema e impostare il canale dove lo Staff riceverà le candidature inoltrate.\n\n" +
                     `📌 **Canale Ricezione Moduli:** ${config.targetChannel ? `<#${config.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
                     `• **Stato Candidature:** ${config.enabled ? "🟢 Aperte" : "🔴 Chiuse"}`
                 )
@@ -98,18 +98,16 @@ module.exports = {
 
         if (subcommand === "send") {
             const publicEmbed = new EmbedBuilder()
-                .setTitle("📝 ELEGANCE SPONSORING ── CANDIDATURE STAFF")
+                .setTitle("📝 ELEGANCE SPONSORING - CANDIDATURE STAFF")
                 .setDescription(
                     "Vorresti fare parte dello staff ufficiale di **Elegance Sponsoring**?\n" +
                     "Stiamo cercando persone motivate, attive ed educate per ampliare il nostro team!\n\n" +
-                    "────────────────────────────────────────\n\n" +
-                    "✧ ʀᴇǫᴜɪsɪᴛɪ & Linee Guida\n" +
-                    " • 📜 Conoscenza approfondita del regolamento del server.\n" +
-                    " • 🤝 Rispetto, massima serietà e nessuna attitudine al trolling.\n" +
-                    " • ⏱️ Buona disponibilità di tempo e presenza attiva nei canali.\n\n" +
-                    "────────────────────────────────────────\n\n" +
-                    "✧ ᴄᴏᴍᴇ Cᴀɴᴅɪᴅᴀʀsɪ\n" +
-                    "1. Clicca sul pulsante **📝 Candidati Ora** qui sotto.\n" +
+                    "**REQUISITI E LINEE GUIDA**\n" +
+                    "• Conoscenza approfondita del regolamento del server.\n" +
+                    "• Rispetto, massima serietà e nessuna attitudine al trolling.\n" +
+                    "• Buona disponibilità di tempo e presenza attiva nei canali.\n\n" +
+                    "**COME CANDIDARSI**\n" +
+                    "1. Clicca sul pulsante **Candidati Ora** qui sotto.\n" +
                     "2. Compila il modulo che apparirà a schermo.\n" +
                     "3. Invia la candidatura per farla pervenire agli Amministratori.\n\n" +
                     "⚠️ *Nota: Risposte non serie o goliardiche porteranno al rifiuto e a possibili sanzioni.*"
@@ -202,7 +200,7 @@ module.exports = {
 
             const q4 = new TextInputBuilder()
                 .setCustomId("apply_q4")
-                .setLabel("Come gestisci utenti provocatori/troll?")
+                .setLabel("Come gestisci utenti provocatori o troll?")
                 .setStyle(TextInputStyle.Paragraph)
                 .setRequired(true);
 
@@ -238,7 +236,7 @@ module.exports = {
 
                 const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
                     .setColor(0x00FF00)
-                    .setTitle(`${interaction.message.embeds[0].title} ── 🟢 ACCETTATA`)
+                    .setTitle(`${interaction.message.embeds[0].title} - ACCETTATA`)
                     .setFooter({ text: `Gestita da ${user.username}`, iconURL: user.displayAvatarURL() });
 
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
@@ -251,7 +249,7 @@ module.exports = {
 
                 const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
                     .setColor(0xFF0000)
-                    .setTitle(`${interaction.message.embeds[0].title} ── 🔴 RIFIUTATA`)
+                    .setTitle(`${interaction.message.embeds[0].title} - RIFIUTATA`)
                     .setFooter({ text: `Gestita da ${user.username}`, iconURL: user.displayAvatarURL() });
 
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
@@ -302,19 +300,18 @@ module.exports = {
             }
 
             const resultEmbed = new EmbedBuilder()
-                .setTitle(`📩 NUOVA CANDIDATURA STAFF ── ${user.username}`)
+                .setTitle(`📩 NUOVA CANDIDATURA STAFF - ${user.username}`)
                 .setThumbnail(user.displayAvatarURL({ dynamic: true }))
                 .setColor(0x00FF99)
                 .setDescription(
                     `**Candidato:** ${user} (\`${user.tag}\`)\n` +
-                    `**ID Utente:** \`${user.id}\`\n\n` +
-                    "────────────────────────────────────────"
+                    `**ID Utente:** \`${user.id}\``
                 )
                 .addFields(
                     { name: "📌 1. Età e Disponibilità", value: ans1 },
                     { name: "📌 2. Esperienze Pregresse", value: ans2 },
                     { name: "📌 3. Motivazione", value: ans3 },
-                    { name: "📌 4. Gestione Conflitti / Troll", value: ans4 },
+                    { name: "📌 4. Gestione Conflitti e Troll", value: ans4 },
                     { name: "📌 5. Punti di forza e debolezza", value: ans5 }
                 )
                 .setFooter({ text: "Elegance Sponsoring • Modulo Ricevuto" })
@@ -344,7 +341,7 @@ module.exports = {
         const config = getGuildApplyConfig(interaction.guild.id);
 
         const embed = new EmbedBuilder()
-            .setTitle("⚙️ ELEGANCE SPONSORING ── CONFIGURAZIONE CANDIDATURE")
+            .setTitle("⚙️ ELEGANCE SPONSORING - CONFIGURAZIONE CANDIDATURE")
             .setDescription(
                 "Configurazione aggiornata con successo!\n\n" +
                 `📌 **Canale Ricezione Moduli:** ${config.targetChannel ? `<#${config.targetChannel}>` : "⚠️ `Non impostato! Usa uno dei pulsanti sotto`"}\n` +
@@ -376,4 +373,4 @@ module.exports = {
         }
     }
 };
-            
+                                                                        

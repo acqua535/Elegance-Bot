@@ -58,20 +58,19 @@ module.exports = {
         }
 
         const embed = new EmbedBuilder()
-            .setTitle("✦ ELEGANCE SPONSORING ✦")
+            .setTitle("🌐 CENTRO SUPPORTO ELEGANCE")
             .setDescription(
-                "Welcome to the **Elegance Sponsoring Support Center**.\n" +
-                "Select the appropriate department from the menu below to open a private request with our executive team.\n\n" +
-                "**DIPARTIMENTI DISPONIBILI**\n" +
-                "💎 `Servizi & VIP` — Assistenza acquisti, informazioni e pacchetti riservati.\n" +
-                "🤝 `Partnership` — Proposte di collaborazione e sponsorizzazioni.\n" +
-                "🐛 `Supporto Tecnico` — Segnalazione bug e problemi della piattaforma.\n" +
-                "🚨 `Segnalazioni` — Report riservati verso utenti o condotta del server.\n\n" +
-                "───────────────────────────────────\n" +
-                "• *Fornisci tutti i dettagli pertinenti all'interno della richiesta.*\n" +
-                "• *Si prega di non aprire ticket multipli per lo stesso motivo.*"
+                "Benvenuto nel portale di assistenza di **Elegance Sponsoring**.\n" +
+                "Scegli il reparto più adatto dal menu a tendina qui sotto per aprire una richiesta privata con noi.\n"
             )
-            .setColor(0x1a1a1a)
+            .addFields(
+                { name: "💎 Servizi & VIP", value: "Info su pacchetti e vantaggi offerti alla community.", inline: false },
+                { name: "🤝 Partnership", value: "Valutazione proposte commerciali e collaborazioni.", inline: false },
+                { name: "💻 Supporto Tecnico", value: "Assistenza per malfunzionamenti, bug ed errori.", inline: false },
+                { name: "🔒 Segnalazioni", value: "Modulo di report riservato per la sicurezza del server.", inline: false },
+                { name: "📌 Regolamento", value: "Non aprire ticket multipli per lo stesso motivo e descrivi subito la tua richiesta.", inline: false }
+            )
+            .setColor(0x00C8FF)
             .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
             .setFooter({ text: "Elegance Sponsoring • Official Support Portal", iconURL: interaction.guild.iconURL() })
             .setTimestamp();
@@ -129,31 +128,30 @@ module.exports = {
 
         // LOG DI APERTURA
         const openLogEmbed = new EmbedBuilder()
-            .setTitle("✦ NUOVA RICHIESTA APERTA ✦")
-            .setDescription(
-                `> Un nuovo ticket è stato inizializzato nel sistema.\n\n` +
-                `• **Richiedente:** ${interaction.user} (\`${interaction.user.id}\`)\n` +
-                `• **Dipartimento:** \`${type.toUpperCase()}\`\n` +
-                `• **Canale:** ${channel}`
+            .setTitle("📋 Nuova Richiesta Aperta")
+            .addFields(
+                { name: "👤 Richiedente", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                { name: "📁 Dipartimento", value: `\`${type.toUpperCase()}\``, inline: true },
+                { name: "📌 Canale", value: `${channel}`, inline: true }
             )
-            .setColor(0x2f3136)
+            .setColor(0x00C8FF)
             .setTimestamp();
         await sendSystemLog(interaction.guild, openLogEmbed);
 
         // EMBED BENVENUTO IN TICKET
         const welcomeEmbed = new EmbedBuilder()
-            .setTitle(`✦ ASSISTENZA — ${type.toUpperCase()} ✦`)
+            .setTitle("💬 RICHIESTA DI SUPPORTO AVVIATA")
             .setDescription(
-                `Benvenuto ${interaction.user},\n` +
-                `Un membro dell'Executive Team prenderà in carico la tua richiesta il prima possibile.\n\n` +
-                `>>> *Spiega dettagliatamente la tua esigenza o il motivo dell'apertura per velocizzare la risoluzione.*`
+                `Benvenuto ${interaction.user}!\n` +
+                `Il tuo ticket è ora attivo. 🚀\n\n` +
+                `✍️ Scrivi pure un messaggio specificando la tua richiesta: il nostro team analizzerà la situazione e ti risponderà al più presto.`
             )
             .addFields(
-                { name: "Richiedente", value: `${interaction.user}`, inline: true },
-                { name: "Dipartimento", value: `\`${type.toUpperCase()}\``, inline: true },
-                { name: "In Carico A", value: "`Non Assegnato`", inline: true }
+                { name: "👤 Utente", value: `${interaction.user}`, inline: true },
+                { name: "📁 Dipartimento", value: `\`${type.toUpperCase()}\``, inline: true },
+                { name: "🛡️ In Carico A", value: "`Non Assegnato`", inline: true }
             )
-            .setColor(0x1a1a1a)
+            .setColor(0x00C8FF)
             .setFooter({ text: "Elegance Sponsoring • Management System", iconURL: interaction.guild.iconURL() })
             .setTimestamp();
 
@@ -208,19 +206,19 @@ module.exports = {
             saveData(data);
 
             const claimEmbed = new EmbedBuilder()
-                .setTitle("✦ INCARICO ASSEGNATO ✦")
-                .setDescription(`> La richiesta è stata presa in carico da ${interaction.user}.`)
-                .setColor(0x2f3136);
+                .setTitle("🛡️ INCARICO ASSEGNATO")
+                .setDescription(`La richiesta è stata presa in carico da ${interaction.user}.`)
+                .setColor(0x00C8FF);
 
             await interaction.channel.send({ embeds: [claimEmbed] });
 
             const log = new EmbedBuilder()
-                .setTitle("✦ TICKET ASSEGNATO ✦")
-                .setDescription(
-                    `• **Operator:** ${interaction.user} (\`${interaction.user.id}\`)\n` +
-                    `• **Canale:** ${interaction.channel}`
+                .setTitle("📋 Ticket Assegnato")
+                .addFields(
+                    { name: "👤 Operatore", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
                 )
-                .setColor(0x2f3136)
+                .setColor(0x00C8FF)
                 .setTimestamp();
 
             await sendSystemLog(interaction.guild, log);
@@ -240,9 +238,9 @@ module.exports = {
             saveData(data);
 
             const unclaimEmbed = new EmbedBuilder()
-                .setTitle("✦ INCARICO RILASCIATO ✦")
-                .setDescription(`> ${interaction.user} ha rilasciato la gestione di questa richiesta.`)
-                .setColor(0x2f3136);
+                .setTitle("🔓 INCARICO RILASCIATO")
+                .setDescription(`${interaction.user} ha rilasciato la gestione di questa richiesta.`)
+                .setColor(0x00C8FF);
 
             await interaction.channel.send({ embeds: [unclaimEmbed] });
             return interaction.reply({ content: "✅ Incarico rilasciato.", flags: MessageFlags.Ephemeral });
@@ -339,17 +337,17 @@ module.exports = {
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     const dmEmbed = new EmbedBuilder()
-                        .setTitle("✦ RIEPILOGO RICHIESTA ✦")
+                        .setTitle("📂 RIEPILOGO RICHIESTA")
                         .setDescription(
                             `Gentile **${ownerUser.user.username}**,\n` +
                             `La tua sessione di supporto su **${interaction.guild.name}** è stata conclusa.\n\n` +
-                            `>>> In allegato trovi il file completo di trascrizione della conversazione.`
+                            `In allegato trovi il file completo di trascrizione della conversazione.`
                         )
                         .addFields(
-                            { name: "Canale", value: `\`${interaction.channel.name}\``, inline: true },
-                            { name: "Chiuso Da", value: `${interaction.user}`, inline: true }
+                            { name: "📌 Canale", value: `\`${interaction.channel.name}\``, inline: true },
+                            { name: "👤 Chiuso Da", value: `${interaction.user}`, inline: true }
                         )
-                        .setColor(0x1a1a1a)
+                        .setColor(0x00C8FF)
                         .setFooter({ text: "Elegance Sponsoring • Support Archive" })
                         .setTimestamp();
 
@@ -364,13 +362,13 @@ module.exports = {
 
             // Log di Chiusura
             const closeLogEmbed = new EmbedBuilder()
-                .setTitle("✦ SESSIONE ARCHIVIATA ✦")
-                .setDescription(
-                    `• **Dipartimento:** \`${ticket.type.toUpperCase()}\`\n` +
-                    `• **Richiedente:** <@${ticket.owner}>\n` +
-                    `• **Chiuso Da:** ${interaction.user} (\`${interaction.user.id}\`)`
+                .setTitle("📋 Sessione Archiviata")
+                .addFields(
+                    { name: "📁 Dipartimento", value: `\`${ticket.type.toUpperCase()}\``, inline: true },
+                    { name: "👤 Richiedente", value: `<@${ticket.owner}>`, inline: true },
+                    { name: "🔒 Chiuso Da", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true }
                 )
-                .setColor(0x1a1a1a)
+                .setColor(0x00C8FF)
                 .setTimestamp();
 
             const logFiles = transcriptBuffer ? [{ attachment: transcriptBuffer, name: transcriptFileName }] : [];
@@ -401,9 +399,9 @@ module.exports = {
         await interaction.channel.setName(newName).catch(() => {});
 
         const transferEmbed = new EmbedBuilder()
-            .setTitle("✦ DIPARTIMENTO AGGIORNATO ✦")
-            .setDescription(`> Il ticket è stato trasferito con successo nel reparto \`${newType.toUpperCase()}\`.`)
-            .setColor(0x2f3136);
+            .setTitle("🔄 DIPARTIMENTO AGGIORNATO")
+            .setDescription(`Il ticket è stato trasferito con successo nel reparto \`${newType.toUpperCase()}\`.`)
+            .setColor(0x00C8FF);
 
         await interaction.channel.send({ embeds: [transferEmbed] });
         return interaction.reply({ content: `✅ Trasferimento completato.`, flags: MessageFlags.Ephemeral });
@@ -439,9 +437,9 @@ module.exports = {
                 return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
             }
 
-            await interaction.channel.permissionOverwrites.delete(targetMember.id).catch(() => {});
+            await interaction.channel.permissionOverwrites.delete(targetMember.id);
 
-            return interaction.reply({ content: `✅ Accesso rimosso per l'utente ${targetMember}.` });
+            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato rimosso dalla sessione.` });
         }
     }
 };

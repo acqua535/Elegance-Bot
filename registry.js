@@ -21,11 +21,15 @@ const entry = loadSafe("./entry");
 const apply = loadSafe("./apply");
 const logSystem = loadSafe("./logSystem");
 const antiLink = loadSafe("./antiLink");
-const minigame = loadSafe("./minigame"); // Carica il minigioco
+const minigame = loadSafe("./minigame");
 
 const registryMap = {
     // --- MINIGAME HUB ---
-    "game_hub_select": minigame.handleGameInteraction,
+    "game_hub_select": async (interaction) => {
+        if (minigame && typeof minigame.handleGameInteraction === 'function') {
+            await minigame.handleGameInteraction(interaction);
+        }
+    },
 
     // --- TICKET ---
     "ticket_category": ticket.categoryHandler,

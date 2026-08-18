@@ -1,7 +1,7 @@
 const ticket = require("./commands/ticket");
 const verify = require("./commands/verify");
 const entry = require("./commands/entry");
-const invites = require("./commands/invites");
+console.log("--> CARICAMENTO REGISTRY DA:", __filename);
 const apply = require("./commands/apply");
 const logSystem = require("./commands/logSystem");
 const antiLink = require("./commands/antiLink");

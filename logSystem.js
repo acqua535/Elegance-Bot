@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: logSystem.js (VERSIONE COMPLETA E INTEGRATA)
+// ==========================================
 const { 
     SlashCommandBuilder, 
     EmbedBuilder, 
@@ -22,7 +25,7 @@ const getSetups = () => {
     }
 };
 
-// Helper per salvare la configurazione su setups.json
+// Helper per salvare la configurazione su setups.json preservando gli altri moduli
 const saveLogSetup = (guildId, data) => {
     const setups = getSetups();
     setups[guildId] = {
@@ -295,3 +298,4 @@ module.exports = {
         });
     }
 };
+                                              

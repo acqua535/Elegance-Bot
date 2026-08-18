@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: logSystem.js (VERSIONE COMPLETA E INTEGRATA)
+// FILE: logSystem.js (VERSIONE FIXATA E BLINDATA)
 // ==========================================
 const { 
     SlashCommandBuilder, 
@@ -38,6 +38,7 @@ const saveLogSetup = (guildId, data) => {
 
 // Ottiene la configurazione salvata per la gilda
 const getGuildLogConfig = (guildId) => {
+    if (!guildId) return { logChannel: null, enabled: false };
     const setups = getSetups();
     return {
         logChannel: setups[guildId]?.logChannel || null,
@@ -47,11 +48,11 @@ const getGuildLogConfig = (guildId) => {
 
 // Funzione helper per inviare gli embed di log
 async function sendLog(guild, title, description, color = 0x2b2d31) {
-    if (!guild) return;
+    if (!guild?.id) return;
     const config = getGuildLogConfig(guild.id);
     if (!config.enabled || !config.logChannel) return;
 
-    const channel = guild.channels.cache.get(config.logChannel);
+    const channel = guild.channels?.cache?.get(config.logChannel);
     if (!channel) return;
 
     const embed = new EmbedBuilder()
@@ -70,14 +71,14 @@ module.exports = {
         .setDescription("Gestisci e configura il sistema dei Log di Elegance Sponsoring"),
 
     async execute(interaction) {
-        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+        if (!interaction?.member?.roles?.cache?.has(STAFF_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo pannello.",
                 flags: MessageFlags.Ephemeral
             });
         }
 
-        const config = getGuildLogConfig(interaction.guild.id);
+        const config = getGuildLogConfig(interaction.guild?.id);
 
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO LOG")
@@ -106,7 +107,7 @@ module.exports = {
     },
 
     async buttonHandler(interaction) {
-        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+        if (!interaction?.member?.roles?.cache?.has(STAFF_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
                 flags: MessageFlags.Ephemeral
@@ -114,6 +115,8 @@ module.exports = {
         }
 
         const { customId, channel, guild } = interaction;
+        if (!guild) return;
+
         let currentConfig = getGuildLogConfig(guild.id);
 
         if (customId === "log_toggle") {
@@ -152,150 +155,195 @@ module.exports = {
     },
 
     // ==========================================
-    // INIZIALIZZAZIONE DEGLI EVENTI LOG
+    // INIZIALIZZAZIONE DEGLI EVENTI LOG (PROTEZIONE CRASH)
     // ==========================================
     initEvents(client) {
 
         // 1. MESSAGGI
         client.on("messageDelete", async (message) => {
-            if (message.partial) { try { await message.fetch(); } catch { return; } }
-            if (!message?.guild || message.author?.bot) return;
+            try {
+                if (message?.partial) await message.fetch().catch(() => {});
+                if (!message?.guild || message.author?.bot) return;
 
-            const content = message.content ? (message.content.length > 1000 ? message.content.substring(0, 1000) + "..." : message.content) : "*Solo allegati o embed*";
-            await sendLog(
-                message.guild,
-                "🗑️ Messaggio Eliminato",
-                `**Autore:** ${message.author} (\`${message.author.id}\`)\n**Canale:** ${message.channel}\n\n**Contenuto:**\n${content}`,
-                0xED4245
-            );
+                const content = message.content ? (message.content.length > 1000 ? message.content.substring(0, 1000) + "..." : message.content) : "*Solo allegati o embed*";
+                await sendLog(
+                    message.guild,
+                    "🗑️ Messaggio Eliminato",
+                    `**Autore:** ${message.author || "`Sconosciuto`"} (\`${message.author?.id || "N/D"}\`)\n**Canale:** ${message.channel}\n\n**Contenuto:**\n${content}`,
+                    0xED4245
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] messageDelete:", e);
+            }
         });
 
         client.on("messageUpdate", async (oldMessage, newMessage) => {
-            if (oldMessage.partial) { try { await oldMessage.fetch(); } catch { return; } }
-            if (newMessage.partial) { try { await newMessage.fetch(); } catch { return; } }
-            if (!oldMessage?.guild || oldMessage.author?.bot) return;
-            if (oldMessage.content === newMessage.content) return;
+            try {
+                if (oldMessage?.partial) await oldMessage.fetch().catch(() => {});
+                if (newMessage?.partial) await newMessage.fetch().catch(() => {});
+                if (!oldMessage?.guild || oldMessage.author?.bot) return;
+                if (oldMessage.content === newMessage.content) return;
 
-            await sendLog(
-                oldMessage.guild,
-                "✏️ Messaggio Modificato",
-                `**Autore:** ${oldMessage.author} (\`${oldMessage.author.id}\`)\n**Canale:** ${oldMessage.channel}\n\n**Prima:**\n${oldMessage.content || "*Vuoto*"}\n\n**Dopo:**\n${newMessage.content || "*Vuoto*"}`,
-                0xFEE75C
-            );
+                await sendLog(
+                    oldMessage.guild,
+                    "✏️ Messaggio Modificato",
+                    `**Autore:** ${oldMessage.author || "`Sconosciuto`"} (\`${oldMessage.author?.id || "N/D"}\`)\n**Canale:** ${oldMessage.channel}\n\n**Prima:**\n${oldMessage.content || "*Vuoto*"}\n\n**Dopo:**\n${newMessage.content || "*Vuoto*"}`,
+                    0xFEE75C
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] messageUpdate:", e);
+            }
         });
 
         // 2. MEMBRI & TIMEOUT
         client.on("guildMemberUpdate", async (oldMember, newMember) => {
-            if (!newMember.guild) return;
+            try {
+                if (!newMember?.guild) return;
 
-            if (oldMember.nickname !== newMember.nickname) {
-                await sendLog(
-                    newMember.guild,
-                    "✏️ Nickname Modificato",
-                    `**Utente:** ${newMember.user} (\`${newMember.id}\`)\n**Prima:** ${oldMember.nickname || oldMember.user.username}\n**Dopo:** ${newMember.nickname || newMember.user.username}`,
-                    0x3498DB
-                );
-            }
+                if (oldMember?.nickname !== newMember?.nickname) {
+                    await sendLog(
+                        newMember.guild,
+                        "✏️ Nickname Modificato",
+                        `**Utente:** ${newMember.user} (\`${newMember.id}\`)\n**Prima:** ${oldMember?.nickname || oldMember?.user?.username || "Nessuno"}\n**Dopo:** ${newMember.nickname || newMember.user?.username}`,
+                        0x3498DB
+                    );
+                }
 
-            if (oldMember.communicationDisabledUntilTimestamp !== newMember.communicationDisabledUntilTimestamp) {
-                const isTimedOut = newMember.communicationDisabledUntilTimestamp && newMember.communicationDisabledUntilTimestamp > Date.now();
-                await sendLog(
-                    newMember.guild,
-                    isTimedOut ? "🔇 Utente in Timeout" : "🔊 Timeout Rimosso",
-                    `**Utente:** ${newMember.user} (\`${newMember.id}\`)` + (isTimedOut ? `\n**Scade il:** <t:${Math.floor(newMember.communicationDisabledUntilTimestamp / 1000)}:F>` : ""),
-                    isTimedOut ? 0xED4245 : 0x57F287
-                );
-            }
+                if (oldMember?.communicationDisabledUntilTimestamp !== newMember?.communicationDisabledUntilTimestamp) {
+                    const isTimedOut = newMember.communicationDisabledUntilTimestamp && newMember.communicationDisabledUntilTimestamp > Date.now();
+                    await sendLog(
+                        newMember.guild,
+                        isTimedOut ? "🔇 Utente in Timeout" : "🔊 Timeout Rimosso",
+                        `**Utente:** ${newMember.user} (\`${newMember.id}\`)` + (isTimedOut ? `\n**Scade il:** <t:${Math.floor(newMember.communicationDisabledUntilTimestamp / 1000)}:F>` : ""),
+                        isTimedOut ? 0xED4245 : 0x57F287
+                    );
+                }
 
-            const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
-            const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
+                if (oldMember?.roles?.cache && newMember?.roles?.cache) {
+                    const addedRoles = newMember.roles.cache.filter(role => !oldMember.roles.cache.has(role.id));
+                    const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
 
-            if (addedRoles.size > 0) {
-                await sendLog(
-                    newMember.guild,
-                    "🛡️ Ruolo Assegnato",
-                    `**Utente:** ${newMember.user}\n**Ruoli Aggiunti:** ${addedRoles.map(r => `${r}`).join(", ")}`,
-                    0x57F287
-                );
-            }
-            if (removedRoles.size > 0) {
-                await sendLog(
-                    newMember.guild,
-                    "🛡️ Ruolo Rimosso",
-                    `**Utente:** ${newMember.user}\n**Ruoli Rimossi:** ${removedRoles.map(r => `${r}`).join(", ")}`,
-                    0xED4245
-                );
+                    if (addedRoles.size > 0) {
+                        await sendLog(
+                            newMember.guild,
+                            "🛡️ Ruolo Assegnato",
+                            `**Utente:** ${newMember.user}\n**Ruoli Aggiunti:** ${addedRoles.map(r => `${r}`).join(", ")}`,
+                            0x57F287
+                        );
+                    }
+                    if (removedRoles.size > 0) {
+                        await sendLog(
+                            newMember.guild,
+                            "🛡️ Ruolo Rimosso",
+                            `**Utente:** ${newMember.user}\n**Ruoli Rimossi:** ${removedRoles.map(r => `${r}`).join(", ")}`,
+                            0xED4245
+                        );
+                    }
+                }
+            } catch (e) {
+                console.error("[LOG ERROR] guildMemberUpdate:", e);
             }
         });
 
         // 3. CANALI VOCALI
         client.on("voiceStateUpdate", async (oldState, newState) => {
-            const member = newState.member || oldState.member;
-            if (!member || member.user.bot) return;
+            try {
+                const member = newState?.member || oldState?.member;
+                if (!member || member.user?.bot) return;
 
-            if (!oldState.channelId && newState.channelId) {
-                await sendLog(
-                    newState.guild,
-                    "🔊 Connessione Vocale",
-                    `**Utente:** ${member.user} (\`${member.id}\`)\n**Canale:** <#${newState.channelId}>`,
-                    0x57F287
-                );
-            } else if (oldState.channelId && !newState.channelId) {
-                await sendLog(
-                    oldState.guild,
-                    "🔇 Disconnessione Vocale",
-                    `**Utente:** ${member.user} (\`${member.id}\`)\n**Canale:** <#${oldState.channelId}>`,
-                    0xED4245
-                );
-            } else if (oldState.channelId && newState.channelId && oldState.channelId !== newState.channelId) {
-                await sendLog(
-                    newState.guild,
-                    "🔄 Spostamento Vocale",
-                    `**Utente:** ${member.user}\n**Da:** <#${oldState.channelId}>\n**A:** <#${newState.channelId}>`,
-                    0x3498DB
-                );
+                const guild = newState?.guild || oldState?.guild;
+                if (!guild) return;
+
+                if (!oldState?.channelId && newState?.channelId) {
+                    await sendLog(
+                        guild,
+                        "🔊 Connessione Vocale",
+                        `**Utente:** ${member.user} (\`${member.id}\`)\n**Canale:** <#${newState.channelId}>`,
+                        0x57F287
+                    );
+                } else if (oldState?.channelId && !newState?.channelId) {
+                    await sendLog(
+                        guild,
+                        "🔇 Disconnessione Vocale",
+                        `**Utente:** ${member.user} (\`${member.id}\`)\n**Canale:** <#${oldState.channelId}>`,
+                        0xED4245
+                    );
+                } else if (oldState?.channelId && newState?.channelId && oldState.channelId !== newState.channelId) {
+                    await sendLog(
+                        guild,
+                        "🔄 Spostamento Vocale",
+                        `**Utente:** ${member.user}\n**Da:** <#${oldState.channelId}>\n**A:** <#${newState.channelId}>`,
+                        0x3498DB
+                    );
+                }
+            } catch (e) {
+                console.error("[LOG ERROR] voiceStateUpdate:", e);
             }
         });
 
         // 4. CANALI SERVER
         client.on("channelCreate", async (channel) => {
-            if (!channel.guild) return;
-            await sendLog(
-                channel.guild,
-                "📁 Canale Creato",
-                `**Nome:** ${channel} (\`${channel.id}\`)\n**Tipo:** \`${channel.type}\``,
-                0x57F287
-            );
+            try {
+                if (!channel?.guild) return;
+                await sendLog(
+                    channel.guild,
+                    "📁 Canale Creato",
+                    `**Nome:** ${channel} (\`${channel.id}\`)\n**Tipo:** \`${channel.type}\``,
+                    0x57F287
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] channelCreate:", e);
+            }
         });
 
         client.on("channelDelete", async (channel) => {
-            if (!channel.guild) return;
-            await sendLog(
-                channel.guild,
-                "🗑️ Canale Eliminato",
-                `**Nome:** #${channel.name} (\`${channel.id}\`)`,
-                0xED4245
-            );
+            try {
+                if (!channel?.guild) return;
+                await sendLog(
+                    channel.guild,
+                    "🗑️ Canale Eliminato",
+                    `**Nome:** #${channel.name || "canale-sconosciuto"} (\`${channel.id}\`)`,
+                    0xED4245
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] channelDelete:", e);
+            }
         });
 
-        // 5. BAN E UNBAN
+        // 5. BAN E UNBAN (Punto del crash risolto con optional chaining)
         client.on("guildBanAdd", async (ban) => {
-            await sendLog(
-                ban.guild,
-                "🔨 Utente Bannato",
-                `**Utente:** ${ban.user.tag} (\`${ban.user.id}\`)\n**Motivo:** ${ban.reason || "Nessuno"}`,
-                0xED4245
-            );
+            try {
+                if (!ban?.guild) return;
+                const userTag = ban.user ? `${ban.user.username}` : "Utente Sconosciuto";
+                const userId = ban.user?.id || "N/D";
+
+                await sendLog(
+                    ban.guild,
+                    "🔨 Utente Bannato",
+                    `**Utente:** ${userTag} (\`${userId}\`)\n**Motivo:** ${ban.reason || "Nessuno"}`,
+                    0xED4245
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] guildBanAdd:", e);
+            }
         });
 
         client.on("guildBanRemove", async (ban) => {
-            await sendLog(
-                ban.guild,
-                "🔓 Utente Sbannato",
-                `**Utente:** ${ban.user.tag} (\`${ban.user.id}\`)`,
-                0x57F287
-            );
+            try {
+                if (!ban?.guild) return;
+                const userTag = ban.user ? `${ban.user.username}` : "Utente Sconosciuto";
+                const userId = ban.user?.id || "N/D";
+
+                await sendLog(
+                    ban.guild,
+                    "🔓 Utente Sbannato",
+                    `**Utente:** ${userTag} (\`${userId}\`)`,
+                    0x57F287
+                );
+            } catch (e) {
+                console.error("[LOG ERROR] guildBanRemove:", e);
+            }
         });
     }
 };
-                                              
+                        

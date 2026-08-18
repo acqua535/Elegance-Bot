@@ -1,6 +1,9 @@
-const { SlashCommandBuilder, PermissionFlagsBits } = require("discord.js");
+// ==========================================
+// FILE: say.js (VERSIONE COMPLETA E FIXATA)
+// ==========================================
+const { SlashCommandBuilder, MessageFlags } = require("discord.js");
 
-// Ruolo autorizzato ad usare /say (Usato ID: 1528576026421231726)
+// Ruolo autorizzato ad usare /say
 const SAY_ROLE_ID = "1528576026421231726";
 
 module.exports = {
@@ -16,22 +19,35 @@ module.exports = {
 
     async execute(interaction) {
         // Controllo ruolo staff
-        if (!interaction.member.roles.cache.has(SAY_ROLE_ID)) {
+        if (!interaction.member?.roles?.cache?.has(SAY_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ Non hai il permesso di usare questo comando.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         const messaggio = interaction.options.getString("messaggio");
 
-        // Il bot invia il messaggio direttamente
-        await interaction.channel.send({ content: messaggio });
-        
-        // Risposta effimera di conferma
-        await interaction.reply({
-            content: "✅ Messaggio inviato.",
-            ephemeral: true
-        });
+        try {
+            // Differisci subito la risposta per evitare il timeout di 3 secondi (Unknown Interaction)
+            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+            // Il bot invia il messaggio nel canale
+            await interaction.channel.send({ content: messaggio });
+
+            // Conferma di invio inviata dopo l'operazione
+            await interaction.editReply({
+                content: "✅ Messaggio inviato con successo!"
+            });
+        } catch (error) {
+            console.error("🚨 Errore durante l'esecuzione del comando /say:", error);
+
+            const errorMessage = "❌ Si è verificato un errore durante l'invio del messaggio.";
+            if (interaction.deferred || interaction.replied) {
+                await interaction.editReply({ content: errorMessage }).catch(() => {});
+            } else {
+                await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
+            }
+        }
     }
 };

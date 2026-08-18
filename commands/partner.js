@@ -45,10 +45,9 @@ module.exports = {
 
         const rappresentante = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
-        const rawDescrizione = interaction.options.getString("descrizione");
 
-        // Rimuove i ping di massa per evitare notifiche indesiderate
-        const descrizione = rawDescrizione
+        // Toglie semplicemente i ping @everyone e @here dal testo
+        const descrizione = interaction.options.getString("descrizione")
             .replace(/@everyone/g, "everyone")
             .replace(/@here/g, "here");
 
@@ -62,11 +61,8 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita con blocco notifiche API
-        await partnerChannel.send({ 
-            content: descrizione,
-            allowedMentions: { parse: [] } 
-        });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita
+        await partnerChannel.send({ content: descrizione });
 
         // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `🤝 **ELEGANCE SPONSORING ── PARTNERSHIP**\n` +
@@ -101,4 +97,3 @@ module.exports = {
         });
     }
 };
-                

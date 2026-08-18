@@ -1,20 +1,9 @@
 const ticket = require("./ticket");
-const fs = require('fs');
-const path = require('path');
-
-const commandsPath = path.join(__dirname, 'commands');
-if (fs.existsSync(commandsPath)) {
-    console.log("📂 CONTENUTO CARTELLA COMMANDS:", fs.readdirSync(commandsPath));
-} else {
-    console.log("❌ LA CARTELLA 'commands' NON ESISTE PROPRIO QUI!");
-}
-
-const verify = require("./commands/verify");
-const entry = require("./commands/entry");
-console.log("--> CARICAMENTO REGISTRY DA:", __filename);
-const invites = require("./commands/invites");
-const apply = require("./commands/apply");
-const logSystem = require("./commands/logSystem");
+const verify = require("./verify");
+const entry = require("./entry");
+const invites = require("./invites");
+const apply = require("./apply");
+const logSystem = require("./logSystem");
 const antiLink = require("./antiLink");
 
 const registryMap = {

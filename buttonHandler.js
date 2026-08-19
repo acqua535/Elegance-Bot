@@ -2,12 +2,23 @@
 // FILE: buttonHandler.js (CON CONSOLE.LOG)
 // ==========================================
 const registryMap = require('./registry');
+const stickyEvents = require('./stickyEvents');
 
 module.exports = async (interaction) => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
 
     const customId = interaction.customId;
     console.log(`[DEBUG] Ricevuta interazione con customId: "${customId}" da @${interaction.user.tag}`);
+
+    // ---------------------------------------------------------
+    // 0. GESTIONE STICKY SYSTEM (Bottoni e Pop-up Modal)
+    // ---------------------------------------------------------
+    if (customId.startsWith('sticky_btn_') || customId.startsWith('sticky_modal_')) {
+        console.log(`[DEBUG Sticky] Intercettata azione sticky: "${customId}"`);
+        if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
+            return await stickyEvents.handleInteraction(interaction);
+        }
+    }
 
     // ---------------------------------------------------------
     // 1. GESTIONE MINIGIOCHI

@@ -7,7 +7,7 @@ module.exports = {
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuildExpressions)
     .addStringOption(option =>
       option.setName('emoji')
-        .setDescription('L\'emoji da rubare (incolla l\'emoji o l\'ID)')
+        .setDescription('Incolla l\'emoji, il testo <:nome:ID> oppure solo l\'ID')
         .setRequired(true))
     .addStringOption(option =>
       option.setName('nome')
@@ -18,40 +18,61 @@ module.exports = {
     const rawEmoji = interaction.options.getString('emoji');
     const name = interaction.options.getString('nome');
 
-    // Estrae l'ID e il tipo (animata o statica) dall'emoji
-    const customEmojiMatch = rawEmoji.match(/<:(a)?:(\w+):(\d+)>/);
+    // Trova l'ID dell'emoji (supporta da 15 a 20 cifre)
+    const idMatch = rawEmoji.match(/\d{15,20}/);
 
-    if (!customEmojiMatch) {
+    if (!idMatch) {
       return interaction.reply({ 
-        content: '❌ Per favore fornisci un\'emoji personalizzata valida di Discord!', 
+        content: '❌ Impossibile trovare un ID emoji valido! Controlla di aver inserito il testo corretto.', 
         ephemeral: true 
       });
     }
 
-    const isAnimated = Boolean(customEmojiMatch[1]);
-    const emojiId = customEmojiMatch[3];
-    const extension = isAnimated ? 'gif' : 'png';
-    const url = `https://cdn.discordapp.com/emojis/${emojiId}.${extension}`;
+    const emojiId = idMatch[0];
+    const isAnimated = rawEmoji.includes('<a:') || rawEmoji.startsWith('a_');
+    
+    // Prova prima con il formato rilevato (gif o png)
+    const primaryExtension = isAnimated ? 'gif' : 'png';
+    const primaryUrl = `https://cdn.discordapp.com/emojis/${emojiId}.${primaryExtension}`;
+
+    await interaction.deferReply();
 
     try {
-      // Crea l'emoji nel server
-      const createdEmoji = await interaction.guild.emojis.create({ attachment: url, name: name });
+      const createdEmoji = await interaction.guild.emojis.create({ attachment: primaryUrl, name: name });
 
       const embed = new EmbedBuilder()
         .setTitle('✨ Emoji Aggiunta con Successo!')
         .setDescription(`L'emoji ${createdEmoji} è stata aggiunta al server come \`:${name}:\`!`)
         .setColor('#2b2d31')
-        .setThumbnail(url)
+        .setThumbnail(primaryUrl)
         .setFooter({ text: 'Elegance Sponsoring System' });
 
-      return interaction.reply({ embeds: [embed] });
+      return interaction.editReply({ embeds: [embed] });
 
     } catch (error) {
-      console.error('Errore in steal-emoji:', error);
-      return interaction.reply({ 
-        content: '❌ Impossibile aggiungere l\'emoji. Verifica che il server non abbia raggiunto il limite massimo di emoji o che il bot abbia i permessi necessari!', 
-        ephemeral: true 
-      });
+      // Se fallisce (ad esempio era una GIF ma l'aveva scambiata per PNG o viceversa), fa un tentativo di backup
+      const fallbackExtension = isAnimated ? 'png' : 'gif';
+      const fallbackUrl = `https://cdn.discordapp.com/emojis/${emojiId}.${fallbackExtension}`;
+
+      try {
+        const createdEmoji = await interaction.guild.emojis.create({ attachment: fallbackUrl, name: name });
+
+        const embed = new EmbedBuilder()
+          .setTitle('✨ Emoji Aggiunta con Successo!')
+          .setDescription(`L'emoji ${createdEmoji} è stata aggiunta al server come \`:${name}:\`!`)
+          .setColor('#2b2d31')
+          .setThumbnail(fallbackUrl)
+          .setFooter({ text: 'Elegance Sponsoring System' });
+
+        return interaction.editReply({ embeds: [embed] });
+
+      } catch (retryError) {
+        console.error('Errore in steal-emoji:', retryError);
+        return interaction.editReply({ 
+          content: '❌ Impossibile aggiungere l\'emoji! Assicurati che lo spazio emoji del server non sia pieno e che l\'ID sia di un\'emoji personalizzata esistente.' 
+        });
+      }
     }
   },
 };
+          

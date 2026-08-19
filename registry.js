@@ -22,12 +22,30 @@ const apply = loadSafe("./apply");
 const logSystem = loadSafe("./logSystem");
 const antiLink = loadSafe("./antiLink");
 const minigame = loadSafe("./minigame");
+const stickyEvents = loadSafe("./stickyEvents");
 
 const registryMap = {
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {
         if (minigame && typeof minigame.handleGameInteraction === 'function') {
             await minigame.handleGameInteraction(interaction);
+        }
+    },
+
+    // --- STICKY MESSAGE SYSTEM ---
+    "sticky_btn_create": async (interaction) => {
+        if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
+            await stickyEvents.handleInteraction(interaction);
+        }
+    },
+    "sticky_btn_delete": async (interaction) => {
+        if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
+            await stickyEvents.handleInteraction(interaction);
+        }
+    },
+    "sticky_modal_create": async (interaction) => {
+        if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
+            await stickyEvents.handleInteraction(interaction);
         }
     },
 

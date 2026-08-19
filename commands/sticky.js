@@ -1,62 +1,31 @@
-const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('discord.js');
-const fs = require('fs');
-const path = require('path');
-
-const stickyPath = path.join(__dirname, '../stickyData.json');
-
-// Assicura che il file JSON esista
-if (!fs.existsSync(stickyPath)) {
-  fs.writeFileSync(stickyPath, JSON.stringify({}), 'utf-8');
-}
+const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
   data: new SlashCommandBuilder()
     .setName('sticky')
-    .setDescription('Gestisci i messaggi fissi in chat')
-    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages)
-    .addSubcommand(sub =>
-      sub.setName('set')
-        .setDescription('Imposta un messaggio sticky in questo canale')
-        .addStringOption(opt => opt.setName('messaggio').setDescription('Il testo da tenere fisso').setRequired(true)))
-    .addSubcommand(sub =>
-      sub.setName('remove')
-        .setDescription('Rimuovi il messaggio sticky da questo canale')),
+    .setDescription('Pannello di gestione dei messaggi fissi (Sticky)')
+    .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
   async execute(interaction) {
-    const subcommand = interaction.options.getSubcommand();
-    const channelId = interaction.channel.id;
-    const stickyData = JSON.parse(fs.readFileSync(stickyPath, 'utf-8'));
+    const embed = new EmbedBuilder()
+      .setTitle('📌 Gestione Messaggi Sticky')
+      .setDescription('Usa i pulsanti sottostanti per creare o rimuovere un messaggio fisso in questo canale.')
+      .setColor('#2b2d31')
+      .setFooter({ text: 'Elegance Sponsoring • Sticky System' });
 
-    if (subcommand === 'set') {
-      const text = interaction.options.getString('messaggio');
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId('sticky_btn_create')
+        .setLabel('Crea Sticky')
+        .setStyle(ButtonStyle.Success)
+        .setEmoji('➕'),
+      new ButtonBuilder()
+        .setCustomId('sticky_btn_delete')
+        .setLabel('Elimina Sticky')
+        .setStyle(ButtonStyle.Danger)
+        .setEmoji('🗑️')
+    );
 
-      const embed = new EmbedBuilder()
-        .setTitle('📌 Messaggio Incollato')
-        .setDescription(text)
-        .setColor('#2b2d31')
-        .setFooter({ text: 'Elegance Sponsoring • Sticky System' });
-
-      const msg = await interaction.channel.send({ embeds: [embed] });
-
-      stickyData[channelId] = {
-        text: text,
-        lastMessageId: msg.id
-      };
-
-      fs.writeFileSync(stickyPath, JSON.stringify(stickyData, null, 2), 'utf-8');
-
-      return interaction.reply({ content: '✅ Messaggio sticky impostato con successo!', ephemeral: true });
-    } 
-
-    if (subcommand === 'remove') {
-      if (!stickyData[channelId]) {
-        return interaction.reply({ content: '❌ Non c\'è alcun messaggio sticky in questo canale.', ephemeral: true });
-      }
-
-      delete stickyData[channelId];
-      fs.writeFileSync(stickyPath, JSON.stringify(stickyData, null, 2), 'utf-8');
-
-      return interaction.reply({ content: '🗑️ Messaggio sticky rimosso da questo canale.', ephemeral: true });
-    }
-  },
+    return interaction.reply({ embeds: [embed], components: [row] });
+  }
 };

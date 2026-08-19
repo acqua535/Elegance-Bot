@@ -1,65 +1,67 @@
 // ==========================================
-// FILE: buttonHandler.js (CON CONSOLE.LOG)
+// FILE: buttonHandler.js (SUPER LOG DI DEBUG)
 // ==========================================
 const registryMap = require('./registry');
-const stickyEvents = require('./stickyEvents');
 
 module.exports = async (interaction) => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
 
     const customId = interaction.customId;
-    console.log(`[DEBUG] Ricevuta interazione con customId: "${customId}" da @${interaction.user.tag}`);
+    console.log(`[BUTTON-HANDLER] 📥 Ricevuta interazione customId: "${customId}" da @${interaction.user.tag}`);
 
     // ---------------------------------------------------------
-    // 0. GESTIONE STICKY SYSTEM (Bottoni e Pop-up Modal)
+    // 0. GESTIONE DIRETTA STICKY SYSTEM
     // ---------------------------------------------------------
     if (customId.startsWith('sticky_btn_') || customId.startsWith('sticky_modal_')) {
-        console.log(`[DEBUG Sticky] Intercettata azione sticky: "${customId}"`);
-        if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
-            return await stickyEvents.handleInteraction(interaction);
+        console.log(`[BUTTON-HANDLER] 📌 Intercettata azione Sticky: "${customId}"`);
+        try {
+            const stickyEvents = require('./stickyEvents');
+            if (stickyEvents && typeof stickyEvents.handleInteraction === 'function') {
+                console.log(`[BUTTON-HANDLER] ➡️ Chiamata a stickyEvents.handleInteraction()...`);
+                return await stickyEvents.handleInteraction(interaction);
+            } else {
+                console.error(`[BUTTON-HANDLER] ❌ stickyEvents.handleInteraction NON TROVATO!`);
+            }
+        } catch (err) {
+            console.error(`[BUTTON-HANDLER] 🚨 ERRORE IMPREVISTO IN CARICAMENTO STICKY:`, err);
         }
     }
 
     // ---------------------------------------------------------
     // 1. GESTIONE MINIGIOCHI
     // ---------------------------------------------------------
-    // Menu principale del Minigioco
     if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
-        console.log(`[DEBUG Minigame] Rilevato menu principale game_hub_select!`);
-        
+        console.log(`[BUTTON-HANDLER] 🎮 Menu Minigiochi game_hub_select`);
         const minigameCmd = interaction.client.commands.get('minigame');
         if (minigameCmd && typeof minigameCmd.handleGameInteraction === 'function') {
-            console.log(`[DEBUG Minigame] Comando minigame trovato, avvio handleGameInteraction...`);
             return await minigameCmd.handleGameInteraction(interaction);
-        } else {
-            console.log(`[DEBUG Minigame] ERRORE: Comando 'minigame' non trovato nella mappa client.commands!`);
         }
     }
 
-    // Bottoni e Menu interni ai Minigiochi (gestiti dai collector)
     const minigamePrefixes = ['quiz_', 'bomb_', 'mem_', 'react_', 'hangman_'];
     if (minigamePrefixes.some(prefix => customId.startsWith(prefix))) {
-        console.log(`[DEBUG Minigame] Interazione interna al gioco (${customId}), passo il controllo al collector.`);
+        console.log(`[BUTTON-HANDLER] 🎮 Interazione interna gioco (${customId}), gestita da Collector.`);
         return; 
     }
-    // ---------------------------------------------------------
 
-    // Recupera l'handler mappato nel registry
+    // ---------------------------------------------------------
+    // 2. REGISTRY MAP
+    // ---------------------------------------------------------
     const handler = registryMap[customId];
 
     if (!handler) {
-        console.log(`[DEBUG] Nessun handler trovato nel registry per: "${customId}"`);
+        console.warn(`[BUTTON-HANDLER] ⚠️ Nessun handler trovato nel Registry per: "${customId}"`);
 
         if (interaction.isButton()) {
             if (customId.startsWith("apply_accept_") || customId.startsWith("apply_reject_")) {
-                console.log(`[DEBUG Apply] Gestione candidatura dinamica per: ${customId}`);
+                console.log(`[BUTTON-HANDLER] Candidatura dinamica per: ${customId}`);
                 const apply = require("./apply");
                 return await apply.buttonHandler(interaction);
             }
         }
 
         if (!interaction.replied && !interaction.deferred) {
-            console.log(`[DEBUG] Rispondo con errore 'Azione non riconosciuta' per: "${customId}"`);
+            console.log(`[BUTTON-HANDLER] ❌ Invio risposta 'Azione non riconosciuta' per: "${customId}"`);
             return interaction.reply({
                 content: "❌ **Azione non riconosciuta o interazione scaduta.**",
                 flags: 64
@@ -68,13 +70,11 @@ module.exports = async (interaction) => {
         return;
     }
 
-    // Esegue la funzione corrispondente presa dal registry
     try {
-        console.log(`[DEBUG Registry] Eseguo la funzione associata a: "${customId}"`);
+        console.log(`[BUTTON-HANDLER] ⚙️ Esecuzione handler da Registry per: "${customId}"`);
         await handler(interaction);
     } catch (error) {
-        console.error(`🚨 Errore durante la gestione dell'interazione [${customId}]:`, error);
-        
+        console.error(`🚨 Errore durante l'esecuzione dell'interazione [${customId}]:`, error);
         const errorMessage = "❌ Si è verificato un errore durante l'esecuzione dell'azione.";
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: errorMessage, flags: 64 }).catch(() => {});

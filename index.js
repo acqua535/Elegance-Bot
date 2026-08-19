@@ -26,6 +26,7 @@ const entry = loadSafe("./entry");
 const logSystem = loadSafe("./logSystem"); 
 const countingSystem = loadSafe("./countingSystem"); 
 const antiLink = loadSafe("./antiLink");
+const stickyEvents = loadSafe("./stickyEvents");
 
 const client = new Client({
     intents: [
@@ -47,7 +48,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
-// Evento Ready aggiornato per evitare warning di deprecazione
+// Evento Ready per l'avvio e la registrazione dei moduli
 client.once("clientReady", async () => {
     console.log(`⚜️  Bot connesso con successo come: ${client.user.tag}`);
 
@@ -70,6 +71,10 @@ client.once("clientReady", async () => {
 
     if (antiLink && typeof antiLink.initEvents === "function") {
         antiLink.initEvents(client);
+    }
+
+    if (stickyEvents && typeof stickyEvents.initEvents === "function") {
+        stickyEvents.initEvents(client);
     }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");

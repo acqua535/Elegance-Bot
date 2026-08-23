@@ -1,5 +1,5 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
-const moderation = require("./moderationSystem");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
+const { addWarn } = require("../memorySystem");
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -23,23 +23,34 @@ module.exports = {
         const user = interaction.options.getUser("utente");
         const reason = interaction.options.getString("motivo");
 
-        const total = moderation.addWarning(
+        // Tenta l'aggiunta del Warn nella Memoria Discord
+        const result = await addWarn(
+            interaction.client,
             user.id,
             interaction.user.id,
             reason
         );
 
+        // Blocco rigido: Max 3 Warn raggiunti
+        if (!result.success && result.reason === "MAX_REACHED") {
+            return interaction.reply({
+                content: `❌ **Impossibile ammonire:** L'utente ${user} ha già raggiunto il limite massimo di **3/3 Warn**!`,
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
         const embed = new EmbedBuilder()
-            .setTitle("⚠️ Warn assegnato")
+            .setTitle("⚠️ Warn Assegnato")
             .setColor("Orange")
             .setDescription(
                 `👤 **Utente**\n${user}\n\n` +
                 `🛡️ **Staff**\n${interaction.user}\n\n` +
                 `📝 **Motivo**\n${reason}\n\n` +
-                `📊 **Totale Warn**\n${total}`
+                `📊 **Totale Warn**\n\`${result.count}/3\``
             )
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });
     }
 };
+    

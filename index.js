@@ -25,6 +25,7 @@ const logSystem = loadSafe("./logSystem");
 const countingSystem = loadSafe("./countingSystem"); 
 const antiLink = loadSafe("./antiLink");
 const stickyEvents = loadSafe("./stickyEvents");
+const partnerDB = loadSafe("./partnerDB"); // <--- Importazione partnerDB
 
 const client = new Client({
     intents: [
@@ -59,6 +60,12 @@ client.once("clientReady", async () => {
     if (stickyEvents && typeof stickyEvents.initEvents === "function") {
         console.log("[INDEX] 📌 Avvio del listener per eventi Sticky...");
         stickyEvents.initEvents(client);
+    }
+
+    // <--- Avvio dell'AutoChecker per le Partner
+    if (partnerDB && typeof partnerDB.startAutoChecker === "function") {
+        console.log("[INDEX] 🤝 Avvio del controllo automatico Partner...");
+        partnerDB.startAutoChecker(client, "1528576179177787642", "1528576197741772902");
     }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
@@ -150,3 +157,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
+                    

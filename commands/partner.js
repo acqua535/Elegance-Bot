@@ -1,5 +1,4 @@
 const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
-const { registerPartner } = require("../partnerDB"); // Collega partnerDB.js che si trova nella root
 
 // ID CONFIGURATION (Elegance Sponsoring)
 const PARTNER_CHANNEL_ID = "1528576179177787642";
@@ -36,6 +35,7 @@ module.exports = {
         ),
 
     async execute(interaction) {
+        // Controllo Permesso Ruolo
         if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Non hai il ruolo necessario per eseguire questo comando!**",
@@ -46,6 +46,7 @@ module.exports = {
         const rappresentante = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
 
+        // Toglie semplicemente i ping @everyone e @here dal testo
         const descrizione = interaction.options.getString("descrizione")
             .replace(/@everyone/g, "everyone")
             .replace(/@here/g, "here");
@@ -60,28 +61,18 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO
-        const msg1 = await partnerChannel.send({ content: descrizione });
+        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita
+        await partnerChannel.send({ content: descrizione });
 
-        // 2. SECONDO MESSAGGIO PUBBLICO
+        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `🤝 **ELEGANCE SPONSORING ── PARTNERSHIP**\n` +
                             `🏷️ **Categoria:** \`${categoria}\`\n` +
                             `📌 **Rappresentante:** ${rappresentante}\n` +
                             `👤 **Pubblicato da:** ${interaction.user}`;
 
-        const msg2 = await partnerChannel.send({ content: infoMessage });
+        await partnerChannel.send({ content: infoMessage });
 
-        // 3. SALVATAGGIO IN partners.json
-        registerPartner({
-            managerId: rappresentante.id,
-            staffId: interaction.user.id,
-            category: categoria,
-            description: descrizione,
-            msg1Id: msg1.id,
-            msg2Id: msg2.id
-        });
-
-        // 4. LOG PRIVATO
+        // 3. LOG PRIVATO PER LO STAFF (Embed)
         if (logChannel) {
             const logEmbed = new EmbedBuilder()
                 .setTitle("📋 LOG PARTNERSHIP REGISTRATA")
@@ -101,7 +92,7 @@ module.exports = {
         }
 
         return interaction.reply({
-            content: `✅ **Partnership pubblicata e registrata con successo in** <#${PARTNER_CHANNEL_ID}>!`,
+            content: `✅ **Partnership pubblicata con successo in** <#${PARTNER_CHANNEL_ID}>!`,
             flags: MessageFlags.Ephemeral
         });
     }

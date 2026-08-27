@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: index.js (CON SUPER LOG DI DEBUG)
+// FILE: index.js (VERSIONE PULITA - SENZA MEMORY & PARTNERDB)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
@@ -81,11 +81,8 @@ client.on("interactionCreate", async (interaction) => {
             console.log(`[MODAL] Rilevato Modal Submit con customId: "${interaction.customId}" da @${interaction.user.tag}`);
             
             if (interaction.customId === "sticky_modal_create") {
-                console.log("[MODAL] -> Inoltro a stickyEvents.handleInteraction...");
                 if (stickyEvents && typeof stickyEvents.handleInteraction === "function") {
                     return await stickyEvents.handleInteraction(interaction);
-                } else {
-                    console.error("[MODAL] ❌ stickyEvents.handleInteraction non è una funzione valida!");
                 }
             }
 
@@ -108,8 +105,6 @@ client.on("interactionCreate", async (interaction) => {
         if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
             if (typeof buttonHandler === "function") {
                 await buttonHandler(interaction);
-            } else {
-                console.error("[INTERACTION] ❌ buttonHandler non è una funzione!");
             }
             return;
         }
@@ -150,3 +145,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
+                

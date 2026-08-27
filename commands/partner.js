@@ -35,7 +35,6 @@ module.exports = {
         ),
 
     async execute(interaction) {
-        // Controllo Permesso Ruolo
         if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Non hai il ruolo necessario per eseguire questo comando!**",
@@ -46,7 +45,6 @@ module.exports = {
         const rappresentante = interaction.options.getUser("richiesta_da");
         const categoria = interaction.options.getString("categoria");
 
-        // Toglie semplicemente i ping @everyone e @here dal testo
         const descrizione = interaction.options.getString("descrizione")
             .replace(/@everyone/g, "everyone")
             .replace(/@here/g, "here");
@@ -61,10 +59,8 @@ module.exports = {
             });
         }
 
-        // 1. PRIMO MESSAGGIO PUBBLICO: Solo descrizione pulita
         await partnerChannel.send({ content: descrizione });
 
-        // 2. SECONDO MESSAGGIO PUBBLICO: Dettagli in testo semplice
         const infoMessage = `🤝 **ELEGANCE SPONSORING ── PARTNERSHIP**\n` +
                             `🏷️ **Categoria:** \`${categoria}\`\n` +
                             `📌 **Rappresentante:** ${rappresentante}\n` +
@@ -72,7 +68,6 @@ module.exports = {
 
         await partnerChannel.send({ content: infoMessage });
 
-        // 3. LOG PRIVATO PER LO STAFF (Embed)
         if (logChannel) {
             const logEmbed = new EmbedBuilder()
                 .setTitle("📋 LOG PARTNERSHIP REGISTRATA")
@@ -97,3 +92,4 @@ module.exports = {
         });
     }
 };
+    

@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: index.js (CON SUPER LOG DI DEBUG E MEMORY SYSTEM)
+// FILE: index.js (CON SUPER LOG DI DEBUG)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 require("dotenv").config();
@@ -25,8 +25,6 @@ const logSystem = loadSafe("./logSystem");
 const countingSystem = loadSafe("./countingSystem"); 
 const antiLink = loadSafe("./antiLink");
 const stickyEvents = loadSafe("./stickyEvents");
-const partnerDB = loadSafe("./partnerDB");
-const memorySystem = loadSafe("./memorySystem"); // <--- Importazione memorySystem
 
 const client = new Client({
     intents: [
@@ -51,12 +49,6 @@ client.commands = new Collection();
 client.once("clientReady", async () => {
     console.log(`⚜️ Bot connesso con successo come: ${client.user.tag}`);
 
-    // <--- Avvio Scansione della Memoria dal Canale Discord
-    if (memorySystem && typeof memorySystem.loadMemoryFromChannel === "function") {
-        console.log("[INDEX] 🧠 Avvio sincronizzazione memoria da Discord...");
-        await memorySystem.loadMemoryFromChannel(client);
-    }
-
     if (typeof deployCommands === "function") await deployCommands();
     if (typeof loadCommands === "function") loadCommands(client);
 
@@ -67,12 +59,6 @@ client.once("clientReady", async () => {
     if (stickyEvents && typeof stickyEvents.initEvents === "function") {
         console.log("[INDEX] 📌 Avvio del listener per eventi Sticky...");
         stickyEvents.initEvents(client);
-    }
-
-    // <--- Avvio dell'AutoChecker per le Partner
-    if (partnerDB && typeof partnerDB.startAutoChecker === "function") {
-        console.log("[INDEX] 🤝 Avvio del controllo automatico Partner...");
-        partnerDB.startAutoChecker(client, "1528576179177787642", "1528576197741772902");
     }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
@@ -164,4 +150,3 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-                            

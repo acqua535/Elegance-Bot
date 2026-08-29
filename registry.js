@@ -99,4 +99,4 @@ const registryMap = {
 };
 
 module.exports = registryMap;
-    
+        

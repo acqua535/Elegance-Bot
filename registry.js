@@ -25,14 +25,17 @@ const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
 
+const handleRolePanelInteraction = async (interaction) => {
+    const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
+    if (rp && typeof rp.selectMenuHandler === "function") {
+        await rp.selectMenuHandler(interaction);
+    }
+};
+
 const registryMap = {
     // --- ROLE PANEL SYSTEM ---
-    "select_age_zone": async (interaction) => {
-        const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
-        if (rp && typeof rp.selectMenuHandler === "function") {
-            await rp.selectMenuHandler(interaction);
-        }
-    },
+    "select_age_zone": handleRolePanelInteraction,
+    "select_ping_zone": handleRolePanelInteraction,
 
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {

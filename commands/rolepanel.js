@@ -15,7 +15,7 @@ const AGE_ROLES = [
     "1528576061963632663", // 14-17
     "1528576063272124476"  // 18+
 ];
-const EXTRA_AGE_ROLE = "1528576060667723936"; // Ruolo extra silenziato assegnato con l'età
+const EXTRA_AGE_ROLE = "1528576060667723936";
 
 // --- 2. PINGS ZONE ---
 const PING_ROLES = {
@@ -24,6 +24,15 @@ const PING_ROLES = {
     "ping_partner": { id: "1528576041206022204", label: "🤝 Partner Ping" }
 };
 const ALL_PING_IDS = Object.values(PING_ROLES).map(r => r.id);
+
+// --- 3. PASSIONS ZONE ---
+const PASSION_ROLES = {
+    "passion_gamer":    { id: "1528576065734443079", label: "🎮 Gamer" },
+    "passion_anime":    { id: "1528576066585759816", label: "🎬 Anime & Series" },
+    "passion_music":    { id: "1528576067445587968", label: "🎧 Music Lover" },
+    "passion_creative": { id: "1528576068351426651", label: "🎨 Creative & Art" }
+};
+const ALL_PASSION_IDS = Object.values(PASSION_ROLES).map(r => r.id);
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -35,17 +44,20 @@ module.exports = {
         const embed = new EmbedBuilder()
             .setTitle("✨ ELEGANCE SPONSORING ── ROLE SELECTION")
             .setDescription(
-                "Personalizza il tuo profilo e le tue notifiche selezionando i ruoli dai menu a tendina qui sotto!\n\n" +
-                "🔞 **1. AGE ZONE** ── Fascia d'età\n" +
-                "🔔 **2. PINGS ZONE** ── Notifiche e Ping"
+                "Personalizza il tuo profilo e le tue notifiche selezionando i ruoli dai menu qui sotto!\n\n" +
+                "🔞 **AGE ZONE**\n" +
+                "🔔 **PINGS ZONE**\n" +
+                "🎨 **PASSIONS ZONE**"
             )
             .setColor(0x2B2D31)
             .setFooter({ text: "Elegance Sponsoring • Role System" });
 
-        // Menu 1: Age Zone
+        // Menu 1: Age Zone (Unico ruolo età consentito)
         const ageMenu = new StringSelectMenuBuilder()
             .setCustomId("select_age_zone")
-            .setPlaceholder("🔞 1. Selezione Età...")
+            .setPlaceholder("🔞 Selezione Età...")
+            .setMinValues(1)
+            .setMaxValues(1)
             .addOptions([
                 { label: "Togli l'età", value: "age_reset", description: "Rimuove il ruolo età", emoji: "❌" },
                 { label: ". 14-17", value: "1528576061963632663", description: "Fascia d'età 14-17 anni", emoji: "📚" },
@@ -55,7 +67,7 @@ module.exports = {
         // Menu 2: Pings Zone (Selezione Multipla)
         const pingMenu = new StringSelectMenuBuilder()
             .setCustomId("select_ping_zone")
-            .setPlaceholder("🔔 2. Selezione Notifiche & Ping...")
+            .setPlaceholder("🔔 Selezione Notifiche & Ping...")
             .setMinValues(0)
             .setMaxValues(Object.keys(PING_ROLES).length)
             .addOptions([
@@ -64,12 +76,26 @@ module.exports = {
                 { label: "Partner Ping", value: "ping_partner", description: "Notifiche per partnership", emoji: "🤝" }
             ]);
 
+        // Menu 3: Passions Zone (Selezione Multipla)
+        const passionMenu = new StringSelectMenuBuilder()
+            .setCustomId("select_passions_zone")
+            .setPlaceholder("🎨 Selezione Passioni...")
+            .setMinValues(0)
+            .setMaxValues(Object.keys(PASSION_ROLES).length)
+            .addOptions([
+                { label: "Gamer", value: "passion_gamer", description: "Passione Gaming", emoji: "🎮" },
+                { label: "Anime & Series", value: "passion_anime", description: "Passione Anime & Serie TV", emoji: "🎬" },
+                { label: "Music Lover", value: "passion_music", description: "Passione Musica", emoji: "🎧" },
+                { label: "Creative & Art", value: "passion_creative", description: "Passione Arte & Creatività", emoji: "🎨" }
+            ]);
+
         const row1 = new ActionRowBuilder().addComponents(ageMenu);
         const row2 = new ActionRowBuilder().addComponents(pingMenu);
+        const row3 = new ActionRowBuilder().addComponents(passionMenu);
 
         await interaction.channel.send({ 
             embeds: [embed], 
-            components: [row1, row2] 
+            components: [row1, row2, row3] 
         });
 
         return interaction.reply({
@@ -91,12 +117,15 @@ module.exports = {
             if (customId === "select_age_zone") {
                 const selectedValue = interaction.values[0];
 
-                await member.roles.remove([...AGE_ROLES, EXTRA_AGE_ROLE]).catch(() => {});
+                // Rimuove tassativamente entrambi i ruoli età per evitare sovrapposizioni
+                await member.roles.remove(AGE_ROLES).catch(() => {});
 
                 if (selectedValue === "age_reset") {
+                    await member.roles.remove(EXTRA_AGE_ROLE).catch(() => {});
                     return await interaction.editReply({ content: "🗑️ **Ruolo Età rimosso!**" });
                 }
 
+                // Assegna esclusivamente l'unico ruolo età scelto + il ruolo silenziato
                 await member.roles.add([selectedValue, EXTRA_AGE_ROLE]);
                 return await interaction.editReply({ content: `✅ **Ruolo <@&${selectedValue}> assegnato!**` });
             }
@@ -118,6 +147,23 @@ module.exports = {
                 return await interaction.editReply({ content: `✅ **Notifiche aggiornate:**\n${labels}` });
             }
 
+            // --- GESTIONE PASSIONS ZONE ---
+            if (customId === "select_passions_zone") {
+                const selectedKeys = interaction.values;
+
+                await member.roles.remove(ALL_PASSION_IDS).catch(() => {});
+
+                if (selectedKeys.length === 0) {
+                    return await interaction.editReply({ content: "🗑️ **Tutti i ruoli Passioni sono stati rimossi!**" });
+                }
+
+                const rolesToAdd = selectedKeys.map(k => PASSION_ROLES[k]?.id).filter(Boolean);
+                await member.roles.add(rolesToAdd);
+
+                const labels = selectedKeys.map(k => `• **${PASSION_ROLES[k].label}**`).join("\n");
+                return await interaction.editReply({ content: `✅ **Passioni aggiornate:**\n${labels}` });
+            }
+
         } catch (error) {
             console.error("🚨 Errore gestione menu ruoli:", error);
             return await interaction.editReply({
@@ -126,4 +172,3 @@ module.exports = {
         }
     }
 };
-                    

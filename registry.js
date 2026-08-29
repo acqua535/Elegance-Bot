@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: registry.js (AGGIORNATO CON ROLE PANEL)
+// FILE: registry.js
 // ==========================================
 
 function loadSafe(path) {
@@ -28,8 +28,9 @@ const rolepanel = loadSafe("./rolepanel");
 const registryMap = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": async (interaction) => {
-        if (rolepanel && typeof rolepanel.selectMenuHandler === "function") {
-            await rolepanel.selectMenuHandler(interaction);
+        const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
+        if (rp && typeof rp.selectMenuHandler === "function") {
+            await rp.selectMenuHandler(interaction);
         }
     },
 

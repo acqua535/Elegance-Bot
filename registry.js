@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: registry.js (PULITO SENZA INVITES)
+// FILE: registry.js (AGGIORNATO CON ROLE PANEL)
 // ==========================================
 
 function loadSafe(path) {
@@ -23,8 +23,16 @@ const logSystem = loadSafe("./logSystem");
 const antiLink = loadSafe("./antiLink");
 const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
+const rolepanel = loadSafe("./rolepanel");
 
 const registryMap = {
+    // --- ROLE PANEL SYSTEM ---
+    "select_age_zone": async (interaction) => {
+        if (rolepanel && typeof rolepanel.selectMenuHandler === "function") {
+            await rolepanel.selectMenuHandler(interaction);
+        }
+    },
+
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {
         if (minigame && typeof minigame.handleGameInteraction === 'function') {

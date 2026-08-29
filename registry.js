@@ -37,6 +37,7 @@ const baseRegistry = {
     "select_age_zone": handleRolePanelInteraction,
     "select_ping_zone": handleRolePanelInteraction,
     "select_passions_zone": handleRolePanelInteraction,
+    "select_color_zone": handleRolePanelInteraction,
 
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {
@@ -98,7 +99,7 @@ const baseRegistry = {
     "antilink_set_channel": antiLink.buttonHandler
 };
 
-// Routing dinamico per catturare tutte le tendine dei ruoli (select_)
+// Routing dinamico per qualsiasi menu tendina con prefisso select_
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (prop in target) {
@@ -112,4 +113,4 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-    
+        

@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: commands/rolepanel.js
+// ==========================================
 const { 
     SlashCommandBuilder, 
     EmbedBuilder, 
@@ -6,6 +9,12 @@ const {
     PermissionFlagsBits, 
     MessageFlags 
 } = require("discord.js");
+
+const AGE_ROLES = [
+    "1528576061963632663", // 14-17
+    "1528576063272124476"  // 18+
+];
+const EXTRA_ROLE = "1528576060667723936";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -57,5 +66,40 @@ module.exports = {
             content: "✅ **Pannello AGE ZONE inviato con successo!**",
             flags: MessageFlags.Ephemeral
         });
+    },
+
+    async selectMenuHandler(interaction) {
+        if (!interaction.isStringSelectMenu()) return;
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
+
+        try {
+            const member = interaction.member;
+            const selectedValue = interaction.values[0];
+
+            // Rimuove i ruoli età correnti e il ruolo collegato
+            await member.roles.remove([...AGE_ROLES, EXTRA_ROLE]).catch((err) => {
+                console.error("[ROLEPANEL] Errore durante la rimozione dei ruoli:", err);
+            });
+
+            // Opzione Reset
+            if (selectedValue === "age_reset") {
+                return await interaction.editReply({
+                    content: "🗑️ **Ruolo Età rimosso con successo!**"
+                });
+            }
+
+            // Assegnazione del ruolo selezionato assieme al ruolo dedicato
+            await member.roles.add([selectedValue, EXTRA_ROLE]);
+
+            return await interaction.editReply({
+                content: `✅ **Ruolo <@&${selectedValue}> assegnato con successo!**`
+            });
+        } catch (error) {
+            console.error("🚨 Errore gestione menu ruoli:", error);
+            return await interaction.editReply({
+                content: "❌ **Impossibile assegnare il ruolo.** Assicurati che il ruolo del Bot sia posizionato sopra tutti i ruoli da assegnare nelle Impostazioni del Server -> Ruoli!"
+            }).catch(() => {});
+        }
     }
 };

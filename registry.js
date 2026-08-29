@@ -32,7 +32,7 @@ const handleRolePanelInteraction = async (interaction) => {
     }
 };
 
-const registryMap = {
+const baseRegistry = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
     "select_ping_zone": handleRolePanelInteraction,
@@ -98,5 +98,18 @@ const registryMap = {
     "antilink_set_channel": antiLink.buttonHandler
 };
 
-module.exports = registryMap;
-        
+// Routing dinamico per catturare tutte le tendine dei ruoli (select_)
+const registryProxy = new Proxy(baseRegistry, {
+    get(target, prop) {
+        if (prop in target) {
+            return target[prop];
+        }
+        if (typeof prop === "string" && (prop.startsWith("select_") || prop.startsWith("rolepanel_"))) {
+            return handleRolePanelInteraction;
+        }
+        return undefined;
+    }
+});
+
+module.exports = registryProxy;
+    

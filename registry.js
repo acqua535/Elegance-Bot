@@ -36,6 +36,7 @@ const registryMap = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
     "select_ping_zone": handleRolePanelInteraction,
+    "select_passions_zone": handleRolePanelInteraction,
 
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {
@@ -98,3 +99,4 @@ const registryMap = {
 };
 
 module.exports = registryMap;
+    

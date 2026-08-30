@@ -1,18 +1,19 @@
 // ==========================================
-// FILE: counting.js (VERSIONE DEFINITIVA SEPARATA NEL DB)
+// FILE: counting.js (VERSIONE BASE ORIGINALE + MONGOOSE)
 // ==========================================
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require("discord.js");
 const Setup = require("./Setup");
 
-// Helper salvataggio MongoDB per il Counting (Campi completamente separati)
+const AI_CHANNEL_ID = "1529276659067523155";
+
+// Helper salvataggio MongoDB per il Counting
 const saveCountingSetup = async (guildId, data) => {
     try {
         const updateData = {};
         if (data.countingChannel !== undefined) updateData.countingChannel = data.countingChannel;
-        if (data.aiChannel !== undefined) updateData.aiChannel = data.aiChannel;
-        if (data.aiEnabled !== undefined) updateData.aiEnabled = data.aiEnabled;
-        if (data.currentNumber !== undefined) updateData.currentNumber = data.currentNumber;
-        if (data.lastUserId !== undefined) updateData.lastUserId = data.lastUserId;
+        if (data.aiEnabled !== undefined) updateData.countingAiEnabled = data.aiEnabled;
+        if (data.currentNumber !== undefined) updateData.countingCurrentNumber = data.currentNumber;
+        if (data.lastUserId !== undefined) updateData.countingLastUserId = data.lastUserId;
 
         return await Setup.findOneAndUpdate(
             { guildId },
@@ -27,29 +28,27 @@ const saveCountingSetup = async (guildId, data) => {
 
 // Helper lettura MongoDB per il Counting
 const getGuildCountingConfig = async (guildId) => {
-    if (!guildId) return { countingChannel: null, aiChannel: null, aiEnabled: false, currentNumber: 0, lastUserId: null };
+    if (!guildId) return { countingChannel: null, aiEnabled: false, currentNumber: 0, lastUserId: null };
     try {
         let setup = await Setup.findOne({ guildId });
         if (!setup) {
             setup = await Setup.create({ 
                 guildId, 
                 countingChannel: null, 
-                aiChannel: null,
-                aiEnabled: false, 
-                currentNumber: 0, 
-                lastUserId: null 
+                countingAiEnabled: false, 
+                countingCurrentNumber: 0, 
+                countingLastUserId: null 
             });
         }
         return {
             countingChannel: setup.countingChannel || null,
-            aiChannel: setup.aiChannel || null,
-            aiEnabled: setup.aiEnabled ?? false,
-            currentNumber: setup.currentNumber ?? 0,
-            lastUserId: setup.lastUserId || null
+            aiEnabled: setup.countingAiEnabled ?? false,
+            currentNumber: setup.countingCurrentNumber ?? 0,
+            lastUserId: setup.countingLastUserId || null
         };
     } catch (e) {
         console.error("[MONGO ERROR] Errore lettura Counting:", e);
-        return { countingChannel: null, aiChannel: null, aiEnabled: false, currentNumber: 0, lastUserId: null };
+        return { countingChannel: null, aiEnabled: false, currentNumber: 0, lastUserId: null };
     }
 };
 
@@ -60,137 +59,133 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName("setup")
-                .setDescription("Imposta il canale corrente come canale per il Counting normale")
+                .setDescription("Imposta il canale per il Counting globale del server")
+                .addChannelOption(option =>
+                    option
+                        .setName("canale")
+                        .setDescription("Seleziona il canale dove attivare il Counting")
+                        .setRequired(true)
+                )
         )
         .addSubcommand(subcommand =>
             subcommand
                 .setName("ai")
-                .setDescription("Imposta il canale corrente per il Counting con l'AI")
+                .setDescription("Attiva il supporto AI per contare da solo")
         ),
 
     async execute(interaction) {
         const subcommand = interaction.options.getSubcommand();
         const guildId = interaction.guild.id;
 
-        if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
-            return interaction.reply({ 
-                content: "❌ Devi essere un **Amministratore** per configurare i canali di Counting.", 
-                flags: MessageFlags.Ephemeral 
-            });
-        }
-
-        // 📌 SUBCOMMAND: /counting setup (Canale Normale)
+        // 📌 SUBCOMMAND: /counting setup
         if (subcommand === "setup") {
-            const targetChannel = interaction.channel;
+            if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
+                return interaction.reply({ 
+                    content: "❌ Devi essere un **Amministratore** per configurare il canale di Counting.", 
+                    flags: MessageFlags.Ephemeral 
+                });
+            }
 
+            const targetChannel = interaction.options.getChannel("canale");
+
+            // Salvataggio su MongoDB Cloud
             await saveCountingSetup(guildId, { countingChannel: targetChannel.id });
 
+            if (interaction.client.setCountingChannel) {
+                interaction.client.setCountingChannel(targetChannel.id);
+            }
+
             const embed = new EmbedBuilder()
-                .setTitle("🔢 Canale Counting Normale Configurato!")
+                .setTitle("🔢 Canale Counting Configurato!")
                 .setColor(0x57F287)
-                .setDescription(`Il gioco del Counting è ora attivo in ${targetChannel}!\n\n**Regole:**\n- Si parte da **1** (o si continua dal numero precedente).\n- Puoi chiacchierare liberamente, ma se invii un numero deve essere **SEMPRE all'inizio** (es. *723 grande!*).\n- Un utente non può inviare due numeri di fila.`)
+                .setDescription(`Il gioco del Counting è ora attivo in ${targetChannel}!\n\n**Regole:**\n- Si parte da **1** (o si continua dal numero precedente).\n- Se scrivi del testo, il numero deve essere all'inizio.\n- Un utente non può inviare due numeri di fila.`)
                 .setTimestamp();
 
             await targetChannel.send({ embeds: [embed] }).catch(() => {});
             return interaction.reply({ 
-                content: `✅ Canale normale impostato automaticamente in ${targetChannel} e salvato su MongoDB!`, 
+                content: `✅ Canale impostato e salvato su MongoDB Cloud in ${targetChannel}!`, 
                 flags: MessageFlags.Ephemeral 
             });
         }
 
-        // 📌 SUBCOMMAND: /counting ai (Canale AI)
+        // 📌 SUBCOMMAND: /counting ai
         if (subcommand === "ai") {
-            const targetChannel = interaction.channel;
+            if (interaction.channelId !== AI_CHANNEL_ID) {
+                return interaction.reply({
+                    content: `❌ Questo comando può essere utilizzato esclusivamente nel canale dedicato: <#${AI_CHANNEL_ID}>!`,
+                    flags: MessageFlags.Ephemeral
+                });
+            }
 
-            await saveCountingSetup(guildId, { aiChannel: targetChannel.id, aiEnabled: true, currentNumber: 0, lastUserId: null });
+            await saveCountingSetup(guildId, { aiEnabled: true });
 
             const embed = new EmbedBuilder()
-                .setTitle("🤖 Modalità Counting AI Configurata!")
+                .setTitle("🤖 Modalità Counting AI")
                 .setColor(0x5865F2)
-                .setDescription(`Il canale ${targetChannel} è stato impostato per il Counting con l'AI!\n\n- Scrivi **` + "`inizia`" + `** se vuoi che inizi ad aiutarti a contare partendo da 1.\n- Scrivi **` + "`cancella`" + `** se vuoi cancellare il supporto dell'AI e resettare la sessione.`)
-                .setFooter({ text: "Il bot conterà e interagirà direttamente qui!" });
+                .setDescription("Vuoi contare da solo in coppia con me?\n\n- Scrivi **`inizia`** se vuoi che inizi ad aiutarti a contare partendo da 1.\n- Scrivi **`cancella`** se vuoi cancellare il supporto dell'AI e resettare la sessione.")
+                .setFooter({ text: "Ricorda: solo numeri consentiti durante la partita!" });
 
-            await targetChannel.send({ embeds: [embed] }).catch(() => {});
-            return interaction.reply({
-                content: `✅ Canale AI impostato automaticamente in ${targetChannel} e salvato su MongoDB!`,
-                flags: MessageFlags.Ephemeral
-            });
+            return interaction.reply({ embeds: [embed] });
         }
     },
 
-    // 🛡️ Gestione Eventi Messaggi per entrambi i canali
+    // 🛡️ Gestione Eventi Messaggi del Counting esatto come lo volevi
     initEvents(client) {
         client.on("messageCreate", async (message) => {
             try {
-                if (!message.guild) return;
+                if (!message.guild || message.author.bot) return;
 
                 const config = await getGuildCountingConfig(message.guild.id);
+                if (!config.countingChannel || message.channel.id !== config.countingChannel) return;
+
                 const content = message.content.trim();
                 if (!content) return;
 
-                let activeChannelId = null;
-                let isAiMode = false;
-
-                // Controlla se siamo nel canale AI o nel canale Normale
-                if (config.aiChannel && message.channel.id === config.aiChannel) {
-                    activeChannelId = config.aiChannel;
-                    isAiMode = true;
-                } else if (config.countingChannel && message.channel.id === config.countingChannel) {
-                    activeChannelId = config.countingChannel;
-                    isAiMode = false;
-                } else {
-                    return; // Non siamo in nessun canale di counting configurato
+                // Gestione comandi AI se siamo nel canale dedicato e l'AI è attiva
+                if (message.channel.id === AI_CHANNEL_ID && config.aiEnabled) {
+                    if (content.toLowerCase() === "inizia") {
+                        const nextNum = 1;
+                        await saveCountingSetup(message.guild.id, {
+                            currentNumber: nextNum,
+                            lastUserId: client.user.id
+                        });
+                        return message.channel.send(nextNum.toString());
+                    }
+                    if (content.toLowerCase() === "cancella") {
+                        await saveCountingSetup(message.guild.id, {
+                            currentNumber: 0,
+                            lastUserId: null,
+                            aiEnabled: false
+                        });
+                        return message.reply("🔄 Sessione AI cancellata e conteggio resettato a 0.");
+                    }
                 }
 
-                // ==========================================
-                // 🤖 LOGICA CANALE AI
-                // ==========================================
-                if (isAiMode) {
-                    if (config.aiEnabled) {
-                        if (content.toLowerCase() === "inizia") {
-                            const nextNum = 1;
-                            await saveCountingSetup(message.guild.id, {
-                                currentNumber: nextNum,
-                                lastUserId: client.user.id
-                            });
-                            return message.channel.send(nextNum.toString());
-                        }
-                        if (content.toLowerCase() === "cancella") {
-                            await saveCountingSetup(message.guild.id, {
-                                currentNumber: 0,
-                                lastUserId: null,
-                                aiEnabled: false,
-                                aiChannel: null
-                            });
-                            return message.reply("🔄 Sessione AI cancellata e conteggio resettato a 0.");
-                        }
-                    }
+                // Estrae il numero dall'inizio del messaggio
+                const match = content.match(/^(\d+)/);
+                if (!match) return; // Se è testo semplice senza numero, lascia chattare senza rompere le scatole
 
-                    if (message.author.bot) {
-                        if (message.author.id === client.user.id) return;
-                        return;
-                    }
+                const guessedNumber = parseInt(match[1], 10);
+                const expectedNumber = config.currentNumber + 1;
 
-                    const aiMatch = content.match(/^(\d+)/);
-                    if (!aiMatch) return;
+                // Controllo doppio invio
+                if (message.author.id === config.lastUserId) {
+                    await message.react("❌").catch(() => {});
+                    const reply = await message.reply("⚠️ Non puoi inviare due numeri di fila! Aspetta che qualcun altro scriva.").catch(() => {});
+                    setTimeout(() => reply?.delete().catch(() => {}), 5000);
+                    return;
+                }
 
-                    const guessedNumber = parseInt(aiMatch[1], 10);
-                    const expectedNumber = config.currentNumber + 1;
+                // Controllo numero corretto o errato
+                if (guessedNumber === expectedNumber) {
+                    await saveCountingSetup(message.guild.id, {
+                        currentNumber: expectedNumber,
+                        lastUserId: message.author.id
+                    });
+                    await message.react("✅").catch(() => {});
 
-                    if (message.author.id === config.lastUserId) {
-                        await message.react("❌").catch(() => {});
-                        const reply = await message.reply("⚠️ Non puoi inviare due numeri di fila! Aspetta che risponda io.").catch(() => {});
-                        setTimeout(() => reply?.delete().catch(() => {}), 5000);
-                        return;
-                    }
-
-                    if (guessedNumber === expectedNumber) {
-                        await saveCountingSetup(message.guild.id, {
-                            currentNumber: expectedNumber,
-                            lastUserId: message.author.id
-                        });
-                        await message.react("✅").catch(() => {});
-
+                    // Se l'AI è attiva nel counting e il bot deve rispondere
+                    if (config.aiEnabled && message.channel.id === AI_CHANNEL_ID) {
                         const aiNextNumber = expectedNumber + 1;
                         setTimeout(async () => {
                             await saveCountingSetup(message.guild.id, {
@@ -199,44 +194,11 @@ module.exports = {
                             });
                             await message.channel.send(aiNextNumber.toString());
                         }, 1000);
-                    } else {
-                        await message.react("❌").catch(() => {});
-                        await message.channel.send(`❌ Hai sbagliato! Il numero corretto era **${expectedNumber}**, ma tu hai detto **${guessedNumber}**. (Partita resettata a 0)`).catch(() => {});
-                        await saveCountingSetup(message.guild.id, {
-                            currentNumber: 0,
-                            lastUserId: null
-                        });
                     }
-                    return;
-                }
-
-                // ==========================================
-                // 🔢 LOGICA CANALE NORMALE
-                // ==========================================
-                if (message.author.bot) return;
-
-                const match = content.match(/^(\d+)/);
-                if (!match) return; // Se è una chiacchierata senza numero all'inizio, ignora e lascia scrivere
-
-                const guessedNumber = parseInt(match[1], 10);
-                const expectedNumber = config.currentNumber + 1;
-
-                if (message.author.id === config.lastUserId) {
-                    await message.react("❌").catch(() => {});
-                    const reply = await message.reply("⚠️ Non puoi inviare due numeri di fila! Aspetta che qualcun altro scriva.").catch(() => {});
-                    setTimeout(() => reply?.delete().catch(() => {}), 5000);
-                    return;
-                }
-
-                if (guessedNumber === expectedNumber) {
-                    await saveCountingSetup(message.guild.id, {
-                        currentNumber: expectedNumber,
-                        lastUserId: message.author.id
-                    });
-                    await message.react("✅").catch(() => {});
                 } else {
                     await message.react("❌").catch(() => {});
                     await message.channel.send(`❌ Hai sbagliato! Il numero corretto era **${expectedNumber}**, ma tu hai detto **${guessedNumber}**. (Partita resettata a 0)`).catch(() => {});
+
                     await saveCountingSetup(message.guild.id, {
                         currentNumber: 0,
                         lastUserId: null
@@ -251,4 +213,4 @@ module.exports = {
     getGuildCountingConfig,
     saveCountingSetup
 };
-                    
+    

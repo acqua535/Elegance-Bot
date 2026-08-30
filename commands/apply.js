@@ -17,7 +17,7 @@ const saveApplySetup = async (guildId, data) => {
     try {
         console.log(`[APPLY DEBUG] Salvataggio su DB per guild ${guildId}:`, data);
         const updateData = {};
-        if (data.targetChannel !== undefined) updateData.applyTargetChannel = data.targetChannel;
+        if (data.targetChannel !== undefined) updateData.applyChannel = data.targetChannel;
         if (data.enabled !== undefined) updateData.applyEnabled = data.enabled;
 
         const result = await Setup.findOneAndUpdate(
@@ -35,7 +35,7 @@ const getGuildApplyConfig = async (guildId) => {
     try {
         let setup = await Setup.findOne({ guildId });
         return {
-            targetChannel: setup?.applyTargetChannel || null,
+            targetChannel: setup?.applyChannel || null,
             enabled: setup?.applyEnabled ?? true
         };
     } catch (e) {
@@ -383,4 +383,4 @@ module.exports = {
         }
     }
 };
-                
+                    

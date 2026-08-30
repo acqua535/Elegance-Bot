@@ -9,7 +9,7 @@ const {
     ButtonStyle, 
     MessageFlags 
 } = require("discord.js");
-const Setup = require("./models/Setup");
+const Setup = require("./models/setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 

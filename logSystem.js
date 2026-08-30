@@ -10,20 +10,8 @@ const {
     MessageFlags 
 } = require("discord.js");
 
-// 🛡️ IMPORT BLINDATO MULTI-PERCORSO
-// Risolve qualsiasi problema di maiuscole/minuscole o cartelle sul server Linux
-let Setup;
-try { Setup = require("./models/setup"); } catch {
-    try { Setup = require("./models/Setup"); } catch {
-        try { Setup = require("./Models/setup"); } catch {
-            try { Setup = require("./Models/Setup"); } catch {
-                try { Setup = require("./setup"); } catch {
-                    Setup = require("./Setup");
-                }
-            }
-        }
-    }
-}
+// 🛡️ Import diretto e pulito dalla root principale
+const Setup = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
@@ -365,4 +353,3 @@ module.exports = {
         });
     }
 };
-            

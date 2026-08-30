@@ -20,5 +20,6 @@ const setupSchema = new mongoose.Schema({
     applyEnabled: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Evita l'errore OverwriteModelError se viene caricato da più file
-module.exports = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
+const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
+
+module.exports = Setup;

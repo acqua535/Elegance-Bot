@@ -1,38 +1,77 @@
 // ==========================================
-// FILE: index.js (VERSIONE COMPLETA CON SICUREZZA MONGOOSE)
+// FILE: index.js (VERSIONE DIAGNOSTICA ULTRADEBUG)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
+const fs = require("fs");
+const path = require("path");
 require("dotenv").config();
 
-// --- AVVIO SICURO MONGOOSE ---
-let mongoose;
+console.log("\n================ 🔍 [ DIAGNOSTICA AVVIO BOT ] ================");
+
+// 1. ISPEZIONE FILE SYSTEM E PACKAGE.JSON SUL SERVER
+try {
+    const pkgPath = path.join(process.cwd(), "package.json");
+    if (fs.existsSync(pkgPath)) {
+        const pkgData = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+        console.log(`📂 [DEBUG-FS] package.json trovato nella root!`);
+        console.log(`   👉 Dipendenze trovate nel file:`, Object.keys(pkgData.dependencies || {}));
+    } else {
+        console.error("❌ [DEBUG-FS] File package.json NON trovato nella directory corrente:", process.cwd());
+    }
+} catch (fsErr) {
+    console.error("❌ [DEBUG-FS] Errore nella lettura di package.json:", fsErr.message);
+}
+
+// 2. ISPEZIONE VARIABILI D'AMBIENTE (ENV)
+const envKeys = Object.keys(process.env).filter(k => !k.startsWith("npm_") && !k.startsWith("NODE_"));
+console.log("🔑 [DEBUG-ENV] Chiavi ENV caricate sul server:", envKeys);
+
+const mongoUri = process.env.MONGO_URI;
+if (mongoUri) {
+    const maskedUri = mongoUri.replace(/\/\/(.*):(.*)@/, "//***:***@");
+    console.log(`✅ [DEBUG-ENV] MONGO_URI trovata! (Lunghezza: ${mongoUri.length} car., Formato: ${maskedUri})`);
+} else {
+    console.error("❌ [DEBUG-ENV] MONGO_URI è UNDEFINED o VUOTA! Discloud non la sta passando all'app.");
+}
+
+// 3. TENTATIVO CARICAMENTO MONGOOSE CON REPORT DETTAGLIATO
+let mongoose = null;
 try {
     mongoose = require("mongoose");
-} catch (e) {
-    console.warn("⚠️ La libreria 'mongoose' non è ancora stata installata su Discloud.");
+    console.log(`🍃 [DEBUG-MONGO] Modulo Mongoose CARICATO CORRETTAMENTE! Versione: v${mongoose.version}`);
+} catch (reqErr) {
+    console.error("❌ [DEBUG-MONGO] Impossibile caricare Mongoose!");
+    console.error(`   👉 Codice Errore: ${reqErr.code}`);
+    console.error(`   👉 Messaggio Errore: ${reqErr.message}`);
 }
 
-if (mongoose && process.env.MONGO_URI) {
-    console.log("🍃 Avvio connessione a MongoDB...");
-    mongoose.connect(process.env.MONGO_URI)
-        .then(() => {
-            console.log("🍃 Connessione a MongoDB completata con successo!");
-        })
-        .catch((err) => {
-            console.error("❌ Errore durante la connessione a MongoDB:", err);
-        });
-} else if (!process.env.MONGO_URI) {
-    console.warn("⚠️ MONGO_URI non trovata nelle variabili d'ambiente!");
+// 4. TENTATIVO DI CONNESSIONE A MONGO DB
+if (mongoose && mongoUri) {
+    console.log("🔄 [DEBUG-MONGO] Avvio connessione a MongoDB...");
+    
+    mongoose.connection.on("connecting", () => console.log("⏳ [MONGO-EVENT] Connessione in corso..."));
+    mongoose.connection.on("connected", () => console.log("🍃 [MONGO-EVENT] ✅ Connesso con successo a MongoDB!"));
+    mongoose.connection.on("error", (err) => console.error("❌ [MONGO-EVENT] Errore connessione:", err.message));
+    mongoose.connection.on("disconnected", () => console.warn("⚠️ [MONGO-EVENT] Disconnesso da MongoDB."));
+
+    mongoose.connect(mongoUri)
+        .then(() => console.log("🎉 [DEBUG-MONGO] Promessa mongoose.connect() risolta con successo!"))
+        .catch((err) => console.error("💥 [DEBUG-MONGO] Fallimento promessa mongoose.connect():", err));
+} else {
+    if (!mongoose) console.warn("⚠️ [DEBUG-MONGO] Connessione saltata: Mongoose non è installato sul server.");
+    if (!mongoUri) console.warn("⚠️ [DEBUG-MONGO] Connessione saltata: MONGO_URI mancante.");
 }
 
-function loadSafe(path) {
+console.log("===============================================================\n");
+
+function loadSafe(pathModule) {
     try {
-        return require(path);
+        return require(pathModule);
     } catch (e) {
         try {
-            return require(`./commands/${path.replace('./', '')}`);
+            return require(`./commands/${pathModule.replace('./', '')}`);
         } catch (err) {
-            console.warn(`[INDEX] Modulo opzionale non trovato: ${path}`);
+            console.warn(`[INDEX] Modulo opzionale non trovato: ${pathModule}`);
             return {};
         }
     }
@@ -166,4 +205,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-                
+        

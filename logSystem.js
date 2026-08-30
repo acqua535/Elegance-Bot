@@ -9,7 +9,21 @@ const {
     ButtonStyle, 
     MessageFlags 
 } = require("discord.js");
-const Setup = require("./models/setup");
+
+// 🛡️ IMPORT BLINDATO MULTI-PERCORSO
+// Risolve qualsiasi problema di maiuscole/minuscole o cartelle sul server Linux
+let Setup;
+try { Setup = require("./models/setup"); } catch {
+    try { Setup = require("./models/Setup"); } catch {
+        try { Setup = require("./Models/setup"); } catch {
+            try { Setup = require("./Models/Setup"); } catch {
+                try { Setup = require("./setup"); } catch {
+                    Setup = require("./Setup");
+                }
+            }
+        }
+    }
+}
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
@@ -160,7 +174,7 @@ module.exports = {
     },
 
         // ==========================================
-    // INIZIALIZZAZIONE DEGLI EVENTI LOG (PARTE 2 DI 2)
+    // FILE: logSystem.js (PARTE 2 DI 2)
     // ==========================================
     initEvents(client) {
 
@@ -351,3 +365,4 @@ module.exports = {
         });
     }
 };
+            

@@ -1,12 +1,18 @@
 // ==========================================
-// FILE: index.js (VERSIONE CON MONGO INIZIALIZZATO ALL'AVVIO)
+// FILE: index.js (VERSIONE COMPLETA CON SICUREZZA MONGOOSE)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
-const mongoose = require("mongoose");
 require("dotenv").config();
 
-// --- AVVIO CONNESSIONE MONGODB ---
-if (process.env.MONGO_URI) {
+// --- AVVIO SICURO MONGOOSE ---
+let mongoose;
+try {
+    mongoose = require("mongoose");
+} catch (e) {
+    console.warn("⚠️ La libreria 'mongoose' non è ancora stata installata su Discloud.");
+}
+
+if (mongoose && process.env.MONGO_URI) {
     console.log("🍃 Avvio connessione a MongoDB...");
     mongoose.connect(process.env.MONGO_URI)
         .then(() => {
@@ -15,8 +21,8 @@ if (process.env.MONGO_URI) {
         .catch((err) => {
             console.error("❌ Errore durante la connessione a MongoDB:", err);
         });
-} else {
-    console.warn("⚠️ MONGO_URI non trovata nel file .env!");
+} else if (!process.env.MONGO_URI) {
+    console.warn("⚠️ MONGO_URI non trovata nelle variabili d'ambiente!");
 }
 
 function loadSafe(path) {
@@ -160,4 +166,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-            
+                

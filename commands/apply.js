@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: apply.js (PANNELLO CONFIGURAZIONE + INVIO MESSAGGIO CANDIDATURA)
+// FILE: apply.js (PANNELLO CONFIGURAZIONE + INVIO)
 // ==========================================
 const { 
     SlashCommandBuilder, 
@@ -9,12 +9,11 @@ const {
     ButtonStyle, 
     MessageFlags 
 } = require("discord.js");
-
 const Setup = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
-// Helper salvataggio MongoDB per Apply
+// Helper salvataggio MongoDB
 const saveApplySetup = async (guildId, data) => {
     try {
         const updateData = {};
@@ -32,17 +31,13 @@ const saveApplySetup = async (guildId, data) => {
     }
 };
 
-// Helper lettura MongoDB per Apply
+// Helper lettura MongoDB
 const getGuildApplyConfig = async (guildId) => {
     if (!guildId) return { applyChannel: null, applyEnabled: true };
     try {
         let setup = await Setup.findOne({ guildId });
         if (!setup) {
-            setup = await Setup.create({ 
-                guildId, 
-                applyChannel: null, 
-                applyEnabled: true 
-            });
+            setup = await Setup.create({ guildId, applyChannel: null, applyEnabled: true });
         }
         return {
             applyChannel: setup.applyChannel || null,
@@ -61,7 +56,7 @@ module.exports = {
         .addSubcommand(subcommand =>
             subcommand
                 .setName("panel")
-                .setDescription("Apre il pannello di controllo per configurare canale ricezione e stato")
+                .setDescription("Apre il pannello di controllo per configurare canale e stato")
         )
         .addSubcommand(subcommand =>
             subcommand
@@ -79,10 +74,13 @@ module.exports = {
 
         const subcommand = interaction.options.getSubcommand();
         const guildId = interaction.guild.id;
-        const config = await getGuildApplyConfig(guildId);
 
-        // 📌 SUBCOMMAND: /apply panel (Pannello di controllo staff)
+        // ==========================================
+        // ⚙️ SUBCOMMAND: /apply panel
+        // ==========================================
         if (subcommand === "panel") {
+            const config = await getGuildApplyConfig(guildId);
+
             const embed = new EmbedBuilder()
                 .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO APPLY")
                 .setDescription(
@@ -109,7 +107,9 @@ module.exports = {
             return interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
         }
 
-        // 📌 SUBCOMMAND: /apply send (Manda il messaggio con il bottone per candidarsi)
+        // ==========================================
+        // 📩 SUBCOMMAND: /apply send
+        // ==========================================
         if (subcommand === "send") {
             const embed = new EmbedBuilder()
                 .setTitle("📋 CANDIDATURE ELEGANCE SPONSORING")
@@ -136,7 +136,9 @@ module.exports = {
         }
     },
 
-    // 🔘 Gestione dei pulsanti del pannello
+    // ==========================================
+    // 🔘 GESTIONE PULSANTI DEL PANNELLO
+    // ==========================================
     async buttonHandler(interaction) {
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
@@ -179,9 +181,5 @@ module.exports = {
         );
 
         await interaction.update({ embeds: [embed], components: [row] });
-    },
-
-    getGuildApplyConfig,
-    saveApplySetup
+    }
 };
-            

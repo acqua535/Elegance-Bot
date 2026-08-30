@@ -87,8 +87,6 @@ const baseRegistry = {
     "apply_set_channel": apply.buttonHandler,
     "apply_set_channel_id": apply.buttonHandler,
     "apply_start_button": apply.buttonHandler,
-    "apply_accept": apply.buttonHandler,
-    "apply_reject": apply.buttonHandler,
 
     // --- LOG SYSTEM ---
     "log_toggle": logSystem.buttonHandler,
@@ -99,18 +97,26 @@ const baseRegistry = {
     "antilink_set_channel": antiLink.buttonHandler
 };
 
-// Routing dinamico per qualsiasi menu tendina con prefisso select_
+// Routing dinamico potenziato per catturare qualsiasi customId dinamico o fisso che inizia con apply_
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (prop in target) {
             return target[prop];
         }
-        if (typeof prop === "string" && (prop.startsWith("select_") || prop.startsWith("rolepanel_"))) {
-            return handleRolePanelInteraction;
+        if (typeof prop === "string") {
+            if (prop.startsWith("select_") || prop.startsWith("rolepanel_")) {
+                return handleRolePanelInteraction;
+            }
+            if (prop.startsWith("apply_")) {
+                if (prop.includes("modal") || prop.includes("form")) {
+                    return apply.modalHandler;
+                }
+                return apply.buttonHandler;
+            }
         }
         return undefined;
     }
 });
 
 module.exports = registryProxy;
-        
+    

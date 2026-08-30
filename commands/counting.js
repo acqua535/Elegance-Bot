@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: counting.js (VERSIONE COMPLETA E INTEGRATA)
+// FILE: counting.js (VERSIONE DEFINITIVA E PERFETTA)
 // ==========================================
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require("discord.js");
 const Setup = require("./Setup");
@@ -117,8 +117,8 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setTitle("🤖 Modalità Counting AI")
                 .setColor(0x5865F2)
-                .setDescription("Vuoi contare in coppia con me?\n\n- Scrivi **`inizia`** se vuoi che inizi ad aiutarti a contare partendo da 1.\n- Scrivi **`cancella`** se vuoi cancellare il supporto dell'AI e resettare la sessione.")
-                .setFooter({ text: "Ricorda: il numero deve essere sempre all'inizio se scrivi altro!" });
+                .setDescription("Vuoi contare in coppia con me nel canale apposito?\n\n- Scrivi **`inizia`** se vuoi che inizi ad aiutarti a contare partendo da 1.\n- Scrivi **`cancella`** se vuoi cancellare il supporto dell'AI e resettare la sessione.")
+                .setFooter({ text: "Ricorda: in questo canale puoi digitare i comandi dell'AI in libertà!" });
 
             return interaction.reply({ embeds: [embed] });
         }
@@ -131,32 +131,39 @@ module.exports = {
                 if (!message.guild) return;
 
                 const config = await getGuildCountingConfig(message.guild.id);
-                if (!config.countingChannel || message.channel.id !== config.countingChannel) return;
-
                 const content = message.content.trim();
                 if (!content) return;
 
-                // 🤖 GESTIONE MODALITÀ AI NEL CANALE DEDICATO
-                if (message.channel.id === AI_CHANNEL_ID && config.aiEnabled) {
-                    if (content.toLowerCase() === "inizia") {
-                        const nextNum = 1;
-                        await saveCountingSetup(message.guild.id, {
-                            currentNumber: nextNum,
-                            lastUserId: client.user.id
-                        });
-                        return message.channel.send(nextNum.toString());
+                // 🤖 GESTIONE MODALITÀ AI NEL CANALE DEDICATO (AI_CHANNEL_ID)
+                if (message.channel.id === AI_CHANNEL_ID) {
+                    // Se l'utente scrive comandi per l'AI o chiacchiera lì dentro, NON deve mai dare errore di counting!
+                    if (config.aiEnabled) {
+                        if (content.toLowerCase() === "inizia") {
+                            const nextNum = 1;
+                            await saveCountingSetup(message.guild.id, {
+                                currentNumber: nextNum,
+                                lastUserId: client.user.id
+                            });
+                            return message.channel.send(nextNum.toString());
+                        }
+                        if (content.toLowerCase() === "cancella") {
+                            await saveCountingSetup(message.guild.id, {
+                                currentNumber: 0,
+                                lastUserId: null,
+                                aiEnabled: false
+                            });
+                            return message.reply("🔄 Sessione AI cancellata e conteggio resettato a 0.");
+                        }
                     }
-                    if (content.toLowerCase() === "cancella") {
-                        await saveCountingSetup(message.guild.id, {
-                            currentNumber: 0,
-                            lastUserId: null,
-                            aiEnabled: false
-                        });
-                        return message.reply("🔄 Sessione AI cancellata e conteggio resettato a 0.");
-                    }
+                    // Se siamo nel canale AI ma non c'è un numero valido o è solo testo/comandi, usciamo senza bloccare
+                    const aiMatch = content.match(/^(\d+)/);
+                    if (!aiMatch && message.channel.id === AI_CHANNEL_ID) return;
                 }
 
-                // Se il messaggio è del bot stesso e l'AI è attiva, gestiamo il suo numero
+                // 🔢 GESTIONE CANALE COUNTING NORMALE
+                if (!config.countingChannel || message.channel.id !== config.countingChannel) return;
+
+                // Se il messaggio è del bot stesso
                 if (message.author.bot) {
                     if (config.aiEnabled && message.author.id === client.user.id) {
                         return;
@@ -164,10 +171,10 @@ module.exports = {
                     return;
                 }
 
-                // Estrae il numero dall'inizio del messaggio (es. "723 grande" -> prende "723")
+                // Estrae il numero dall'inizio del messaggio (es. "1" -> "1", oppure "1 stiamo andando" -> "1")
                 const match = content.match(/^(\d+)/);
                 
-                // SE NON INIZIA CON UN NUMERO, SIGNIFICA CHE È UNA CHIACCHIERATA NORMALE: LO IGNORIAMO E NON DIAMO ERRORE!
+                // SE NON INIZIA CON UN NUMERO: È UNA SEMPLICE CHIACHIERATA NEL CANALE, NON FARE NULLA!
                 if (!match) return;
 
                 const guessedNumber = parseInt(match[1], 10);
@@ -190,8 +197,8 @@ module.exports = {
 
                     await message.react("✅").catch(() => {});
 
-                    // Se l'AI è attiva, risponde dicendo SOLO il numero pulito
-                    if (config.aiEnabled) {
+                    // Se l'AI è attiva nel canale counting, risponde dicendo SOLO il numero pulito
+                    if (config.aiEnabled && message.channel.id === config.countingChannel) {
                         const aiNextNumber = expectedNumber + 1;
                         setTimeout(async () => {
                             await saveCountingSetup(message.guild.id, {

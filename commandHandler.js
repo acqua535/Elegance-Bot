@@ -6,23 +6,31 @@ module.exports = function loadCommands(client) {
     const rootPath = process.cwd();
     const commandsFolder = path.join(rootPath, "commands");
 
-    let filesToLoad = new Map(); // Usiamo una Map per evitare duplicati tra Root e /commands
+    let filesToLoad = new Map();
+
+    // 🛡️ Filtro anti-fantasmi, spazi e file duplicati con parentesi (es. logSystem (1).js)
+    const isValidJsFile = (file) => {
+        if (!file.endsWith(".js")) return false;
+        if (file.includes("(") || file.includes(")")) return false; // Ignora cloni con parentesi
+        if (file.includes(" ")) return false; // Ignora file con spazi
+        return true;
+    };
 
     // 1. Cerca file .js nella cartella /commands
     if (fs.existsSync(commandsFolder)) {
-        const subFiles = fs.readdirSync(commandsFolder).filter(file => file.endsWith(".js"));
+        const subFiles = fs.readdirSync(commandsFolder).filter(isValidJsFile);
         subFiles.forEach(file => filesToLoad.set(file, path.join(commandsFolder, file)));
     }
 
-    // 2. Cerca file .js nella Root (se non già presi da /commands)
-    const rootFiles = fs.readdirSync(rootPath).filter(file => file.endsWith(".js"));
+    // 2. Cerca file .js nella Root
+    const rootFiles = fs.readdirSync(rootPath).filter(isValidJsFile);
     rootFiles.forEach(file => {
         if (!filesToLoad.has(file)) {
             filesToLoad.set(file, path.join(rootPath, file));
         }
     });
 
-    console.log(`🔍 [DIAGNOSI] Trovati ${filesToLoad.size} file .js totali da analizzare.`);
+    console.log(`🔍 [DIAGNOSI] Trovati ${filesToLoad.size} file .js validi da analizzare.`);
 
     filesToLoad.forEach((filePath, fileName) => {
         const ignoredFiles = [
@@ -36,7 +44,6 @@ module.exports = function loadCommands(client) {
             delete require.cache[require.resolve(filePath)];
             const command = require(filePath);
 
-            // Controlli specifici con spiegazione in console
             if (!command) {
                 console.warn(`⚠️ [SALTATO] ${fileName}: Il file è vuoto o non esporta nulla.`);
                 return;

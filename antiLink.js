@@ -1,11 +1,19 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, MessageFlags } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
+// ==========================================
+// FILE: antiLink.js (VERSIONE UNICA COMPLETA MONGOOSE)
+// ==========================================
+const { 
+    SlashCommandBuilder, 
+    EmbedBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle, 
+    MessageFlags 
+} = require("discord.js");
+const Setup = require("./models/Setup");
 const moderation = require("./moderationSystem");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 const ALLOWED_ROLE_ID = "1528576014446231683";
-const SETUPS_PATH = path.join(__dirname, "setups.json");
 
 const ALLOWED_CHANNELS = [
     "1528576184785305600",
@@ -13,37 +21,43 @@ const ALLOWED_CHANNELS = [
     "1528576179177787642"
 ];
 
-// Helper lettura setups.json
-const getSetups = () => {
-    if (!fs.existsSync(SETUPS_PATH)) return {};
+// Helper salvataggio MongoDB
+const saveAntiLinkSetup = async (guildId, data) => {
     try {
-        return JSON.parse(fs.readFileSync(SETUPS_PATH, "utf8"));
-    } catch {
-        return {};
+        const updateData = {};
+        if (data.enabled !== undefined) updateData.antiLinkEnabled = data.enabled;
+        if (data.logChannel !== undefined) updateData.antiLinkLogChannel = data.logChannel;
+
+        return await Setup.findOneAndUpdate(
+            { guildId },
+            { $set: updateData },
+            { upsert: true, new: true }
+        );
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore salvataggio Anti-Link:", e);
+        return null;
     }
 };
 
-// Helper salvataggio setups.json
-const saveAntiLinkSetup = (guildId, data) => {
-    const setups = getSetups();
-    setups[guildId] = {
-        ...setups[guildId],
-        antiLinkEnabled: data.enabled !== undefined ? data.enabled : (setups[guildId]?.antiLinkEnabled ?? false),
-        antiLinkLogChannel: data.logChannel !== undefined ? data.logChannel : (setups[guildId]?.antiLinkLogChannel || null)
-    };
-    fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
-};
-
-const getGuildConfig = (guildId) => {
-    const setups = getSetups();
-    return {
-        enabled: setups[guildId]?.antiLinkEnabled ?? false,
-        logChannel: setups[guildId]?.antiLinkLogChannel || null
-    };
+// Helper lettura da MongoDB
+const getGuildConfig = async (guildId) => {
+    if (!guildId) return { enabled: false, logChannel: null };
+    try {
+        let setup = await Setup.findOne({ guildId });
+        if (!setup) {
+            setup = await Setup.create({ guildId, antiLinkEnabled: false, antiLinkLogChannel: null });
+        }
+        return {
+            enabled: setup.antiLinkEnabled ?? false,
+            logChannel: setup.antiLinkLogChannel || null
+        };
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore lettura Anti-Link:", e);
+        return { enabled: false, logChannel: null };
+    }
 };
 
 module.exports = {
-    // 📌 NOME COMANDO SLASH SU DISCORD: /antilink
     data: new SlashCommandBuilder()
         .setName("antilink")
         .setDescription("Gestisci il sistema Anti-Link e imposta il canale di log"),
@@ -56,7 +70,9 @@ module.exports = {
             });
         }
 
-        const config = getGuildConfig(interaction.guild.id);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const config = await getGuildConfig(interaction.guild.id);
 
         const embed = new EmbedBuilder()
             .setTitle("🛡️ ELEGANCE SPONSORING ── PANNELLO ANTI-LINK")
@@ -81,7 +97,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
         );
 
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed], components: [row] });
     },
 
     async buttonHandler(interaction) {
@@ -93,20 +109,20 @@ module.exports = {
         }
 
         const { customId, channel, guild } = interaction;
-        let config = getGuildConfig(guild.id);
+        let config = await getGuildConfig(guild.id);
 
         if (customId === "antilink_toggle") {
             config.enabled = !config.enabled;
-            saveAntiLinkSetup(guild.id, { enabled: config.enabled });
+            await saveAntiLinkSetup(guild.id, { enabled: config.enabled });
         } else if (customId === "antilink_set_channel") {
             config.logChannel = channel.id;
-            saveAntiLinkSetup(guild.id, { logChannel: channel.id });
+            await saveAntiLinkSetup(guild.id, { logChannel: channel.id });
         }
 
         const embed = new EmbedBuilder()
             .setTitle("🛡️ ELEGANCE SPONSORING ── PANNELLO ANTI-LINK")
             .setDescription(
-                "Impostazioni salvate con successo in `setups.json`!\n\n" +
+                "Impostazioni salvate con successo su MongoDB Cloud!\n\n" +
                 `📌 **Canale Log Impostato:** ${config.logChannel ? `<#${config.logChannel}>` : "`Non impostato`"}\n` +
                 `⚡ **Stato Anti-Link:** ${config.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
@@ -134,7 +150,7 @@ module.exports = {
             try {
                 if (message.author?.bot || !message.guild) return;
 
-                const config = getGuildConfig(message.guild.id);
+                const config = await getGuildConfig(message.guild.id);
                 if (!config.enabled) return;
 
                 if (ALLOWED_CHANNELS.includes(message.channel.id)) return;
@@ -151,7 +167,7 @@ module.exports = {
 
                 let totalWarns = 1;
                 if (moderation && typeof moderation.addWarning === "function") {
-                    totalWarns = moderation.addWarning(
+                    totalWarns = await moderation.addWarning(
                         message.author.id,
                         client.user.id,
                         "Invio di link non autorizzato (Anti-Link Automatico)"

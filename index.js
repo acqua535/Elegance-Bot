@@ -1,69 +1,39 @@
 // ==========================================
-// FILE: index.js (VERSIONE DIAGNOSTICA ULTRADEBUG)
+// FILE: index.js (VERSIONE COMPLETA E CORRETTA)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
-console.log("\n================ 🔍 [ DIAGNOSTICA AVVIO BOT ] ================");
-
-// 1. ISPEZIONE FILE SYSTEM E PACKAGE.JSON SUL SERVER
-try {
-    const pkgPath = path.join(process.cwd(), "package.json");
-    if (fs.existsSync(pkgPath)) {
-        const pkgData = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
-        console.log(`📂 [DEBUG-FS] package.json trovato nella root!`);
-        console.log(`   👉 Dipendenze trovate nel file:`, Object.keys(pkgData.dependencies || {}));
-    } else {
-        console.error("❌ [DEBUG-FS] File package.json NON trovato nella directory corrente:", process.cwd());
-    }
-} catch (fsErr) {
-    console.error("❌ [DEBUG-FS] Errore nella lettura di package.json:", fsErr.message);
+// --- GESTIONE E PULIZIA MONGO_URI ---
+let mongoUri = process.env.MONGO_URI;
+if (mongoUri && mongoUri.includes("MONGO_URI=")) {
+    mongoUri = mongoUri.split("MONGO_URI=")[1].trim();
 }
 
-// 2. ISPEZIONE VARIABILI D'AMBIENTE (ENV)
-const envKeys = Object.keys(process.env).filter(k => !k.startsWith("npm_") && !k.startsWith("NODE_"));
-console.log("🔑 [DEBUG-ENV] Chiavi ENV caricate sul server:", envKeys);
-
-const mongoUri = process.env.MONGO_URI;
-if (mongoUri) {
-    const maskedUri = mongoUri.replace(/\/\/(.*):(.*)@/, "//***:***@");
-    console.log(`✅ [DEBUG-ENV] MONGO_URI trovata! (Lunghezza: ${mongoUri.length} car., Formato: ${maskedUri})`);
-} else {
-    console.error("❌ [DEBUG-ENV] MONGO_URI è UNDEFINED o VUOTA! Discloud non la sta passando all'app.");
-}
-
-// 3. TENTATIVO CARICAMENTO MONGOOSE CON REPORT DETTAGLIATO
+// --- CONNESSIONE MONGODB ---
 let mongoose = null;
 try {
     mongoose = require("mongoose");
-    console.log(`🍃 [DEBUG-MONGO] Modulo Mongoose CARICATO CORRETTAMENTE! Versione: v${mongoose.version}`);
-} catch (reqErr) {
-    console.error("❌ [DEBUG-MONGO] Impossibile caricare Mongoose!");
-    console.error(`   👉 Codice Errore: ${reqErr.code}`);
-    console.error(`   👉 Messaggio Errore: ${reqErr.message}`);
+} catch (e) {
+    console.warn("⚠️ La libreria 'mongoose' non è installata.");
 }
 
-// 4. TENTATIVO DI CONNESSIONE A MONGO DB
 if (mongoose && mongoUri) {
-    console.log("🔄 [DEBUG-MONGO] Avvio connessione a MongoDB...");
-    
-    mongoose.connection.on("connecting", () => console.log("⏳ [MONGO-EVENT] Connessione in corso..."));
-    mongoose.connection.on("connected", () => console.log("🍃 [MONGO-EVENT] ✅ Connesso con successo a MongoDB!"));
-    mongoose.connection.on("error", (err) => console.error("❌ [MONGO-EVENT] Errore connessione:", err.message));
-    mongoose.connection.on("disconnected", () => console.warn("⚠️ [MONGO-EVENT] Disconnesso da MongoDB."));
-
+    console.log("🍃 Avvio connessione a MongoDB...");
     mongoose.connect(mongoUri)
-        .then(() => console.log("🎉 [DEBUG-MONGO] Promessa mongoose.connect() risolta con successo!"))
-        .catch((err) => console.error("💥 [DEBUG-MONGO] Fallimento promessa mongoose.connect():", err));
-} else {
-    if (!mongoose) console.warn("⚠️ [DEBUG-MONGO] Connessione saltata: Mongoose non è installato sul server.");
-    if (!mongoUri) console.warn("⚠️ [DEBUG-MONGO] Connessione saltata: MONGO_URI mancante.");
+        .then(() => {
+            console.log("🍃 Connessione a MongoDB completata con successo!");
+        })
+        .catch((err) => {
+            console.error("❌ Errore durante la connessione a MongoDB:", err.message);
+        });
+} else if (!mongoUri) {
+    console.warn("⚠️ MONGO_URI non trovata nelle variabili d'ambiente!");
 }
 
-console.log("===============================================================\n");
-
+// --- CARICAMENTO MODULI DI SISTEMA ---
 function loadSafe(pathModule) {
     try {
         return require(pathModule);
@@ -86,6 +56,7 @@ const countingSystem = loadSafe("./countingSystem");
 const antiLink = loadSafe("./antiLink");
 const stickyEvents = loadSafe("./stickyEvents");
 
+// --- INIZIALIZZAZIONE CLIENT DISCORD ---
 const client = new Client({
     intents: [
         GatewayIntentBits.Guilds,
@@ -106,6 +77,7 @@ const client = new Client({
 
 client.commands = new Collection();
 
+// --- EVENTO READY ---
 client.once("clientReady", async () => {
     console.log(`⚜️ Bot connesso con successo come: ${client.user.tag}`);
 
@@ -124,6 +96,7 @@ client.once("clientReady", async () => {
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
 });
 
+// --- GESTIONE INTERAZIONI ---
 client.on("interactionCreate", async (interaction) => {
     try {
         if (interaction.isChatInputCommand()) {
@@ -180,6 +153,7 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
+// --- EVENTI MEMBRI ---
 client.on("guildMemberAdd", async (member) => {
     try {
         if (entry && typeof entry.handleMemberAdd === "function") await entry.handleMemberAdd(member);
@@ -196,6 +170,7 @@ client.on("guildMemberRemove", async (member) => {
     }
 });
 
+// --- SISTEMA ANTI-CRASH ---
 process.on("unhandledRejection", (reason) => {
     console.error("⚠️ [ANTI-CRASH] Unhandled Rejection:", reason);
 });
@@ -205,4 +180,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-        
+            

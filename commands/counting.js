@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: counting.js (VERSIONE COMPLETA E INTEGRATA CON BOT CHAT & AI)
+// FILE: counting.js (VERSIONE COMPLETA E INTEGRATA)
 // ==========================================
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require("discord.js");
 const Setup = require("./Setup");
@@ -93,7 +93,7 @@ module.exports = {
             const embed = new EmbedBuilder()
                 .setTitle("🔢 Canale Counting Configurato!")
                 .setColor(0x57F287)
-                .setDescription(`Il gioco del Counting è ora attivo in ${targetChannel}!\n\n**Regole:**\n- Si parte da **1** (o si continua dal numero precedente).\n- Se scrivi del testo, **il numero deve essere SEMPRE all'inizio** (es. *723 grande!*).\n- Un utente non può inviare due numeri di fila.`)
+                .setDescription(`Il gioco del Counting è ora attivo in ${targetChannel}!\n\n**Regole:**\n- Si parte da **1** (o si continua dal numero precedente).\n- Puoi scrivere liberamente nel canale, ma se invii un numero deve essere **SEMPRE all'inizio** (es. *723 grande!*).\n- Un utente non può inviare due numeri di fila.`)
                 .setTimestamp();
 
             await targetChannel.send({ embeds: [embed] }).catch(() => {});
@@ -159,17 +159,16 @@ module.exports = {
                 // Se il messaggio è del bot stesso e l'AI è attiva, gestiamo il suo numero
                 if (message.author.bot) {
                     if (config.aiEnabled && message.author.id === client.user.id) {
-                        return; // Il bot ha inviato correttamente il suo numero pulito
+                        return;
                     }
-                    return; // Ignora altri bot
-                }
-
-                // Estrae il numero dall'inizio del messaggio
-                const match = content.match(/^(\d+)/);
-                if (!match) {
-                    await message.react("❌").catch(() => {});
                     return;
                 }
+
+                // Estrae il numero dall'inizio del messaggio (es. "723 grande" -> prende "723")
+                const match = content.match(/^(\d+)/);
+                
+                // SE NON INIZIA CON UN NUMERO, SIGNIFICA CHE È UNA CHIACCHIERATA NORMALE: LO IGNORIAMO E NON DIAMO ERRORE!
+                if (!match) return;
 
                 const guessedNumber = parseInt(match[1], 10);
                 const expectedNumber = config.currentNumber + 1;
@@ -191,7 +190,7 @@ module.exports = {
 
                     await message.react("✅").catch(() => {});
 
-                    // Se l'AI è attiva, il bot risponde dicendo SOLO il numero successivo in modo pulito
+                    // Se l'AI è attiva, risponde dicendo SOLO il numero pulito
                     if (config.aiEnabled) {
                         const aiNextNumber = expectedNumber + 1;
                         setTimeout(async () => {
@@ -205,7 +204,7 @@ module.exports = {
                 } else {
                     // Numero errato: il bot parla e spiega l'errore chiaramente
                     await message.react("❌").catch(() => {});
-                    const reply = await message.channel.send(`❌ Hai sbagliato! Il numero corretto era **${expectedNumber}**, ma tu hai detto **${guessedNumber}**. (Partita resettata a 0)`).catch(() => {});
+                    await message.channel.send(`❌ Hai sbagliato! Il numero corretto era **${expectedNumber}**, ma tu hai detto **${guessedNumber}**. (Partita resettata a 0)`).catch(() => {});
 
                     await saveCountingSetup(message.guild.id, {
                         currentNumber: 0,
@@ -221,4 +220,3 @@ module.exports = {
     getGuildCountingConfig,
     saveCountingSetup
 };
-    

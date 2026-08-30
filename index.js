@@ -1,7 +1,8 @@
 // ==========================================
-// FILE: index.js (VERSIONE PULITA - SENZA MEMORY & PARTNERDB)
+// FILE: index.js (VERSIONE PULITA - CON MONGODB INTEGRATO)
 // ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
+const mongoose = require("mongoose");
 require("dotenv").config();
 
 function loadSafe(path) {
@@ -48,6 +49,19 @@ client.commands = new Collection();
 
 client.once("clientReady", async () => {
     console.log(`⚜️ Bot connesso con successo come: ${client.user.tag}`);
+
+    // Connessione al Database MongoDB
+    if (process.env.MONGO_URI) {
+        mongoose.connect(process.env.MONGO_URI)
+            .then(() => {
+                console.log("🍃 Connessione a MongoDB completata con successo!");
+            })
+            .catch((err) => {
+                console.error("❌ Errore durante la connessione a MongoDB:", err);
+            });
+    } else {
+        console.warn("⚠️ MONGO_URI non trovata nel file .env!");
+    }
 
     if (typeof deployCommands === "function") await deployCommands();
     if (typeof loadCommands === "function") loadCommands(client);
@@ -145,4 +159,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-                
+                    

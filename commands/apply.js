@@ -9,28 +9,28 @@ const {
     TextInputStyle,
     MessageFlags
 } = require("discord.js");
-const Setup = require("./Setup"); // Connessione a MongoDB
+const Setup = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
-// FUNZIONE 1: Salva i dati su MongoDB
 const saveApplySetup = async (guildId, data) => {
     try {
+        console.log(`[APPLY DEBUG] Salvataggio su DB per guild ${guildId}:`, data);
         const updateData = {};
         if (data.targetChannel !== undefined) updateData.applyTargetChannel = data.targetChannel;
         if (data.enabled !== undefined) updateData.applyEnabled = data.enabled;
 
-        await Setup.findOneAndUpdate(
+        const result = await Setup.findOneAndUpdate(
             { guildId },
             { $set: updateData },
             { upsert: true, new: true }
         );
+        console.log("[APPLY DEBUG] Salvataggio completato con successo:", result);
     } catch (e) {
         console.error("[MONGO ERROR] Errore salvataggio Apply:", e);
     }
 };
 
-// FUNZIONE 2: Leggi i dati da MongoDB
 const getGuildApplyConfig = async (guildId) => {
     try {
         let setup = await Setup.findOne({ guildId });
@@ -132,6 +132,8 @@ module.exports = {
 
     async buttonHandler(interaction) {
         const { customId, channel, guild, user } = interaction;
+        console.log(`[APPLY DEBUG] buttonHandler attivato per customId: "${customId}" da ${user.tag}`);
+
         const config = await getGuildApplyConfig(guild.id);
 
         if (customId === "apply_toggle") {
@@ -146,6 +148,7 @@ module.exports = {
             if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
                 return interaction.reply({ content: "❌ Permessi insufficienti.", flags: MessageFlags.Ephemeral });
             }
+            console.log(`[APPLY DEBUG] Impostazione canale target su: ${channel.id}`);
             await saveApplySetup(guild.id, { targetChannel: channel.id });
             return module.exports.updatePanelMessage(interaction);
         }
@@ -340,6 +343,7 @@ module.exports = {
     },
 
     async updatePanelMessage(interaction) {
+        console.log("[APPLY DEBUG] Esecuzione updatePanelMessage in corso...");
         const config = await getGuildApplyConfig(interaction.guild.id);
 
         const embed = new EmbedBuilder()
@@ -368,11 +372,15 @@ module.exports = {
                 .setStyle(ButtonStyle.Secondary)
         );
 
-        if (interaction.isModalSubmit()) {
-            return interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
-        } else {
-            return interaction.update({ embeds: [embed], components: [row] });
+        try {
+            if (interaction.isModalSubmit()) {
+                return await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+            } else {
+                return await interaction.update({ embeds: [embed], components: [row] });
+            }
+        } catch (err) {
+            console.error("[APPLY ERROR] Errore critico in updatePanelMessage durante l'invio dell'aggiornamento:", err);
         }
     }
 };
-                    
+                

@@ -4,6 +4,7 @@ const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js"
 const PARTNER_CHANNEL_ID = "1528576179177787642";
 const LOG_CHANNEL_ID     = "1528576197741772902";
 const ALLOWED_ROLE_ID    = "1528576031680630804";
+const PING_ROLE_ID       = "1528576041206022204";
 
 module.exports = {
     data: new SlashCommandBuilder()
@@ -59,12 +60,15 @@ module.exports = {
             });
         }
 
+        // Primo messaggio: Testo della partner
         await partnerChannel.send({ content: descrizione });
 
+        // Secondo messaggio: Blocco info + Ping
         const infoMessage = `🤝 **ELEGANCE SPONSORING ── PARTNERSHIP**\n` +
                             `🏷️ **Categoria:** \`${categoria}\`\n` +
                             `📌 **Rappresentante:** ${rappresentante}\n` +
-                            `👤 **Pubblicato da:** ${interaction.user}`;
+                            `👤 **Pubblicato da:** ${interaction.user}\n` +
+                            `🐚 **Ping Role:** <@&${PING_ROLE_ID}>`;
 
         await partnerChannel.send({ content: infoMessage });
 
@@ -92,4 +96,3 @@ module.exports = {
         });
     }
 };
-    

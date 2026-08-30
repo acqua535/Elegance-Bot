@@ -20,6 +20,7 @@ const setupSchema = new mongoose.Schema({
     applyEnabled: { type: Boolean, default: true }
 }, { timestamps: true });
 
+// Questo controlla se il modello esiste già nella connessione attiva, evitando il crash
 const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
 
 module.exports = Setup;

@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: logSystem.js (VERSIONE FIXATA E BLINDATA)
+// FILE: logSystem.js (PARTE 1 DI 2)
 // ==========================================
 const { 
     SlashCommandBuilder, 
@@ -9,47 +9,50 @@ const {
     ButtonStyle, 
     MessageFlags 
 } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
+const Setup = require("../models/Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
-const SETUPS_PATH = path.join(__dirname, "setups.json");
 
-// Helper per leggere dal file setups.json
-const getSetups = () => {
-    if (!fs.existsSync(SETUPS_PATH)) return {};
+// Helper per salvare o aggiornare la configurazione su MongoDB
+const saveLogSetup = async (guildId, data) => {
     try {
-        return JSON.parse(fs.readFileSync(SETUPS_PATH, "utf8"));
-    } catch {
-        return {};
+        const updateData = {};
+        if (data.logChannel !== undefined) updateData.logChannel = data.logChannel;
+        if (data.enabled !== undefined) updateData.logEnabled = data.enabled;
+
+        return await Setup.findOneAndUpdate(
+            { guildId },
+            { $set: updateData },
+            { upsert: true, new: true }
+        );
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore durante il salvataggio dei Log:", e);
+        return null;
     }
 };
 
-// Helper per salvare la configurazione su setups.json preservando gli altri moduli
-const saveLogSetup = (guildId, data) => {
-    const setups = getSetups();
-    setups[guildId] = {
-        ...setups[guildId],
-        logChannel: data.logChannel !== undefined ? data.logChannel : (setups[guildId]?.logChannel || null),
-        logEnabled: data.enabled !== undefined ? data.enabled : (setups[guildId]?.logEnabled ?? true)
-    };
-    fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
-};
-
-// Ottiene la configurazione salvata per la gilda
-const getGuildLogConfig = (guildId) => {
+// Ottiene la configurazione salvata da MongoDB per la gilda
+const getGuildLogConfig = async (guildId) => {
     if (!guildId) return { logChannel: null, enabled: false };
-    const setups = getSetups();
-    return {
-        logChannel: setups[guildId]?.logChannel || null,
-        enabled: setups[guildId]?.logEnabled ?? true
-    };
+    try {
+        let setup = await Setup.findOne({ guildId });
+        if (!setup) {
+            setup = await Setup.create({ guildId, logChannel: null, logEnabled: true });
+        }
+        return {
+            logChannel: setup.logChannel || null,
+            enabled: setup.logEnabled ?? true
+        };
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore nella lettura della configurazione Log:", e);
+        return { logChannel: null, enabled: false };
+    }
 };
 
 // Funzione helper per inviare gli embed di log
 async function sendLog(guild, title, description, color = 0x2b2d31) {
     if (!guild?.id) return;
-    const config = getGuildLogConfig(guild.id);
+    const config = await getGuildLogConfig(guild.id);
     if (!config.enabled || !config.logChannel) return;
 
     const channel = guild.channels?.cache?.get(config.logChannel);
@@ -78,7 +81,9 @@ module.exports = {
             });
         }
 
-        const config = getGuildLogConfig(interaction.guild?.id);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const config = await getGuildLogConfig(interaction.guild?.id);
 
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO LOG")
@@ -103,7 +108,7 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
         );
 
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        await interaction.editReply({ embeds: [embed], components: [row] });
     },
 
     async buttonHandler(interaction) {
@@ -117,21 +122,21 @@ module.exports = {
         const { customId, channel, guild } = interaction;
         if (!guild) return;
 
-        let currentConfig = getGuildLogConfig(guild.id);
+        let currentConfig = await getGuildLogConfig(guild.id);
 
         if (customId === "log_toggle") {
             const newStatus = !currentConfig.enabled;
-            saveLogSetup(guild.id, { enabled: newStatus });
+            await saveLogSetup(guild.id, { enabled: newStatus });
             currentConfig.enabled = newStatus;
         } else if (customId === "log_set_channel") {
-            saveLogSetup(guild.id, { logChannel: channel.id });
+            await saveLogSetup(guild.id, { logChannel: channel.id });
             currentConfig.logChannel = channel.id;
         }
 
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING ── PANNELLO LOG")
             .setDescription(
-                "Stato della configurazione aggiornato e salvato nel database!\n\n" +
+                "Stato della configurazione aggiornato e salvato su MongoDB Cloud!\n\n" +
                 `📌 **Canale Log Impostato:** ${currentConfig.logChannel ? `<#${currentConfig.logChannel}>` : "`Non impostato`"}\n\n` +
                 `• **Stato Sistema Log:** ${currentConfig.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
@@ -154,8 +159,8 @@ module.exports = {
         await interaction.update({ embeds: [embed], components: [row] });
     },
 
-    // ==========================================
-    // INIZIALIZZAZIONE DEGLI EVENTI LOG (PROTEZIONE CRASH)
+        // ==========================================
+    // INIZIALIZZAZIONE DEGLI EVENTI LOG (PARTE 2 DI 2)
     // ==========================================
     initEvents(client) {
 
@@ -310,7 +315,7 @@ module.exports = {
             }
         });
 
-        // 5. BAN E UNBAN (Punto del crash risolto con optional chaining)
+        // 5. BAN E UNBAN
         client.on("guildBanAdd", async (ban) => {
             try {
                 if (!ban?.guild) return;
@@ -346,4 +351,3 @@ module.exports = {
         });
     }
 };
-                        

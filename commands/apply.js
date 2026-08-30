@@ -1,91 +1,142 @@
+// ==========================================
+// FILE: apply.js (PANNELLO CONFIGURAZIONE + INVIO MESSAGGIO CANDIDATURA)
+// ==========================================
 const { 
     SlashCommandBuilder, 
     EmbedBuilder, 
     ActionRowBuilder, 
     ButtonBuilder, 
     ButtonStyle, 
-    MessageFlags,
-    Collection
+    MessageFlags 
 } = require("discord.js");
-const fs = require("fs");
-const path = require("path");
+
+const Setup = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
-const SETUPS_PATH = path.join(__dirname, "setups.json");
 
-const guildInvites = new Map();
-const userInviteStats = new Map();
-
-const getSetups = () => {
-    if (!fs.existsSync(SETUPS_PATH)) return {};
+// Helper salvataggio MongoDB per Apply
+const saveApplySetup = async (guildId, data) => {
     try {
-        return JSON.parse(fs.readFileSync(SETUPS_PATH, "utf8"));
-    } catch {
-        return {};
+        const updateData = {};
+        if (data.applyChannel !== undefined) updateData.applyChannel = data.applyChannel;
+        if (data.applyEnabled !== undefined) updateData.applyEnabled = data.applyEnabled;
+
+        return await Setup.findOneAndUpdate(
+            { guildId },
+            { $set: updateData },
+            { upsert: true, new: true }
+        );
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore salvataggio Apply:", e);
+        return null;
     }
 };
 
-const saveInvitesSetup = (guildId, data) => {
-    const setups = getSetups();
-    setups[guildId] = {
-        ...setups[guildId],
-        invitesLogChannel: data.logChannel !== undefined ? data.logChannel : (setups[guildId]?.invitesLogChannel || null),
-        invitesEnabled: data.enabled !== undefined ? data.enabled : (setups[guildId]?.invitesEnabled ?? true)
-    };
-    fs.writeFileSync(SETUPS_PATH, JSON.stringify(setups, null, 4));
-};
-
-const getGuildInvitesConfig = (guildId) => {
-    const setups = getSetups();
-    return {
-        logChannel: setups[guildId]?.invitesLogChannel || null,
-        enabled: setups[guildId]?.invitesEnabled ?? true
-    };
+// Helper lettura MongoDB per Apply
+const getGuildApplyConfig = async (guildId) => {
+    if (!guildId) return { applyChannel: null, applyEnabled: true };
+    try {
+        let setup = await Setup.findOne({ guildId });
+        if (!setup) {
+            setup = await Setup.create({ 
+                guildId, 
+                applyChannel: null, 
+                applyEnabled: true 
+            });
+        }
+        return {
+            applyChannel: setup.applyChannel || null,
+            applyEnabled: setup.applyEnabled ?? true
+        };
+    } catch (e) {
+        console.error("[MONGO ERROR] Errore lettura Apply:", e);
+        return { applyChannel: null, applyEnabled: true };
+    }
 };
 
 module.exports = {
     data: new SlashCommandBuilder()
-        .setName("invites")
-        .setDescription("Apre il pannello di controllo della gestione inviti"),
-
-    userInviteStats,
+        .setName("apply")
+        .setDescription("Gestisci il sistema delle Candidature")
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("panel")
+                .setDescription("Apre il pannello di controllo per configurare canale ricezione e stato")
+        )
+        .addSubcommand(subcommand =>
+            subcommand
+                .setName("send")
+                .setDescription("Manda il messaggio pubblico con il bottone per candidarsi")
+        ),
 
     async execute(interaction) {
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
-                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo pannello.",
+                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo comando.",
                 flags: MessageFlags.Ephemeral
             });
         }
 
-        const config = getGuildInvitesConfig(interaction.guild.id);
+        const subcommand = interaction.options.getSubcommand();
+        const guildId = interaction.guild.id;
+        const config = await getGuildApplyConfig(guildId);
 
-        const embed = new EmbedBuilder()
-            .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO INVITI")
-            .setDescription(
-                "Da questo pannello puoi attivare o disattivare il log degli inviti e impostare il canale di notifica.\n\n" +
-                `📌 **Canale Log Inviti:** ${config.logChannel ? `<#${config.logChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
-                `• **Stato Tracciamento:** ${config.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
-            )
-            .setColor(0x00FF99)
-            .setFooter({ text: "Elegance Sponsoring • System Control" })
-            .setTimestamp();
+        // 📌 SUBCOMMAND: /apply panel (Pannello di controllo staff)
+        if (subcommand === "panel") {
+            const embed = new EmbedBuilder()
+                .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO APPLY")
+                .setDescription(
+                    "Da questo pannello puoi gestire e configurare il sistema delle **Candidature**.\n\n" +
+                    `📌 **Canale Ricezione Risposte:** ${config.applyChannel ? `<#${config.applyChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
+                    `• **Stato Sistema:** ${config.applyEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
+                )
+                .setColor(0x00FF99)
+                .setFooter({ text: "Elegance Sponsoring • Apply System Control" })
+                .setTimestamp();
 
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("invites_toggle")
-                .setLabel(config.enabled ? "Disattiva Log" : "Attiva Log")
-                .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("apply_toggle")
+                    .setLabel(config.applyEnabled ? "Disattiva Apply" : "Attiva Apply")
+                    .setStyle(config.applyEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
-            new ButtonBuilder()
-                .setCustomId("invites_set_channel")
-                .setLabel("📌 Imposta Canale Corrente")
-                .setStyle(ButtonStyle.Primary)
-        );
+                new ButtonBuilder()
+                    .setCustomId("apply_set_channel")
+                    .setLabel("📌 Imposta Canale Corrente")
+                    .setStyle(ButtonStyle.Primary)
+            );
 
-        await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+            return interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
+        }
+
+        // 📌 SUBCOMMAND: /apply send (Manda il messaggio con il bottone per candidarsi)
+        if (subcommand === "send") {
+            const embed = new EmbedBuilder()
+                .setTitle("📋 CANDIDATURE ELEGANCE SPONSORING")
+                .setDescription(
+                    "Vuoi entrare a far parte del nostro team?\n\n" +
+                    "Clicca il bottone qui sotto per iniziare la procedura di candidatura e inviare le tue risposte allo staff!"
+                )
+                .setColor(0x00FF99)
+                .setFooter({ text: "Elegance Sponsoring • Staff Recruitment" })
+                .setTimestamp();
+
+            const row = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId("apply_start_button")
+                    .setLabel("📝 Candidati Ora")
+                    .setStyle(ButtonStyle.Success)
+            );
+
+            await interaction.channel.send({ embeds: [embed], components: [row] });
+            return interaction.reply({
+                content: "✅ Messaggio di candidatura inviato con successo in questo canale!",
+                flags: MessageFlags.Ephemeral
+            });
+        }
     },
 
+    // 🔘 Gestione dei pulsanti del pannello
     async buttonHandler(interaction) {
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
@@ -95,34 +146,34 @@ module.exports = {
         }
 
         const { customId, channel, guild } = interaction;
-        let config = getGuildInvitesConfig(guild.id);
+        let config = await getGuildApplyConfig(guild.id);
 
-        if (customId === "invites_toggle") {
-            const newStatus = !config.enabled;
-            saveInvitesSetup(guild.id, { enabled: newStatus });
-            config.enabled = newStatus;
-        } else if (customId === "invites_set_channel") {
-            saveInvitesSetup(guild.id, { logChannel: channel.id });
-            config.logChannel = channel.id;
+        if (customId === "apply_toggle") {
+            const newStatus = !config.applyEnabled;
+            await saveApplySetup(guild.id, { applyEnabled: newStatus });
+            config.applyEnabled = newStatus;
+        } else if (customId === "apply_set_channel") {
+            await saveApplySetup(guild.id, { applyChannel: channel.id });
+            config.applyChannel = channel.id;
         }
 
         const embed = new EmbedBuilder()
-            .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO INVITI")
+            .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO APPLY")
             .setDescription(
-                "Configurazione aggiornata con successo!\n\n" +
-                `📌 **Canale Log Inviti:** <#${config.logChannel || channel.id}>\n` +
-                `• **Stato Tracciamento:** ${config.enabled ? "🟢 Attivo" : "🔴 Disattivato"}`
+                "Configurazione delle candidature aggiornata e salvata su MongoDB Cloud!\n\n" +
+                `📌 **Canale Ricezione Risposte:** <#${config.applyChannel || channel.id}>\n` +
+                `• **Stato Sistema:** ${config.applyEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
             .setColor(0x00FF99);
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId("invites_toggle")
-                .setLabel(config.enabled ? "Disattiva Log" : "Attiva Log")
-                .setStyle(config.enabled ? ButtonStyle.Danger : ButtonStyle.Success),
+                .setCustomId("apply_toggle")
+                .setLabel(config.applyEnabled ? "Disattiva Apply" : "Attiva Apply")
+                .setStyle(config.applyEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
 
             new ButtonBuilder()
-                .setCustomId("invites_set_channel")
+                .setCustomId("apply_set_channel")
                 .setLabel("📌 Imposta Canale Corrente")
                 .setStyle(ButtonStyle.Primary)
         );
@@ -130,73 +181,7 @@ module.exports = {
         await interaction.update({ embeds: [embed], components: [row] });
     },
 
-    async initInvites(guild) {
-        try {
-            const fetches = await guild.invites.fetch();
-            const codeUses = new Collection();
-            fetches.each(inv => codeUses.set(inv.code, inv.uses));
-            guildInvites.set(guild.id, codeUses);
-        } catch (err) {
-            console.error(`Impossibile caricare gli inviti per il server ${guild.id}:`, err);
-        }
-    },
-
-    async handleMemberAdd(member) {
-        const { guild } = member;
-        const config = getGuildInvitesConfig(guild.id);
-        if (!config.enabled) return;
-
-        const cachedInvites = guildInvites.get(guild.id) || new Collection();
-        
-        let inviter = null;
-        let usedCode = null;
-
-        try {
-            const newInvites = await guild.invites.fetch();
-            const usedInvite = newInvites.find(inv => (cachedInvites.get(inv.code) || 0) < inv.uses);
-
-            if (usedInvite) {
-                inviter = usedInvite.inviter;
-                usedCode = usedInvite.code;
-            }
-
-            const updatedCache = new Collection();
-            newInvites.each(inv => updatedCache.set(inv.code, inv.uses));
-            guildInvites.set(guild.id, updatedCache);
-
-        } catch (error) {
-            console.error("Errore nel tracciamento invito:", error);
-        }
-
-        const channelId = config.logChannel || guild.systemChannelId;
-        const channel = guild.channels.cache.get(channelId);
-        if (!channel) return;
-
-        let statsText = "Sconosciuto / Link Vanity / Bot";
-        if (inviter) {
-            const stats = userInviteStats.get(inviter.id) || { total: 0, left: 0, fake: 0 };
-            stats.total += 1;
-            userInviteStats.set(inviter.id, stats);
-            
-            const real = stats.total - stats.left - stats.fake;
-            statsText = `Invitato da **${inviter.tag}** (Codice: \`${usedCode}\`)\n✉️ **${inviter.username}** ha ora **${real}** inviti!`;
-        }
-
-        const embed = new EmbedBuilder()
-            .setTitle("📩 TRACCIAMENTO INVITO - ENTRATA")
-            .setDescription(
-                `L'utente ${member} (\`${member.user.tag}\`) è entrato nel server!\n\n` +
-                `📌 **Dettagli Invito:**\n${statsText}`
-            )
-            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-            .setColor(0x00FF99)
-            .setFooter({ text: "Elegance Sponsoring • Invite Tracker" })
-            .setTimestamp();
-
-        await channel.send({ embeds: [embed] });
-    },
-
-    async handleMemberRemove(member) {
-        // Logica per aggiornare inviti uscite se necessario
-    }
+    getGuildApplyConfig,
+    saveApplySetup
 };
+            

@@ -1,12 +1,12 @@
 // ==========================================
-// FILE: counting.js (VERSIONE BASE ORIGINALE + MONGOOSE)
+// FILE: counting.js (VERSIONE DEFINITIVA CON SALVATAGGIO MONGO CORRETTO)
 // ==========================================
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder, MessageFlags } = require("discord.js");
 const Setup = require("./Setup");
 
 const AI_CHANNEL_ID = "1529276659067523155";
 
-// Helper salvataggio MongoDB per il Counting
+// Helper salvataggio MongoDB per il Counting (preso pari pari dallo stile di entry.js)
 const saveCountingSetup = async (guildId, data) => {
     try {
         const updateData = {};
@@ -88,12 +88,8 @@ module.exports = {
 
             const targetChannel = interaction.options.getChannel("canale");
 
-            // Salvataggio su MongoDB Cloud
+            // Salvataggio sicuro su MongoDB Cloud
             await saveCountingSetup(guildId, { countingChannel: targetChannel.id });
-
-            if (interaction.client.setCountingChannel) {
-                interaction.client.setCountingChannel(targetChannel.id);
-            }
 
             const embed = new EmbedBuilder()
                 .setTitle("🔢 Canale Counting Configurato!")
@@ -129,7 +125,7 @@ module.exports = {
         }
     },
 
-    // 🛡️ Gestione Eventi Messaggi del Counting esatto come lo volevi
+    // 🛡️ Gestione Eventi Messaggi
     initEvents(client) {
         client.on("messageCreate", async (message) => {
             try {
@@ -141,7 +137,7 @@ module.exports = {
                 const content = message.content.trim();
                 if (!content) return;
 
-                // Gestione comandi AI se siamo nel canale dedicato e l'AI è attiva
+                // Gestione comandi AI nel canale dedicato se l'AI è attiva
                 if (message.channel.id === AI_CHANNEL_ID && config.aiEnabled) {
                     if (content.toLowerCase() === "inizia") {
                         const nextNum = 1;
@@ -163,7 +159,7 @@ module.exports = {
 
                 // Estrae il numero dall'inizio del messaggio
                 const match = content.match(/^(\d+)/);
-                if (!match) return; // Se è testo semplice senza numero, lascia chattare senza rompere le scatole
+                if (!match) return; // Se è testo semplice, ignora
 
                 const guessedNumber = parseInt(match[1], 10);
                 const expectedNumber = config.currentNumber + 1;
@@ -184,7 +180,7 @@ module.exports = {
                     });
                     await message.react("✅").catch(() => {});
 
-                    // Se l'AI è attiva nel counting e il bot deve rispondere
+                    // Risposta automatica dell'AI se attiva nel canale
                     if (config.aiEnabled && message.channel.id === AI_CHANNEL_ID) {
                         const aiNextNumber = expectedNumber + 1;
                         setTimeout(async () => {
@@ -213,4 +209,3 @@ module.exports = {
     getGuildCountingConfig,
     saveCountingSetup
 };
-    

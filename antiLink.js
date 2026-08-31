@@ -11,7 +11,7 @@ const {
 } = require("discord.js");
 
 // 🛡️ Import diretto e pulito dalla root principale
-const Setup = require("./Setup");
+const { Setup } = require("./Setup");
 const moderation = require("./moderationSystem");
 
 const STAFF_ROLE_ID = "1528576014446231683";

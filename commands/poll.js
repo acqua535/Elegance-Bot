@@ -1,13 +1,13 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
-const { Poll, PollLog } = require("./Setup");
+const { Poll, Setup } = require("./Setup");
 
 const ALLOWED_ROLE_ID = "1528576032670482502";
 
 async function sendPollLog(client, guildId, embed) {
     try {
-        const logConfig = await PollLog.findOne({ guildId });
-        if (!logConfig) return;
-        const channel = await client.channels.fetch(logConfig.channelId);
+        const config = await Setup.findOne({ guildId });
+        if (!config || !config.pollLogChannel) return;
+        const channel = await client.channels.fetch(config.pollLogChannel);
         if (channel) {
             await channel.send({ embeds: [embed] });
         }
@@ -327,4 +327,4 @@ async function chiudiSondaggio(client, messageId, tipoChiusura = "scadenza", chi
 
 module.exports.chiudiSondaggio = chiudiSondaggio;
 module.exports.handlePollInteraction = handlePollInteraction;
-    
+                                                       

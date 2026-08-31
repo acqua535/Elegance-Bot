@@ -182,4 +182,3 @@ async function chiudiSondaggio(client, messageId) {
 }
 
 module.exports.chiudiSondaggio = chiudiSondaggio;
-            

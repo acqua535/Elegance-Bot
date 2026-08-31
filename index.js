@@ -1,6 +1,3 @@
-// ==========================================
-// FILE: index.js (VERSIONE COMPLETA E CORRETTA)
-// ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
@@ -55,6 +52,8 @@ const logSystem = loadSafe("./logSystem");
 const countingSystem = loadSafe("./countingSystem"); 
 const antiLink = loadSafe("./antiLink");
 const stickyEvents = loadSafe("./stickyEvents");
+const { Poll } = require("./Setup");
+const pollModule = loadSafe("./poll");
 
 // --- INIZIALIZZAZIONE CLIENT DISCORD ---
 const client = new Client({
@@ -91,6 +90,31 @@ client.once("clientReady", async () => {
     if (stickyEvents && typeof stickyEvents.initEvents === "function") {
         console.log("[INDEX] 📌 Avvio del listener per eventi Sticky...");
         stickyEvents.initEvents(client);
+    }
+
+    // --- RIPRISTINO SONDAGGI ATTIVI AL RIAVVIO ---
+    try {
+        const now = Date.now();
+        const activePolls = await Poll.find({ ended: false });
+        for (const poll of activePolls) {
+            const timeLeft = poll.endTime - now;
+            if (timeLeft <= 0) {
+                if (pollModule && typeof pollModule.chiudiSondaggio === "function") {
+                    await pollModule.chiudiSondaggio(client, poll.messageId);
+                }
+            } else {
+                setTimeout(() => {
+                    if (pollModule && typeof pollModule.chiudiSondaggio === "function") {
+                        pollModule.chiudiSondaggio(client, poll.messageId);
+                    }
+                }, timeLeft);
+            }
+        }
+        if (activePolls.length > 0) {
+            console.log(`[INDEX] 📊 Ripristinati ${activePolls.length} sondaggi attivi.`);
+        }
+    } catch (err) {
+        console.error("❌ Errore nel ripristino dei sondaggi:", err);
     }
 
     console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
@@ -180,4 +204,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-            
+                

@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, PermissionFlagsBits } = require("discord.js");
-const Poll = require("../Setup");
+const Poll = require("./Setup");
 
 module.exports = {
     data: new SlashCommandBuilder()

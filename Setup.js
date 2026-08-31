@@ -17,7 +17,10 @@ const setupSchema = new mongoose.Schema({
 
     // --- CANDIDATURE (APPLY) ---
     applyChannel: { type: String, default: null },
-    applyEnabled: { type: Boolean, default: true }
+    applyEnabled: { type: Boolean, default: true },
+
+    // --- POLL LOG SYSTEM ---
+    pollLogChannel: { type: String, default: null }
 }, { timestamps: true });
 
 // --- SCHEMA PER I SONDAGGI (POLL) ---

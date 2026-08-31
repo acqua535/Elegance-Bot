@@ -10,7 +10,7 @@ const {
     MessageFlags 
 } = require("discord.js");
 
-const Setup = require("./Setup");
+const { Setup } = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 

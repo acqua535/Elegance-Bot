@@ -20,7 +20,7 @@ const antiLink = loadSafe("./antiLink");
 const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
-const pollSystem = loadSafe("./pollSystem");
+const poll = loadSafe("./poll"); // <-- FIX ESSENZIALE: Punta a poll.js e non a pollSystem
 
 const handleRolePanelInteraction = async (interaction) => {
     const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
@@ -95,13 +95,13 @@ const baseRegistry = {
 
     // --- POLL SYSTEM ---
     "poll_close_early": async (interaction) => {
-        if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
-            await pollSystem.handlePollInteraction(interaction);
+        if (poll && typeof poll.handlePollInteraction === 'function') {
+            await poll.handlePollInteraction(interaction);
         }
     },
     "poll_voters_info": async (interaction) => {
-        if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
-            await pollSystem.handlePollInteraction(interaction);
+        if (poll && typeof poll.handlePollInteraction === 'function') {
+            await poll.handlePollInteraction(interaction);
         }
     }
 };
@@ -124,8 +124,8 @@ const registryProxy = new Proxy(baseRegistry, {
             }
             if (prop.startsWith("poll_")) {
                 return async (interaction) => {
-                    if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
-                        await pollSystem.handlePollInteraction(interaction);
+                    if (poll && typeof poll.handlePollInteraction === 'function') {
+                        await poll.handlePollInteraction(interaction);
                     }
                 };
             }

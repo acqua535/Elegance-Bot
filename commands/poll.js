@@ -21,16 +21,6 @@ module.exports = {
                 .setRequired(true)
         )
         .addStringOption(option =>
-            option.setName("opzione3")
-                .setDescription("Terza opzione (opzionale)")
-                .setRequired(false)
-        )
-        .addStringOption(option =>
-            option.setName("opzione4")
-                .setDescription("Quarta opzione (opzionale)")
-                .setRequired(false)
-        )
-        .addStringOption(option =>
             option.setName("multipla")
                 .setDescription("Permetti di votare più opzioni?")
                 .setRequired(true)
@@ -57,6 +47,16 @@ module.exports = {
                     { name: "6 Giorni", value: "6d" },
                     { name: "7 Giorni", value: "7d" }
                 )
+        )
+        .addStringOption(option =>
+            option.setName("opzione3")
+                .setDescription("Terza opzione (opzionale)")
+                .setRequired(false)
+        )
+        .addStringOption(option =>
+            option.setName("opzione4")
+                .setDescription("Quarta opzione (opzionale)")
+                .setRequired(false)
         )
         .setDefaultMemberPermissions(PermissionFlagsBits.ManageMessages),
 
@@ -182,3 +182,4 @@ async function chiudiSondaggio(client, messageId) {
 }
 
 module.exports.chiudiSondaggio = chiudiSondaggio;
+            

@@ -20,7 +20,21 @@ const setupSchema = new mongoose.Schema({
     applyEnabled: { type: Boolean, default: true }
 }, { timestamps: true });
 
-// Questo controlla se il modello esiste già nella connessione attiva, evitando il crash
-const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
+// --- SCHEMA PER I SONDAGGI (POLL) ---
+const pollSchema = new mongoose.Schema({
+    messageId: { type: String, required: true, unique: true },
+    guildId: { type: String, required: true },
+    channelId: { type: String, required: true },
+    question: { type: String, required: true },
+    options: { type: [String], required: true },
+    isMultiple: { type: Boolean, default: false },
+    endTime: { type: Number, required: true },
+    votes: { type: Map, of: [Number], default: {} },
+    ended: { type: Boolean, default: false }
+}, { timestamps: true });
 
-module.exports = Setup;
+// Questo controlla se i modelli esistono già nella connessione attiva, evitando il crash
+const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
+const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
+
+module.exports = { Setup, Poll };

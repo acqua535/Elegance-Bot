@@ -45,28 +45,10 @@ module.exports = {
                 .setRequired(true)
                 .addChoices(
                     { name: "1 Ora", value: "1h" },
-                    { name: "2 Ore", value: "2h" },
                     { name: "3 Ore", value: "3h" },
-                    { name: "4 Ore", value: "4h" },
-                    { name: "5 Ore", value: "5h" },
                     { name: "6 Ore", value: "6h" },
-                    { name: "7 Ore", value: "7h" },
-                    { name: "8 Ore", value: "8h" },
-                    { name: "9 Ore", value: "9h" },
-                    { name: "10 Ore", value: "10h" },
-                    { name: "11 Ore", value: "11h" },
                     { name: "12 Ore", value: "12h" },
-                    { name: "13 Ore", value: "13h" },
-                    { name: "14 Ore", value: "14h" },
-                    { name: "15 Ore", value: "15h" },
-                    { name: "16 Ore", value: "16h" },
-                    { name: "17 Ore", value: "17h" },
                     { name: "18 Ore", value: "18h" },
-                    { name: "19 Ore", value: "19h" },
-                    { name: "20 Ore", value: "20h" },
-                    { name: "21 Ore", value: "21h" },
-                    { name: "22 Ore", value: "22h" },
-                    { name: "23 Ore", value: "23h" },
                     { name: "1 Giorno", value: "1d" },
                     { name: "2 Giorni", value: "2d" },
                     { name: "3 Giorni", value: "3d" },
@@ -87,7 +69,6 @@ module.exports = {
             interaction.options.getString("opzione4")
         ];
         
-        // Filtra solo le opzioni effettivamente inserite dall'utente
         const options = rawOptions.filter(Boolean);
         const isMultiple = interaction.options.getString("multipla") === "yes";
         const durationStr = interaction.options.getString("durata");
@@ -102,7 +83,6 @@ module.exports = {
         const endTime = Date.now() + msDuration;
         const emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
 
-        // Embed BLU per il sondaggio attivo
         const embed = new EmbedBuilder()
             .setColor("#0099FF")
             .setTitle("📊 Sondaggio")
@@ -110,7 +90,6 @@ module.exports = {
             .setFooter({ text: `Creato da ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
             .setTimestamp();
 
-        // Crea dinamicamente solo i bottoni corrispondenti alle opzioni inserite
         const row = new ActionRowBuilder();
         options.forEach((_, i) => {
             row.addComponents(
@@ -121,7 +100,6 @@ module.exports = {
             );
         });
 
-        // Aggiungiamo anche i pulsanti di controllo extra (Chiusura anticipata e Info voti)
         const controlRow = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
                 .setCustomId("poll_close_early")
@@ -135,7 +113,6 @@ module.exports = {
 
         const message = await interaction.reply({ embeds: [embed], components: [row, controlRow], fetchReply: true });
 
-        // Salva il sondaggio su MongoDB garantendo la persistenza anche se il bot va offline
         await Poll.create({
             messageId: message.id,
             guildId: interaction.guild.id,
@@ -148,14 +125,12 @@ module.exports = {
             ended: false
         });
 
-        // Pianifica la chiusura automatica
         setTimeout(() => {
             chiudiSondaggio(message.client, message.id);
         }, msDuration);
     }
 };
 
-// Funzione globale o esportata per chiudere il sondaggio e calcolare le percentuali
 async function chiudiSondaggio(client, messageId) {
     const poll = await Poll.findOne({ messageId, ended: false });
     if (!poll) return;
@@ -181,12 +156,12 @@ async function chiudiSondaggio(client, messageId) {
         const percent = totalVotes > 0 ? ((count / totalVotes) * 100).toFixed(1) : 0;
         const barLength = Math.round(percent / 10);
         const bar = "█".repeat(barLength) + "░".repeat(10 - barLength);
-        resultsDesc += `1️⃣2️⃣3️⃣4️⃣`[i] ? `${["1️⃣", "2️⃣", "3️⃣", "4️⃣"][i]} **${opt}**\n${bar} ${percent}% (${count} voti)\n\n` : "";
+        const emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
+        resultsDesc += `${emojis[i]} **${opt}**\n${bar} ${percent}% (${count} voti)\n\n`;
     });
 
     resultsDesc += `📦 **Totale voti unici registrati:** ${totalVotes}`;
 
-    // Embed NERO per il sondaggio concluso
     const closedEmbed = new EmbedBuilder()
         .setColor("#2b2d31")
         .setTitle("📊 Sondaggio Concluso")
@@ -207,4 +182,3 @@ async function chiudiSondaggio(client, messageId) {
 }
 
 module.exports.chiudiSondaggio = chiudiSondaggio;
-  

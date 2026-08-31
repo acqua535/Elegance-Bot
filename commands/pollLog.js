@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require("discord.js");
-const { PollLog } = require("./Setup");
+const { Setup } = require("./Setup");
 
 const ALLOWED_ROLE_ID = "1528576032670482502";
 
@@ -16,31 +16,21 @@ module.exports = {
 
     async execute(interaction) {
         if (!interaction.member.roles.cache.has(ALLOWED_ROLE_ID) && !interaction.member.permissions.has(PermissionFlagsBits.ManageGuild)) {
-            return await interaction.reply({
-                content: "❌ Non hai i permessi necessari (ruolo Community Support o Gestione Server) per configurare i log dei sondaggi.",
-                ephemeral: true
-            });
+            return await interaction.reply({ content: "❌ Non hai i permessi necessari.", ephemeral: true });
         }
 
         const targetChannel = interaction.options.getChannel("canale");
 
-        if (!targetChannel.isTextBased()) {
-            return await interaction.reply({
-                content: "❌ Devi selezionare un canale testuale valido.",
-                ephemeral: true
-            });
-        }
-
-        await PollLog.findOneAndUpdate(
+        await Setup.findOneAndUpdate(
             { guildId: interaction.guild.id },
-            { channelId: targetChannel.id },
+            { pollLogChannel: targetChannel.id },
             { upsert: true, new: true }
         );
 
         const embed = new EmbedBuilder()
             .setColor("#00FFCC")
             .setTitle("📊 Configurazione Log Sondaggi")
-            .setDescription(`Il canale dei log per i sondaggi è stato impostato con successo su ${targetChannel}!`)
+            .setDescription(`Canale impostato su ${targetChannel}!`)
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed], ephemeral: true });

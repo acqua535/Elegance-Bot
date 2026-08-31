@@ -1,7 +1,3 @@
-// ==========================================
-// FILE: registry.js
-// ==========================================
-
 function loadSafe(path) {
     try {
         return require(path);
@@ -24,6 +20,7 @@ const antiLink = loadSafe("./antiLink");
 const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
+const pollSystem = loadSafe("./pollSystem");
 
 const handleRolePanelInteraction = async (interaction) => {
     const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
@@ -94,10 +91,22 @@ const baseRegistry = {
 
     // --- ANTI-LINK SYSTEM ---
     "antilink_toggle": antiLink.buttonHandler,
-    "antilink_set_channel": antiLink.buttonHandler
+    "antilink_set_channel": antiLink.buttonHandler,
+
+    // --- POLL SYSTEM ---
+    "poll_close_early": async (interaction) => {
+        if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
+            await pollSystem.handlePollInteraction(interaction);
+        }
+    },
+    "poll_voters_info": async (interaction) => {
+        if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
+            await pollSystem.handlePollInteraction(interaction);
+        }
+    }
 };
 
-// Routing dinamico potenziato per catturare qualsiasi customId dinamico o fisso che inizia con apply_
+// Routing dinamico potenziato per catturare qualsiasi customId dinamico o fisso che inizia con apply_ o poll_
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (prop in target) {
@@ -112,6 +121,13 @@ const registryProxy = new Proxy(baseRegistry, {
                     return apply.modalHandler;
                 }
                 return apply.buttonHandler;
+            }
+            if (prop.startsWith("poll_")) {
+                return async (interaction) => {
+                    if (pollSystem && typeof pollSystem.handlePollInteraction === 'function') {
+                        await pollSystem.handlePollInteraction(interaction);
+                    }
+                };
             }
         }
         return undefined;

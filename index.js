@@ -71,7 +71,10 @@ const client = new Client({
         Partials.Channel,
         Partials.Reaction,
         Partials.GuildMember
-    ]
+    ],
+    rest: {
+        timeout: 30000
+    }
 });
 
 client.commands = new Collection();
@@ -204,4 +207,3 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-                

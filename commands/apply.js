@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: apply.js
+// ==========================================
 const { 
     SlashCommandBuilder, 
     EmbedBuilder, 
@@ -373,14 +376,11 @@ module.exports = {
         );
 
         try {
-            if (interaction.isModalSubmit()) {
-                return await interaction.reply({ embeds: [embed], components: [row], flags: MessageFlags.Ephemeral });
-            } else {
-                return await interaction.update({ embeds: [embed], components: [row] });
-            }
+            // Usiamo sempre interaction.update() così aggiorna pulitamente il pannello, anche dopo il modale!
+            return await interaction.update({ embeds: [embed], components: [row] });
         } catch (err) {
-            console.error("[APPLY ERROR] Errore critico in updatePanelMessage durante l'invio dell'aggiornamento:", err);
+            console.error("[APPLY ERROR] Errore critico in updatePanelMessage durante l'aggiornamento:", err);
         }
     }
 };
-                    
+            

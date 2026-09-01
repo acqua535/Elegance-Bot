@@ -56,11 +56,50 @@ const getGuildEntryConfig = async (guildId) => {
     }
 };
 
+// Generatore Pannello Centralizzato (Ora isolato e sicuro dal problema del 'this')
+const sendPanel = async (interaction, config, isInitial) => {
+    const embed = new EmbedBuilder()
+        .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
+        .setDescription(
+            "Da questo pannello puoi gestire e configurare il sistema di **Benvenuto** e **Addio** per il server.\n\n" +
+            `📌 **Canale Benvenuto:** ${config.welcomeChannel ? `<#${config.welcomeChannel}>` : "`Da Impostare (Usa Bottone)`"}\n` +
+            `📌 **Canale Addio:** ${config.leaveChannel ? `<#${config.leaveChannel}>` : "`Da Impostare (Usa Bottone)`"}\n\n` +
+            `• **Stato Benvenuto:** ${config.welcomeEnabled ? "🟢 Attivo" : "🔴 Disattivato"}\n` +
+            `• **Stato Addio:** ${config.leaveEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
+        )
+        .setColor(0x00FF99)
+        .setFooter({ text: "Elegance Sponsoring • System Control" })
+        .setTimestamp();
+
+    const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+            .setCustomId("entry_toggle_welcome")
+            .setLabel(config.welcomeEnabled ? "Disattiva Benvenuto" : "Attiva Benvenuto")
+            .setStyle(config.welcomeEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
+
+        new ButtonBuilder()
+            .setCustomId("entry_toggle_leave")
+            .setLabel(config.leaveEnabled ? "Disattiva Addio" : "Attiva Addio")
+            .setStyle(config.leaveEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
+
+        new ButtonBuilder()
+            .setCustomId("entry_set_channel")
+            .setLabel("📌 Imposta Canale Corrente")
+            .setStyle(ButtonStyle.Primary)
+    );
+
+    if (isInitial) {
+        await interaction.editReply({ embeds: [embed], components: [row] });
+    } else {
+        await interaction.update({ embeds: [embed], components: [row] });
+    }
+};
+
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("entry")
         .setDescription("Gestisci i messaggi di Benvenuto e Addio del server")
-        .setDefaultMemberPermissions(0), // Visibile solo agli admin
+        .setDefaultMemberPermissions(0),
 
     async execute(interaction) {
         console.log(`[ENTRY SYSTEM] 📥 Comando eseguito da ${interaction.user.tag}`);
@@ -73,7 +112,9 @@ module.exports = {
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const config = await getGuildEntryConfig(interaction.guild.id);
-        await this.sendPanel(interaction, config, true);
+        
+        // Chiamata diretta senza 'this.'
+        await sendPanel(interaction, config, true);
     },
 
     async buttonHandler(interaction) {
@@ -103,46 +144,9 @@ module.exports = {
         }
 
         await saveEntrySetup(guild.id, updates);
-        await this.sendPanel(interaction, config, false);
-    },
-
-    // Generatore Pannello Centralizzato
-    async sendPanel(interaction, config, isInitial) {
-        const embed = new EmbedBuilder()
-            .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
-            .setDescription(
-                "Da questo pannello puoi gestire e configurare il sistema di **Benvenuto** e **Addio** per il server.\n\n" +
-                `📌 **Canale Benvenuto:** ${config.welcomeChannel ? `<#${config.welcomeChannel}>` : "`Da Impostare (Usa Bottone)`"}\n` +
-                `📌 **Canale Addio:** ${config.leaveChannel ? `<#${config.leaveChannel}>` : "`Da Impostare (Usa Bottone)`"}\n\n` +
-                `• **Stato Benvenuto:** ${config.welcomeEnabled ? "🟢 Attivo" : "🔴 Disattivato"}\n` +
-                `• **Stato Addio:** ${config.leaveEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
-            )
-            .setColor(0x00FF99)
-            .setFooter({ text: "Elegance Sponsoring • System Control" })
-            .setTimestamp();
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("entry_toggle_welcome")
-                .setLabel(config.welcomeEnabled ? "Disattiva Benvenuto" : "Attiva Benvenuto")
-                .setStyle(config.welcomeEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
-
-            new ButtonBuilder()
-                .setCustomId("entry_toggle_leave")
-                .setLabel(config.leaveEnabled ? "Disattiva Addio" : "Attiva Addio")
-                .setStyle(config.leaveEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
-
-            new ButtonBuilder()
-                .setCustomId("entry_set_channel")
-                .setLabel("📌 Imposta Canale Corrente")
-                .setStyle(ButtonStyle.Primary)
-        );
-
-        if (isInitial) {
-            await interaction.editReply({ embeds: [embed], components: [row] });
-        } else {
-            await interaction.update({ embeds: [embed], components: [row] });
-        }
+        
+        // Chiamata diretta senza 'this.'
+        await sendPanel(interaction, config, false);
     },
 
     initEvents(client) {
@@ -214,4 +218,4 @@ module.exports = {
         });
     }
 };
-                                            
+    

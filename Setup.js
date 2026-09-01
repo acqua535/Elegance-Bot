@@ -12,8 +12,10 @@ const setupSchema = new mongoose.Schema({
     antiLinkEnabled: { type: Boolean, default: false },
 
     // --- ENTRY (BENVENUTO / ADDIO) ---
-    entryChannel: { type: String, default: null },
-    entryRole: { type: String, default: null },
+    welcomeChannel: { type: String, default: null },
+    leaveChannel: { type: String, default: null },
+    welcomeEnabled: { type: Boolean, default: true },
+    leaveEnabled: { type: Boolean, default: true },
 
     // --- CANDIDATURE (APPLY) ---
     applyChannel: { type: String, default: null },

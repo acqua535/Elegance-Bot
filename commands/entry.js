@@ -14,40 +14,36 @@ const { Setup } = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 
-// Helper salvataggio MongoDB per Entry
+// Helper salvataggio MongoDB con Logging
 const saveEntrySetup = async (guildId, data) => {
     try {
-        const updateData = {};
-        if (data.welcomeChannel !== undefined) updateData.welcomeChannel = data.welcomeChannel;
-        if (data.leaveChannel !== undefined) updateData.leaveChannel = data.leaveChannel;
-        if (data.welcomeEnabled !== undefined) updateData.welcomeEnabled = data.welcomeEnabled;
-        if (data.leaveEnabled !== undefined) updateData.leaveEnabled = data.leaveEnabled;
-
-        return await Setup.findOneAndUpdate(
+        console.log(`[ENTRY SYSTEM] 💾 Salvataggio dati per guild ${guildId}:`, data);
+        const result = await Setup.findOneAndUpdate(
             { guildId },
-            { $set: updateData },
+            { $set: data },
             { upsert: true, new: true }
         );
+        console.log(`[ENTRY SYSTEM] ✅ Salvataggio DB riuscito!`);
+        return result;
     } catch (e) {
-        console.error("[MONGO ERROR] Errore salvataggio Entry:", e);
+        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile salvare DB per guild ${guildId}:`, e);
         return null;
     }
 };
 
-// Helper lettura MongoDB per Entry
+// Helper lettura MongoDB con Logging
 const getGuildEntryConfig = async (guildId) => {
     if (!guildId) return { welcomeChannel: null, leaveChannel: null, welcomeEnabled: true, leaveEnabled: true };
     try {
+        console.log(`[ENTRY SYSTEM] 🔍 Lettura configurazione per guild ${guildId}...`);
         let setup = await Setup.findOne({ guildId });
+        
         if (!setup) {
-            setup = await Setup.create({ 
-                guildId, 
-                welcomeChannel: null, 
-                leaveChannel: null, 
-                welcomeEnabled: true, 
-                leaveEnabled: true 
-            });
+            console.log(`[ENTRY SYSTEM] ⚠️ Documento non trovato. Ne creo uno nuovo.`);
+            setup = await Setup.create({ guildId, welcomeEnabled: true, leaveEnabled: true });
         }
+        
+        console.log(`[ENTRY SYSTEM] ✅ Dati letti con successo.`);
         return {
             welcomeChannel: setup.welcomeChannel || null,
             leaveChannel: setup.leaveChannel || null,
@@ -55,7 +51,7 @@ const getGuildEntryConfig = async (guildId) => {
             leaveEnabled: setup.leaveEnabled ?? true
         };
     } catch (e) {
-        console.error("[MONGO ERROR] Errore lettura Entry:", e);
+        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile leggere DB per guild ${guildId}:`, e);
         return { welcomeChannel: null, leaveChannel: null, welcomeEnabled: true, leaveEnabled: true };
     }
 };
@@ -63,9 +59,11 @@ const getGuildEntryConfig = async (guildId) => {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("entry")
-        .setDescription("Gestisci i messaggi di Benvenuto e Addio del server"),
+        .setDescription("Gestisci i messaggi di Benvenuto e Addio del server")
+        .setDefaultMemberPermissions(0), // Visibile solo agli admin
 
     async execute(interaction) {
+        console.log(`[ENTRY SYSTEM] 📥 Comando eseguito da ${interaction.user.tag}`);
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo pannello.",
@@ -74,15 +72,48 @@ module.exports = {
         }
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
         const config = await getGuildEntryConfig(interaction.guild.id);
+        await this.sendPanel(interaction, config, true);
+    },
 
+    async buttonHandler(interaction) {
+        console.log(`[ENTRY SYSTEM] 🔘 Bottone premuto: ${interaction.customId} da ${interaction.user.tag}`);
+        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+            return interaction.reply({
+                content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
+                flags: MessageFlags.Ephemeral
+            });
+        }
+
+        const { customId, channel, guild } = interaction;
+        const config = await getGuildEntryConfig(guild.id);
+        const updates = {};
+
+        if (customId === "entry_toggle_welcome") {
+            updates.welcomeEnabled = !config.welcomeEnabled;
+            config.welcomeEnabled = updates.welcomeEnabled;
+        } else if (customId === "entry_toggle_leave") {
+            updates.leaveEnabled = !config.leaveEnabled;
+            config.leaveEnabled = updates.leaveEnabled;
+        } else if (customId === "entry_set_channel") {
+            updates.welcomeChannel = channel.id;
+            updates.leaveChannel = channel.id;
+            config.welcomeChannel = channel.id;
+            config.leaveChannel = channel.id;
+        }
+
+        await saveEntrySetup(guild.id, updates);
+        await this.sendPanel(interaction, config, false);
+    },
+
+    // Generatore Pannello Centralizzato
+    async sendPanel(interaction, config, isInitial) {
         const embed = new EmbedBuilder()
             .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
             .setDescription(
                 "Da questo pannello puoi gestire e configurare il sistema di **Benvenuto** e **Addio** per il server.\n\n" +
-                `📌 **Canale Benvenuto:** ${config.welcomeChannel ? `<#${config.welcomeChannel}>` : "`Non impostato (Usa canale corrente)`"}\n` +
-                `📌 **Canale Addio:** ${config.leaveChannel ? `<#${config.leaveChannel}>` : "`Non impostato (Usa canale corrente)`"}\n\n` +
+                `📌 **Canale Benvenuto:** ${config.welcomeChannel ? `<#${config.welcomeChannel}>` : "`Da Impostare (Usa Bottone)`"}\n` +
+                `📌 **Canale Addio:** ${config.leaveChannel ? `<#${config.leaveChannel}>` : "`Da Impostare (Usa Bottone)`"}\n\n` +
                 `• **Stato Benvenuto:** ${config.welcomeEnabled ? "🟢 Attivo" : "🔴 Disattivato"}\n` +
                 `• **Stato Addio:** ${config.leaveEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
             )
@@ -107,73 +138,25 @@ module.exports = {
                 .setStyle(ButtonStyle.Primary)
         );
 
-        await interaction.editReply({ embeds: [embed], components: [row] });
-    },
-
-    async buttonHandler(interaction) {
-        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
-            return interaction.reply({
-                content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
-                flags: MessageFlags.Ephemeral
-            });
+        if (isInitial) {
+            await interaction.editReply({ embeds: [embed], components: [row] });
+        } else {
+            await interaction.update({ embeds: [embed], components: [row] });
         }
-
-        const { customId, channel, guild } = interaction;
-        let config = await getGuildEntryConfig(guild.id);
-
-        if (customId === "entry_toggle_welcome") {
-            const newStatus = !config.welcomeEnabled;
-            await saveEntrySetup(guild.id, { welcomeEnabled: newStatus });
-            config.welcomeEnabled = newStatus;
-        } else if (customId === "entry_toggle_leave") {
-            const newStatus = !config.leaveEnabled;
-            await saveEntrySetup(guild.id, { leaveEnabled: newStatus });
-            config.leaveEnabled = newStatus;
-        } else if (customId === "entry_set_channel") {
-            await saveEntrySetup(guild.id, { welcomeChannel: channel.id, leaveChannel: channel.id });
-            config.welcomeChannel = channel.id;
-            config.leaveChannel = channel.id;
-        }
-
-        const embed = new EmbedBuilder()
-            .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
-            .setDescription(
-                "Stato della configurazione aggiornato e salvato su MongoDB Cloud!\n\n" +
-                `📌 **Canale Impostato:** <#${config.welcomeChannel || channel.id}>\n\n` +
-                `• **Stato Benvenuto:** ${config.welcomeEnabled ? "🟢 Attivo" : "🔴 Disattivato"}\n` +
-                `• **Stato Addio:** ${config.leaveEnabled ? "🟢 Attivo" : "🔴 Disattivato"}`
-            )
-            .setColor(0x00FF99);
-
-        const row = new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-                .setCustomId("entry_toggle_welcome")
-                .setLabel(config.welcomeEnabled ? "Disattiva Benvenuto" : "Attiva Benvenuto")
-                .setStyle(config.welcomeEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
-
-            new ButtonBuilder()
-                .setCustomId("entry_toggle_leave")
-                .setLabel(config.leaveEnabled ? "Disattiva Addio" : "Attiva Addio")
-                .setStyle(config.leaveEnabled ? ButtonStyle.Danger : ButtonStyle.Success),
-
-            new ButtonBuilder()
-                .setCustomId("entry_set_channel")
-                .setLabel("📌 Imposta Canale Corrente")
-                .setStyle(ButtonStyle.Primary)
-        );
-
-        await interaction.update({ embeds: [embed], components: [row] });
     },
 
     initEvents(client) {
         client.on("guildMemberAdd", async (member) => {
+            console.log(`[ENTRY SYSTEM] 👤 Trigger Benvenuto: Entrato ${member.user.tag}`);
             try {
                 const config = await getGuildEntryConfig(member.guild.id);
-                if (!config.welcomeEnabled) return;
+                if (!config.welcomeEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Benvenuto spento, ignoro.`);
 
                 const channelId = config.welcomeChannel || member.guild.systemChannelId;
+                if (!channelId) return console.log(`[ENTRY SYSTEM] ⚠️ Nessun canale impostato.`);
+
                 const channel = member.guild.channels.cache.get(channelId);
-                if (!channel) return;
+                if (!channel) return console.log(`[ENTRY SYSTEM] ⚠️ Canale ${channelId} non in cache.`);
 
                 const embed = new EmbedBuilder()
                     .setTitle("👋 ELEGANCE SPONSORING - BENVENUTO/A!")
@@ -194,17 +177,21 @@ module.exports = {
                     .setTimestamp();
 
                 await channel.send({ content: `👋 Benvenuto/a ${member}!`, embeds: [embed] });
+                console.log(`[ENTRY SYSTEM] ✅ Benvenuto inviato!`);
             } catch (e) {
-                console.error("[LOG ERROR] guildMemberAdd:", e);
+                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberAdd:", e);
             }
         });
 
         client.on("guildMemberRemove", async (member) => {
+            console.log(`[ENTRY SYSTEM] 👤 Trigger Addio: Uscito ${member.user.tag}`);
             try {
                 const config = await getGuildEntryConfig(member.guild.id);
-                if (!config.leaveEnabled) return;
+                if (!config.leaveEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Addio spento, ignoro.`);
 
                 const channelId = config.leaveChannel || member.guild.systemChannelId;
+                if (!channelId) return;
+
                 const channel = member.guild.channels.cache.get(channelId);
                 if (!channel) return;
 
@@ -220,10 +207,11 @@ module.exports = {
                     .setTimestamp();
 
                 await channel.send({ embeds: [embed] });
+                console.log(`[ENTRY SYSTEM] ✅ Addio inviato!`);
             } catch (e) {
-                console.error("[LOG ERROR] guildMemberRemove:", e);
+                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberRemove:", e);
             }
         });
     }
 };
-                          
+                                            

@@ -56,7 +56,7 @@ const getGuildEntryConfig = async (guildId) => {
     }
 };
 
-// Generatore Pannello Centralizzato (Ora isolato e sicuro dal problema del 'this')
+// Generatore Pannello Centralizzato
 const sendPanel = async (interaction, config, isInitial) => {
     const embed = new EmbedBuilder()
         .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
@@ -113,7 +113,6 @@ module.exports = {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const config = await getGuildEntryConfig(interaction.guild.id);
         
-        // Chiamata diretta senza 'this.'
         await sendPanel(interaction, config, true);
     },
 
@@ -145,7 +144,7 @@ module.exports = {
 
         await saveEntrySetup(guild.id, updates);
         
-        // Chiamata diretta senza 'this.'
+        // Chiamata pulita e corretta
         await sendPanel(interaction, config, false);
     },
 

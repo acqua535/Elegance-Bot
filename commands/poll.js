@@ -188,7 +188,7 @@ async function handlePollInteraction(interaction) {
             return await interaction.reply({ content: "❌ Non hai i permessi per visualizzare i partecipanti.", ephemeral: true });
         }
 
-        if (poll.votes.size === 0) {
+        if (!poll.votes || poll.votes.size === 0) {
             return await interaction.reply({ content: "ℹ️ Nessun voto registrato finora.", ephemeral: true });
         }
 
@@ -218,15 +218,16 @@ async function handlePollInteraction(interaction) {
         }
 
         let userVotes = poll.votes.get(userId) || [];
+        const alreadyVoted = userVotes.includes(voteIndex);
 
         if (poll.isMultiple) {
-            if (userVotes.includes(voteIndex)) {
+            if (alreadyVoted) {
                 userVotes = userVotes.filter(i => i !== voteIndex);
             } else {
                 userVotes.push(voteIndex);
             }
         } else {
-            if (userVotes.includes(voteIndex)) {
+            if (alreadyVoted) {
                 userVotes = [];
             } else {
                 userVotes = [voteIndex];
@@ -239,12 +240,12 @@ async function handlePollInteraction(interaction) {
             poll.votes.delete(userId);
         }
 
+        poll.markModified('votes'); // Forza Mongoose a salvare la Map
         await poll.save();
 
-        // LOG ESPRESSIONE VOTO
-        const emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
+        // LOG ESPRESSIONE VOTO CORRETTO
         const votedOptName = poll.options[voteIndex];
-        const actionType = userVotes.includes(voteIndex) ? "ha votato / modificato il voto su" : "ha rimosso il voto da";
+        const actionType = !alreadyVoted ? "ha votato / aggiunto il voto su" : "ha rimosso il voto da";
         
         const voteLogEmbed = new EmbedBuilder()
             .setColor("#9b59b6")
@@ -253,6 +254,7 @@ async function handlePollInteraction(interaction) {
             .setTimestamp();
         await sendPollLog(interaction.client, interaction.guild.id, voteLogEmbed);
 
+        const emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣"];
         const embed = new EmbedBuilder()
             .setColor("#0099FF")
             .setTitle("📊 Sondaggio")
@@ -273,14 +275,16 @@ async function chiudiSondaggio(client, messageId, tipoChiusura = "scadenza", chi
     let totalVotes = 0;
     const counts = new Array(poll.options.length).fill(0);
 
-    poll.votes.forEach((selectedIndices) => {
-        selectedIndices.forEach(index => {
-            if (counts[index] !== undefined) {
-                counts[index]++;
-                totalVotes++;
-            }
+    if (poll.votes) {
+        poll.votes.forEach((selectedIndices) => {
+            selectedIndices.forEach(index => {
+                if (counts[index] !== undefined) {
+                    counts[index]++;
+                    totalVotes++;
+                }
+            });
         });
-    });
+    }
 
     let resultsDesc = `**${poll.question}**\n\n`;
     poll.options.forEach((opt, i) => {
@@ -327,4 +331,4 @@ async function chiudiSondaggio(client, messageId, tipoChiusura = "scadenza", chi
 
 module.exports.chiudiSondaggio = chiudiSondaggio;
 module.exports.handlePollInteraction = handlePollInteraction;
-                                                       
+        

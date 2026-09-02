@@ -45,8 +45,8 @@ const getGuildEntryConfig = async (guildId) => {
         
         console.log(`[ENTRY SYSTEM] ✅ Dati letti con successo.`);
         return {
-            welcomeChannel: setup.welcomeChannel || null,
-            leaveChannel: setup.leaveChannel || null,
+            welcomeChannel: setup.welcomeChannel || setup.welcomeChannelId || null,
+            leaveChannel: setup.leaveChannel || setup.leaveChannelId || null,
             welcomeEnabled: setup.welcomeEnabled ?? true,
             leaveEnabled: setup.leaveEnabled ?? true
         };
@@ -137,7 +137,9 @@ module.exports = {
             config.leaveEnabled = updates.leaveEnabled;
         } else if (customId === "entry_set_channel") {
             updates.welcomeChannel = channel.id;
+            updates.welcomeChannelId = channel.id;
             updates.leaveChannel = channel.id;
+            updates.leaveChannelId = channel.id;
             config.welcomeChannel = channel.id;
             config.leaveChannel = channel.id;
         }
@@ -154,6 +156,8 @@ module.exports = {
 
             // --- INVIO CARTA "GET OUT OF JAIL FREE" IN DM ---
             try {
+                console.log(`[ENTRY SYSTEM] 📩 Tentativo invio DM Jail Card a @${member.user.tag}...`);
+                
                 const dmWelcomeEmbed = new EmbedBuilder()
                     .setTitle("🎉 Benvenuto su Elegance Sponsoring!")
                     .setDescription(
@@ -178,9 +182,9 @@ module.exports = {
                 );
 
                 await member.send({ embeds: [dmWelcomeEmbed], components: [jailButtonRow] });
-                console.log(`[ENTRY SYSTEM] 📩 DM "Get Out of Jail" inviato con successo a ${member.user.tag}`);
+                console.log(`[ENTRY SYSTEM] 🚀 DM "Get Out of Jail" inviato con successo a ${member.user.tag}!`);
             } catch (dmErr) {
-                console.log(`[ENTRY SYSTEM] ⚠️ Impossibile inviare DM a ${member.user.tag} (Messaggi privati chiusi o bloccati).`);
+                console.error(`[ENTRY SYSTEM] ❌ ERRORE DM per @${member.user.tag}: ${dmErr.message}`);
             }
 
             // --- MESSAGGIO DI BENVENUTO SUL CANALE PUBBLICO ---
@@ -191,8 +195,14 @@ module.exports = {
                 const channelId = config.welcomeChannel || member.guild.systemChannelId;
                 if (!channelId) return console.log(`[ENTRY SYSTEM] ⚠️ Nessun canale impostato.`);
 
-                const channel = member.guild.channels.cache.get(channelId);
-                if (!channel) return console.log(`[ENTRY SYSTEM] ⚠️ Canale ${channelId} non in cache.`);
+                let channel = member.guild.channels.cache.get(channelId);
+                if (!channel) {
+                    try {
+                        channel = await member.guild.channels.fetch(channelId);
+                    } catch (fetchErr) {
+                        return console.log(`[ENTRY SYSTEM] ⚠️ Canale ${channelId} non trovato nel server.`);
+                    }
+                }
 
                 const embed = new EmbedBuilder()
                     .setTitle("👋 ELEGANCE SPONSORING - BENVENUTO/A!")
@@ -213,7 +223,7 @@ module.exports = {
                     .setTimestamp();
 
                 await channel.send({ content: `👋 Benvenuto/a ${member}!`, embeds: [embed] });
-                console.log(`[ENTRY SYSTEM] ✅ Benvenuto inviato!`);
+                console.log(`[ENTRY SYSTEM] ✅ Benvenuto inviato nel canale!`);
             } catch (e) {
                 console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberAdd:", e);
             }
@@ -228,8 +238,14 @@ module.exports = {
                 const channelId = config.leaveChannel || member.guild.systemChannelId;
                 if (!channelId) return;
 
-                const channel = member.guild.channels.cache.get(channelId);
-                if (!channel) return;
+                let channel = member.guild.channels.cache.get(channelId);
+                if (!channel) {
+                    try {
+                        channel = await member.guild.channels.fetch(channelId);
+                    } catch (fetchErr) {
+                        return;
+                    }
+                }
 
                 const embed = new EmbedBuilder()
                     .setTitle("⚙️ ELEGANCE SPONSORING - ARRIVEDERCI")
@@ -250,4 +266,4 @@ module.exports = {
         });
     }
 };
-               
+                   

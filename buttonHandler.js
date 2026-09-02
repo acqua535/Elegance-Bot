@@ -1,7 +1,10 @@
 // ==========================================
-// FILE: buttonHandler.js (SUPER LOG DI DEBUG)
+// FILE: buttonHandler.js (SUPER LOG DI DEBUG + RECENSIONI)
 // ==========================================
 const registryMap = require('./registry');
+const loadSafe = (path) => {
+    try { return require(path); } catch (e) { return {}; }
+};
 
 module.exports = async (interaction) => {
     if (!interaction.isButton() && !interaction.isStringSelectMenu() && !interaction.isModalSubmit()) return;
@@ -24,6 +27,24 @@ module.exports = async (interaction) => {
             }
         } catch (err) {
             console.error(`[BUTTON-HANDLER] 🚨 ERRORE IMPREVISTO IN CARICAMENTO STICKY:`, err);
+        }
+    }
+
+    // ---------------------------------------------------------
+    // 0.1 GESTIONE DINAMICA RECENSIONI (TICKET)
+    // ---------------------------------------------------------
+    if (customId.startsWith('open_review_modal_') || customId.startsWith('submit_review_modal_')) {
+        console.log(`[BUTTON-HANDLER] ⭐ Intercettata azione Recensione: "${customId}"`);
+        try {
+            const ticketModule = loadSafe('./ticket');
+            if (customId.startsWith('open_review_modal_') && typeof ticketModule.handleReviewButton === 'function') {
+                return await ticketModule.handleReviewButton(interaction);
+            }
+            if (customId.startsWith('submit_review_modal_') && typeof ticketModule.handleReviewSubmit === 'function') {
+                return await ticketModule.handleReviewSubmit(interaction);
+            }
+        } catch (err) {
+            console.error(`[BUTTON-HANDLER] 🚨 ERRORE NELLA GESTIONE DELLA RECENSIONE:`, err);
         }
     }
 
@@ -83,4 +104,3 @@ module.exports = async (interaction) => {
         }
     }
 };
-        

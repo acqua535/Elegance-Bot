@@ -41,9 +41,6 @@ async function sendSystemLog(guild, embed, files = []) {
     }
 }
 
-// ==========================================
-// PARTE 1: COMANDO PRINCIPALE, CREAZIONE & UTENTI
-// ==========================================
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket')
@@ -234,11 +231,10 @@ module.exports = {
 
             return interaction.reply({ content: `✅ L'accesso è stato rimosso per ${targetMember}.` });
         }
-    },
+    }
+};
 
-        // ==========================================
-    // PARTE 2: GESTIONE AZIONI, LOG & RECENSIONI
-    // ==========================================
+module.exports = {
     async manageMenuHandler(interaction) {
         const action = interaction.values[0];
         const data = getData();
@@ -390,7 +386,7 @@ module.exports = {
 
                     const reviewButtonRow = new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
-                            .setCustomId('open_review_modal')
+                            .setCustomId(`open_review_dm_${ticket.claimedBy || 'none'}`)
                             .setLabel('Recensisci')
                             .setStyle(ButtonStyle.Success)
                             .setEmoji('⭐')
@@ -412,7 +408,7 @@ module.exports = {
                     { name: "📁 Dipartimento", value: `\`${ticket.type.toUpperCase()}\``, inline: true },
                     { name: "👤 Richiedente", value: `<@${ticket.owner}>`, inline: true },
                     { name: "🛡️ Operatore", value: ticket.claimedBy ? `<@${ticket.claimedBy}>` : "`Nessuno`", inline: true },
-                    { name: "🔒 Chiuso Da", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true }
+                    { name: "🔒 Chiuse Da", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true }
                 )
                 .setColor(0x00C8FF)
                 .setTimestamp();
@@ -463,50 +459,83 @@ module.exports = {
     },
 
     async handleReviewButton(interaction) {
-        if (interaction.customId !== 'open_review_modal') return;
+        const customId = interaction.customId;
+        const modal = new ModalBuilder();
 
-        const modal = new ModalBuilder()
-            .setCustomId('submit_review_modal')
-            .setTitle('⭐ Recensione Supporto');
+        if (customId === 'open_review_modal') {
+            modal.setCustomId('submit_review_public').setTitle('⭐ Recensione Supporto');
 
-        const staffInput = new TextInputBuilder()
-            .setCustomId('review_staff')
-            .setLabel('Chi vuoi recensire? (ID o Tag dello Staffer)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Es: @Neymar oppure 1504206598728323174')
-            .setRequired(true);
+            const staffInput = new TextInputBuilder()
+                .setCustomId('review_staff')
+                .setLabel('Staff da recensire (ID o Tag)')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Es: 837482910293847561')
+                .setRequired(true);
 
-        const ratingInput = new TextInputBuilder()
-            .setCustomId('review_rating')
-            .setLabel('Voto (Inserisci un numero da 1 a 5)')
-            .setStyle(TextInputStyle.Short)
-            .setPlaceholder('Es: 5')
-            .setMinLength(1)
-            .setMaxLength(1)
-            .setRequired(true);
+            const ratingInput = new TextInputBuilder()
+                .setCustomId('review_rating')
+                .setLabel('Voto (Inserisci un numero da 1 a 5)')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Es: 5')
+                .setMinLength(1)
+                .setMaxLength(1)
+                .setRequired(true);
 
-        const detailsInput = new TextInputBuilder()
-            .setCustomId('review_details')
-            .setLabel('Dettagli nella recensione')
-            .setStyle(TextInputStyle.Paragraph)
-            .setPlaceholder('Scrivi cosa ne pensi del servizio ricevuto...')
-            .setRequired(true);
+            const detailsInput = new TextInputBuilder()
+                .setCustomId('review_details')
+                .setLabel('Dettagli nella recensione')
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder('Scrivi cosa ne pensi del servizio ricevuto...')
+                .setRequired(true);
 
-        modal.addComponents(
-            new ActionRowBuilder().addComponents(staffInput),
-            new ActionRowBuilder().addComponents(ratingInput),
-            new ActionRowBuilder().addComponents(detailsInput)
-        );
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(staffInput),
+                new ActionRowBuilder().addComponents(ratingInput),
+                new ActionRowBuilder().addComponents(detailsInput)
+            );
+        } else if (customId.startsWith('open_review_dm_')) {
+            const staffId = customId.replace('open_review_dm_', '');
+            modal.setCustomId(`submit_review_dm_${staffId}`).setTitle('⭐ Recensione Supporto');
+
+            const ratingInput = new TextInputBuilder()
+                .setCustomId('review_rating')
+                .setLabel('Voto (Inserisci un numero da 1 a 5)')
+                .setStyle(TextInputStyle.Short)
+                .setPlaceholder('Es: 5')
+                .setMinLength(1)
+                .setMaxLength(1)
+                .setRequired(true);
+
+            const detailsInput = new TextInputBuilder()
+                .setCustomId('review_details')
+                .setLabel('Dettagli nella recensione')
+                .setStyle(TextInputStyle.Paragraph)
+                .setPlaceholder('Scrivi cosa ne pensi del servizio ricevuto...')
+                .setRequired(true);
+
+            modal.addComponents(
+                new ActionRowBuilder().addComponents(ratingInput),
+                new ActionRowBuilder().addComponents(detailsInput)
+            );
+        }
 
         await interaction.showModal(modal);
     },
 
     async handleReviewSubmit(interaction) {
-        if (interaction.customId !== 'submit_review_modal') return;
+        const customId = interaction.customId;
+        if (!customId.startsWith('submit_review_')) return;
 
-        const rawStaff = interaction.fields.getTextInputValue('review_staff').trim().replace(/[<@!>]/g, '');
+        let rawStaff = null;
         const ratingStr = interaction.fields.getTextInputValue('review_rating').trim();
         const details = interaction.fields.getTextInputValue('review_details');
+
+        if (customId === 'submit_review_public') {
+            rawStaff = interaction.fields.getTextInputValue('review_staff').trim().replace(/[<@!>]/g, '');
+        } else if (customId.startsWith('submit_review_dm_')) {
+            rawStaff = customId.replace('submit_review_dm_', '');
+            if (rawStaff === 'none') rawStaff = null;
+        }
 
         const rating = parseInt(ratingStr);
         if (isNaN(rating) || rating < 1 || rating > 5) {
@@ -526,7 +555,7 @@ module.exports = {
         const starsVisual = starsMap[rating] || "⭐⭐⭐⭐⭐";
 
         await interaction.reply({
-            content: "✅ **Grazie mille!** La tua recensione è stata inviata con successo nel canale dedicato.",
+            content: "✅ **Grazie mille!** La tua recensione è stata registrata con successo.",
             flags: MessageFlags.Ephemeral
         });
 
@@ -536,8 +565,14 @@ module.exports = {
 
             let staffDisplay = "`Non specificato`";
             if (rawStaff) {
-                const memberCheck = await interaction.guild.members.fetch(rawStaff).catch(() => null);
-                staffDisplay = memberCheck ? `${memberCheck} (\`${rawStaff}\`)` : `<@${rawStaff}>`;
+                const guild = interaction.client.guilds.cache.first();
+                const targetGuild = interaction.guild || guild;
+                if (targetGuild) {
+                    const memberCheck = await targetGuild.members.fetch(rawStaff).catch(() => null);
+                    staffDisplay = memberCheck ? `${memberCheck} (\`${rawStaff}\`)` : `<@${rawStaff}>`;
+                } else {
+                    staffDisplay = `<@${rawStaff}>`;
+                }
             }
 
             const reviewEmbed = new EmbedBuilder()
@@ -568,4 +603,4 @@ module.exports = {
         }
     }
 };
-                                      
+                

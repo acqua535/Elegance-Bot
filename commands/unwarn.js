@@ -1,5 +1,5 @@
 const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
-const { Warn } = require("../Setup");
+const { Warn } = require("./Setup");
 
 module.exports = {
     data: new SlashCommandBuilder()

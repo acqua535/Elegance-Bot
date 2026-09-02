@@ -43,8 +43,15 @@ const warnSchema = new mongoose.Schema({
     ]
 }, { timestamps: true });
 
+// --- NUOVO SCHEMA GET OUT OF JAIL ---
+const jailCardSchema = new mongoose.Schema({
+    userId: { type: String, required: true, unique: true },
+    lastUsed: { type: Date, required: true }
+}, { timestamps: true });
+
 const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
 const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
 const Warn = mongoose.models.Warn || mongoose.model("Warn", warnSchema);
+const JailCard = mongoose.models.JailCard || mongoose.model("JailCard", jailCardSchema);
 
-module.exports = { Setup, Poll, Warn };
+module.exports = { Setup, Poll, Warn, JailCard };

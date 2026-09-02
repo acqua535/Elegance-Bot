@@ -86,6 +86,10 @@ client.once("clientReady", async () => {
     if (typeof deployCommands === "function") await deployCommands();
     if (typeof loadCommands === "function") loadCommands(client);
 
+    if (entry && typeof entry.initEvents === "function") {
+        console.log("[INDEX] 👤 Avvio dei listener per Entry System (Benvenuto/Addio/JailCard)...");
+        entry.initEvents(client);
+    }
     if (logSystem && typeof logSystem.initEvents === "function") logSystem.initEvents(client);
     if (typeof countingSystem === "function") countingSystem(client);
     if (antiLink && typeof antiLink.initEvents === "function") antiLink.initEvents(client);
@@ -187,23 +191,6 @@ client.on("interactionCreate", async (interaction) => {
     }
 });
 
-// --- EVENTI MEMBRI ---
-client.on("guildMemberAdd", async (member) => {
-    try {
-        if (entry && typeof entry.handleMemberAdd === "function") await entry.handleMemberAdd(member);
-    } catch (error) {
-        console.error("❌ Errore guildMemberAdd:", error);
-    }
-});
-
-client.on("guildMemberRemove", async (member) => {
-    try {
-        if (entry && typeof entry.handleMemberRemove === "function") await entry.handleMemberRemove(member);
-    } catch (error) {
-        console.error("❌ Errore guildMemberRemove:", error);
-    }
-});
-
 // --- SISTEMA ANTI-CRASH ---
 process.on("unhandledRejection", (reason) => {
     console.error("⚠️ [ANTI-CRASH] Unhandled Rejection:", reason);
@@ -214,3 +201,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
+                

@@ -1,30 +1,3 @@
-const mongoose = require("mongoose");
-
-const setupSchema = new mongoose.Schema({
-    guildId: { type: String, required: true, unique: true },
-
-    // --- LOG SYSTEM ---
-    logChannel: { type: String, default: null },
-    logEnabled: { type: Boolean, default: false },
-
-    // --- ANTI-LINK SYSTEM ---
-    antiLinkChannel: { type: String, default: null },
-    antiLinkEnabled: { type: Boolean, default: false },
-
-    // --- ENTRY (BENVENUTO / ADDIO) ---
-    welcomeChannel: { type: String, default: null },
-    leaveChannel: { type: String, default: null },
-    welcomeEnabled: { type: Boolean, default: true },
-    leaveEnabled: { type: Boolean, default: true },
-
-    // --- CANDIDATURE (APPLY) ---
-    applyChannel: { type: String, default: null },
-    applyEnabled: { type: Boolean, default: true },
-
-    // --- POLL LOG SYSTEM ---
-    pollLogChannel: { type: String, default: null }
-}, { timestamps: true });
-
 // --- SCHEMA PER I SONDAGGI (POLL) ---
 const pollSchema = new mongoose.Schema({
     messageId: { type: String, required: true, unique: true },
@@ -37,12 +10,6 @@ const pollSchema = new mongoose.Schema({
     votes: { type: Map, of: [Number], default: {} },
     ended: { type: Boolean, default: false }
 }, { timestamps: true });
-
-// Questo controlla se i modelli esistono già nella connessione attiva, evitando il crash
-const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
-const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
-
-module.exports = { Setup, Poll };
 
 // --- SCHEMA PER I WARN ---
 const warnSchema = new mongoose.Schema({
@@ -57,7 +24,10 @@ const warnSchema = new mongoose.Schema({
     ]
 }, { timestamps: true });
 
+// Questo controlla se i modelli esistono già nella connessione attiva, evitando il crash
+const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
+const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
 const Warn = mongoose.models.Warn || mongoose.model("Warn", warnSchema);
 
-// Aggiungi Warn all'export finale insieme a Setup e Poll
+// UNICO EXPORT FINALE CON TUTTI E TRE
 module.exports = { Setup, Poll, Warn };

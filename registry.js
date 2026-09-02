@@ -36,7 +36,6 @@ const handlePollInteraction = async (interaction) => {
     }
 };
 
-// Funzioni di sicurezza dedicate per le recensioni
 const handleReviewBtn = async (interaction) => {
     const tk = ticket && typeof ticket.handleReviewButton === 'function' ? ticket : loadSafe("./ticket");
     if (tk && typeof tk.handleReviewButton === 'function') {
@@ -82,7 +81,7 @@ const baseRegistry = {
         }
     },
 
-    // --- TICKET & RECENSIONI (FORZATURA DIRETTA) ---
+    // --- TICKET & RECENSIONI ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage_menu": ticket.manageMenuHandler,
     "ticket_transfer_select": ticket.transferHandler,
@@ -90,7 +89,7 @@ const baseRegistry = {
     "ticket_modal_removeuser": ticket.modalHandler,
     
     "open_review_modal": handleReviewBtn,
-    "submit_review_modal": handleReviewSub,
+    "submit_review_public": handleReviewSub,
 
     // --- VERIFICA / CAPTCHA ---
     "verify_button": verify.buttonHandler,
@@ -122,15 +121,14 @@ const baseRegistry = {
 
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
-        // Controllo diretto ed esplicito per le recensioni a prescindere dal proxy
         if (prop === "open_review_modal") return handleReviewBtn;
-        if (prop === "submit_review_modal") return handleReviewSub;
+        if (prop === "submit_review_public") return handleReviewSub;
 
         if (typeof prop === "string") {
-            if (prop.startsWith("open_review_modal_") || prop.startsWith("open_review_modal")) {
+            if (prop.startsWith("open_review_modal") || prop.startsWith("open_review_dm_")) {
                 return handleReviewBtn;
             }
-            if (prop.startsWith("submit_review_modal_") || prop.startsWith("submit_review_modal")) {
+            if (prop.startsWith("submit_review_modal") || prop.startsWith("submit_review_")) {
                 return handleReviewSub;
             }
         }
@@ -158,4 +156,4 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-    
+                                                                                             

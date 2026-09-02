@@ -1,7 +1,9 @@
 // ==========================================
-// FILE: buttonHandler.js (SUPER LOG DI DEBUG + RECENSIONI)
+// FILE: buttonHandler.js (SUPER LOG DI DEBUG + RECENSIONI + JAIL CARD)
 // ==========================================
+const { EmbedBuilder, MessageFlags } = require('discord.js');
 const registryMap = require('./registry');
+
 const loadSafe = (path) => {
     try { return require(path); } catch (e) { return {}; }
 };
@@ -49,6 +51,83 @@ module.exports = async (interaction) => {
     }
 
     // ---------------------------------------------------------
+    // 0.2 GESTIONE CARTA GET OUT OF JAIL FREE
+    // ---------------------------------------------------------
+    if (customId === 'use_jail_card') {
+        console.log(`[BUTTON-HANDLER] 🃏 Intercettato utilizzo Get Out of Jail Card da @${interaction.user.tag}`);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
+
+        try {
+            const { JailCard } = require('./Setup');
+            const userId = interaction.user.id;
+            const now = new Date();
+
+            // 1. Controllo Cooldown su MongoDB (24 ore)
+            let userCard = await JailCard.findOne({ userId });
+
+            if (userCard) {
+                const lastUsed = new Date(userCard.lastUsed).getTime();
+                const cooldown = 24 * 60 * 60 * 1000;
+                const timePassed = now.getTime() - lastUsed;
+
+                if (timePassed < cooldown) {
+                    const timeLeft = cooldown - timePassed;
+                    const hoursLeft = Math.floor(timeLeft / (1000 * 60 * 60));
+                    const minutesLeft = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+
+                    return await interaction.editReply({
+                        content: `⏳ **Cooldown Attivo:** Hai già usato la carta di recente. Potrai riutilizzarla tra **${hoursLeft}h e ${minutesLeft}m**.`
+                    });
+                }
+            }
+
+            // 2. Recupero del Server (gestisce anche l'esecuzione da DM)
+            const guild = interaction.guild 
+                || await interaction.client.guilds.fetch("1528576030783176835").catch(() => null) 
+                || interaction.client.guilds.cache.first();
+
+            if (!guild) {
+                return await interaction.editReply({ content: "❌ Impossibile reperire le informazioni del server." });
+            }
+
+            const member = await guild.members.fetch(userId).catch(() => null);
+            if (!member) {
+                return await interaction.editReply({ content: "❌ Non risulti essere presente nel server Elegance Sponsoring." });
+            }
+
+            // 3. Verifica presenza Timeout attivo
+            if (!member.isCommunicationDisabled()) {
+                return await interaction.editReply({
+                    content: "🛡️ **Nessun Timeout attivo!** Non hai alcun Timeout da rimuovere al momento. Conserva la tua carta per quando ne avrai bisogno."
+                });
+            }
+
+            // 4. Esecuzione istantanea: rimozione Timeout
+            await member.timeout(null, "Rimozione tramite Get Out of Jail Free Card (DM)");
+
+            // 5. Salvataggio Timestamp su MongoDB per Cooldown Persistente
+            if (userCard) {
+                userCard.lastUsed = now;
+                await userCard.save();
+            } else {
+                await JailCard.create({ userId, lastUsed: now });
+            }
+
+            const successEmbed = new EmbedBuilder()
+                .setTitle("🃏 CARTA GIOCATA CON SUCCESSO")
+                .setDescription("✅ Il tuo Timeout nel server è stato rimosso istantaneamente!\n\n*Nota: la carta entra ora in cooldown per 24 ore.*")
+                .setColor(0x00FF00)
+                .setTimestamp();
+
+            return await interaction.editReply({ embeds: [successEmbed] });
+
+        } catch (err) {
+            console.error("[BUTTON-HANDLER 🚨 ERRORE JAIL CARD]", err);
+            return await interaction.editReply({ content: "❌ Si è verificato un errore imprevisto durante l'esecuzione della carta." });
+        }
+    }
+
+    // ---------------------------------------------------------
     // 1. GESTIONE MINIGIOCHI
     // ---------------------------------------------------------
     if (interaction.isStringSelectMenu() && customId === 'game_hub_select') {
@@ -85,7 +164,7 @@ module.exports = async (interaction) => {
             console.log(`[BUTTON-HANDLER] ❌ Invio risposta 'Azione non riconosciuta' per: "${customId}"`);
             return interaction.reply({
                 content: "❌ **Azione non riconosciuta o interazione scaduta.**",
-                flags: 64
+                flags: MessageFlags.Ephemeral
             }).catch(() => {});
         }
         return;
@@ -98,9 +177,10 @@ module.exports = async (interaction) => {
         console.error(`🚨 Errore durante l'esecuzione dell'interazione [${customId}]:`, error);
         const errorMessage = "❌ Si è verificato un errore durante l'esecuzione dell'azione.";
         if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({ content: errorMessage, flags: 64 }).catch(() => {});
+            await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         } else {
-            await interaction.reply({ content: errorMessage, flags: 64 }).catch(() => {});
+            await interaction.reply({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         }
     }
 };
+        

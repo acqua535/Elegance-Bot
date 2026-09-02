@@ -160,6 +160,13 @@ client.on("interactionCreate", async (interaction) => {
                 const ticketCmd = client.commands.get("ticket");
                 if (ticketCmd && ticketCmd.modalHandler) return await ticketCmd.modalHandler(interaction);
             }
+
+            if (interaction.customId.startsWith("submit_review_modal_")) {
+                const ticketModule = loadSafe("./ticket");
+                if (ticketModule && typeof ticketModule.handleReviewSubmit === "function") {
+                    return await ticketModule.handleReviewSubmit(interaction);
+                }
+            }
         }
 
         if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
@@ -207,3 +214,4 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
+            

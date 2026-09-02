@@ -43,3 +43,21 @@ const Setup = mongoose.models.Setup || mongoose.model("Setup", setupSchema);
 const Poll = mongoose.models.Poll || mongoose.model("Poll", pollSchema);
 
 module.exports = { Setup, Poll };
+
+// --- SCHEMA PER I WARN ---
+const warnSchema = new mongoose.Schema({
+    userId: { type: String, required: true },
+    guildId: { type: String, required: true },
+    warnings: [
+        {
+            moderator: { type: String, required: true },
+            reason: { type: String, required: true },
+            date: { type: Number, default: Date.now }
+        }
+    ]
+}, { timestamps: true });
+
+const Warn = mongoose.models.Warn || mongoose.model("Warn", warnSchema);
+
+// Aggiungi Warn all'export finale insieme a Setup e Poll
+module.exports = { Setup, Poll, Warn };

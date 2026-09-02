@@ -84,7 +84,7 @@ module.exports = {
                 { name: "👤 Utente Ammonito", value: `${user} (\`${user.id}\`)`, inline: false },
                 { name: "🛡️ Operatore Staff", value: `${interaction.user}`, inline: true },
                 { name: "📊 Stato Attuale", value: `\` ${totalWarns} / 3 \` Warn totali`, inline: true },
-                { name: "📝 Motivazione", value: `> ${reason}`, inline: false },
+                { name: "📝 Motivazione", value: reason, inline: false },
                 { name: "⚙️ Provvedimento Automatico", value: automaticAction, inline: false }
             )
             .setFooter({ text: "Elegance Sponsoring • Sistema di Sicurezza Integrato", iconURL: interaction.guild.iconURL() })
@@ -93,4 +93,3 @@ module.exports = {
         await interaction.reply({ embeds: [embed] });
     }
 };
-            

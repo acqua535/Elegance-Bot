@@ -81,12 +81,16 @@ const baseRegistry = {
         }
     },
 
-    // --- TICKET ---
+    // --- TICKET & RECENSIONI ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage_menu": ticket.manageMenuHandler,
     "ticket_transfer_select": ticket.transferHandler,
     "ticket_modal_adduser": ticket.modalHandler,
     "ticket_modal_removeuser": ticket.modalHandler,
+    
+    // Nuovi ID fissi per le recensioni universali
+    "open_review_modal": handleReviewBtn,
+    "submit_review_modal": handleReviewSub,
 
     // --- VERIFICA / CAPTCHA ---
     "verify_button": verify.buttonHandler,
@@ -119,7 +123,7 @@ const baseRegistry = {
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (typeof prop === "string") {
-            // --- GESTIONE DINAMICA RECENSIONI (CONTROLLO ANTICIPATO) ---
+            // --- GESTIONE DINAMICA RECENSIONI (RETROCOMPATIBILITÀ) ---
             if (prop.startsWith("open_review_modal_")) {
                 return handleReviewBtn;
             }

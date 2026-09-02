@@ -144,13 +144,46 @@ module.exports = {
 
         await saveEntrySetup(guild.id, updates);
         
-        // Chiamata pulita e corretta
         await sendPanel(interaction, config, false);
     },
 
     initEvents(client) {
         client.on("guildMemberAdd", async (member) => {
             console.log(`[ENTRY SYSTEM] 👤 Trigger Benvenuto: Entrato ${member.user.tag}`);
+            if (member.user.bot) return;
+
+            // --- INVIO CARTA "GET OUT OF JAIL FREE" IN DM ---
+            try {
+                const dmWelcomeEmbed = new EmbedBuilder()
+                    .setTitle("🎉 Benvenuto su Elegance Sponsoring!")
+                    .setDescription(
+                        `Ciao ${member.user.username}, grazie per esserti unito alla nostra community!\n\n` +
+                        `🎁 **IL TUO REGALO DI BENVENUTO**\n` +
+                        `Come nuovo membro, ti è stata assegnata una speciale **"Get Out of Jail Free" Card**.\n\n` +
+                        `🚨 **A cosa serve?**\n` +
+                        `Se in futuro dovessi ricevere un provvedimento minore (come un **Timeout**), potrai premere il pulsante qui sotto per **annullarlo istantaneamente**.\n\n` +
+                        `⚠️ *Nota bene: Questa carta ha un cooldown di 24 ore dopo ogni utilizzo e non funziona sui Ban.*`
+                    )
+                    .setColor(0x00C8FF)
+                    .setThumbnail(member.guild.iconURL({ dynamic: true }) || member.user.displayAvatarURL())
+                    .setFooter({ text: "Elegance Sponsoring • Conserva questo messaggio!" })
+                    .setTimestamp();
+
+                const jailButtonRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('use_jail_card')
+                        .setLabel('Usa Carta "Get Out of Jail"')
+                        .setEmoji('🃏')
+                        .setStyle(ButtonStyle.Danger)
+                );
+
+                await member.send({ embeds: [dmWelcomeEmbed], components: [jailButtonRow] });
+                console.log(`[ENTRY SYSTEM] 📩 DM "Get Out of Jail" inviato con successo a ${member.user.tag}`);
+            } catch (dmErr) {
+                console.log(`[ENTRY SYSTEM] ⚠️ Impossibile inviare DM a ${member.user.tag} (Messaggi privati chiusi o bloccati).`);
+            }
+
+            // --- MESSAGGIO DI BENVENUTO SUL CANALE PUBBLICO ---
             try {
                 const config = await getGuildEntryConfig(member.guild.id);
                 if (!config.welcomeEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Benvenuto spento, ignoro.`);
@@ -217,4 +250,4 @@ module.exports = {
         });
     }
 };
-    
+               

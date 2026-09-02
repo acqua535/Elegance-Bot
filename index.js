@@ -214,4 +214,3 @@ process.on("uncaughtException", (err) => {
 });
 
 client.login(process.env.TOKEN);
-            

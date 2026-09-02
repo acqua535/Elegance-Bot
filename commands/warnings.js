@@ -1,44 +1,52 @@
-const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require("discord.js");
-const moderation = require("./moderationSystem");
+const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits, MessageFlags } = require("discord.js");
+const { Warn } = require("../Setup");
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("warnings")
-        .setDescription("Mostra tutti i warn di un utente")
+        .setDescription("Visualizza lo storico dettagliato dei warn di un utente")
         .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers)
         .addUserOption(option =>
             option
                 .setName("utente")
-                .setDescription("Utente da controllare")
+                .setDescription("L'utente di cui vuoi controllare lo storico")
                 .setRequired(true)
         ),
 
     async execute(interaction) {
         const user = interaction.options.getUser("utente");
-        const warnings = moderation.getWarnings(user.id);
+        const userData = await Warn.findOne({ userId: user.id, guildId: interaction.guild.id });
 
-        if (warnings.length === 0) {
+        if (!userData || userData.warnings.length === 0) {
             return interaction.reply({
                 embeds: [
-                    new EmbedBuilder()
-                        .setTitle("📋 Warnings")
-                        .setDescription(`${user} non ha alcun warn.`)
+                    fed = new EmbedBuilder()
+                        .setTitle("🛡️ Registro Sicurezza • Storico Avvertimenti")
                         .setColor("Green")
-                ]
+                        .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+                        .setDescription(`Ottime notizie! L'utente ${user} ha la fedina penale pulita e **non possiede alcun warn** registrato.`)
+                        .setTimestamp()
+                ],
+                flags: MessageFlags.Ephemeral
             });
         }
 
-        let description = "";
-        warnings.forEach((warn, index) => {
-            description += `### ${index + 1}\n🛡️ Staff: <@${warn.moderator}>\n📝 Motivo: ${warn.reason}\n📅 Data: <t:${Math.floor(warn.date / 1000)}:F>\n\n`;
+        let historyList = "";
+        userData.warnings.forEach((warn, index) => {
+            const timestampSec = Math.floor(warn.date / 1000);
+            historyList += `### Avvertimento n° ${index + 1}\n` +
+                           `• **Moderatore:** <@${warn.moderator}>\n` +
+                           `• **Motivazione:** ${warn.reason}\n` +
+                           `• **Data Registrazione:** <t:${timestampSec}:F> (<t:${timestampSec}:R>)\n\n`;
         });
 
         const embed = new EmbedBuilder()
-            .setTitle(`📋 Warn di ${user.username}`)
-            .setThumbnail(user.displayAvatarURL())
-            .setDescription(description)
-            .addFields({ name: "📊 Totale", value: `${warnings.length} warn` })
-            .setColor("Orange")
+            .setTitle(`📋 Dossier Warn • ${user.tag}`)
+            .setColor(userData.warnings.length >= 3 ? "Red" : "Orange")
+            .setThumbnail(user.displayAvatarURL({ dynamic: true }))
+            .setDescription(`Ecco l'elenco completo e cronologico degli avvertimenti accumulati dall'utente nel server:\n\n${historyList}`)
+            .addFields({ name: "📊 Riepilogo Complessivo", value: `L'utente possiede attualmente **${userData.warnings.length}** warn attivi nel database.` })
+            .setFooter({ text: `ID Utente: ${user.id}`, iconURL: interaction.guild.iconURL() })
             .setTimestamp();
 
         await interaction.reply({ embeds: [embed] });

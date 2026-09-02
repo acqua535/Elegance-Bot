@@ -20,7 +20,7 @@ const antiLink = loadSafe("./antiLink");
 const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
-const poll = loadSafe("./poll"); // <-- FIX ESSENZIALE: Punta a poll.js e non a pollSystem
+const poll = loadSafe("./poll");
 
 const handleRolePanelInteraction = async (interaction) => {
     const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
@@ -66,9 +66,6 @@ const baseRegistry = {
     "ticket_transfer_select": ticket.transferHandler,
     "ticket_modal_adduser": ticket.modalHandler,
     "ticket_modal_removeuser": ticket.modalHandler,
-    "rate_good": ticket.ratingHandler,
-    "rate_mid": ticket.ratingHandler,
-    "rate_bad": ticket.ratingHandler,
 
     // --- VERIFICA / CAPTCHA ---
     "verify_button": verify.buttonHandler,
@@ -106,7 +103,6 @@ const baseRegistry = {
     }
 };
 
-// Routing dinamico potenziato per catturare qualsiasi customId dinamico o fisso che inizia con apply_ o poll_
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (prop in target) {
@@ -128,6 +124,13 @@ const registryProxy = new Proxy(baseRegistry, {
                         await poll.handlePollInteraction(interaction);
                     }
                 };
+            }
+            // --- GESTIONE DINAMICA RECENSIONI (TICKET) ---
+            if (prop.startsWith("open_review_modal_")) {
+                return ticket.handleReviewButton;
+            }
+            if (prop.startsWith("submit_review_modal_")) {
+                return ticket.handleReviewSubmit;
             }
         }
         return undefined;

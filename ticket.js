@@ -539,7 +539,7 @@ module.exports = {
                     { name: "🏆 Valutazione", value: `**${starsVisual}**`, inline: false },
                     { name: "📝 Dettagli nella recensione", value: `${details}`, inline: false }
                 )
-                .setFooter({ text: "Elegance Sponsoring • Customer Feedback", iconURL: interaction.guild.iconURL() })
+                .setFooter({ text: "Elegance Sponsoring • Customer Feedback", iconURL: interaction.guild?.iconURL() })
                 .setTimestamp();
 
             await reviewChannel.send({ embeds: [reviewEmbed] });

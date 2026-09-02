@@ -36,6 +36,20 @@ const handlePollInteraction = async (interaction) => {
     }
 };
 
+const handleReviewBtn = async (interaction) => {
+    const tk = ticket && typeof ticket.handleReviewButton === 'function' ? ticket : loadSafe("./ticket");
+    if (tk && typeof tk.handleReviewButton === 'function') {
+        await tk.handleReviewButton(interaction);
+    }
+};
+
+const handleReviewSub = async (interaction) => {
+    const tk = ticket && typeof ticket.handleReviewSubmit === 'function' ? ticket : loadSafe("./ticket");
+    if (tk && typeof tk.handleReviewSubmit === 'function') {
+        await tk.handleReviewSubmit(interaction);
+    }
+};
+
 const baseRegistry = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
@@ -104,9 +118,20 @@ const baseRegistry = {
 
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
+        if (typeof prop === "string") {
+            // --- GESTIONE DINAMICA RECENSIONI (CONTROLLO ANTICIPATO) ---
+            if (prop.startsWith("open_review_modal_")) {
+                return handleReviewBtn;
+            }
+            if (prop.startsWith("submit_review_modal_")) {
+                return handleReviewSub;
+            }
+        }
+
         if (prop in target) {
             return target[prop];
         }
+
         if (typeof prop === "string") {
             if (prop.startsWith("select_") || prop.startsWith("rolepanel_")) {
                 return handleRolePanelInteraction;
@@ -119,13 +144,6 @@ const registryProxy = new Proxy(baseRegistry, {
             }
             if (prop.startsWith("poll_")) {
                 return handlePollInteraction;
-            }
-            // --- GESTIONE DINAMICA RECENSIONI (TICKET) ---
-            if (prop.startsWith("open_review_modal_")) {
-                return ticket.handleReviewButton;
-            }
-            if (prop.startsWith("submit_review_modal_")) {
-                return ticket.handleReviewSubmit;
             }
         }
         return undefined;

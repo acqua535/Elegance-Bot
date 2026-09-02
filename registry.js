@@ -36,6 +36,7 @@ const handlePollInteraction = async (interaction) => {
     }
 };
 
+// Funzioni di sicurezza dedicate per le recensioni
 const handleReviewBtn = async (interaction) => {
     const tk = ticket && typeof ticket.handleReviewButton === 'function' ? ticket : loadSafe("./ticket");
     if (tk && typeof tk.handleReviewButton === 'function') {
@@ -81,14 +82,13 @@ const baseRegistry = {
         }
     },
 
-    // --- TICKET & RECENSIONI ---
+    // --- TICKET & RECENSIONI (FORZATURA DIRETTA) ---
     "ticket_category": ticket.categoryHandler,
     "ticket_manage_menu": ticket.manageMenuHandler,
     "ticket_transfer_select": ticket.transferHandler,
     "ticket_modal_adduser": ticket.modalHandler,
     "ticket_modal_removeuser": ticket.modalHandler,
     
-    // Nuovi ID fissi per le recensioni universali
     "open_review_modal": handleReviewBtn,
     "submit_review_modal": handleReviewSub,
 
@@ -122,12 +122,15 @@ const baseRegistry = {
 
 const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
+        // Controllo diretto ed esplicito per le recensioni a prescindere dal proxy
+        if (prop === "open_review_modal") return handleReviewBtn;
+        if (prop === "submit_review_modal") return handleReviewSub;
+
         if (typeof prop === "string") {
-            // --- GESTIONE DINAMICA RECENSIONI (RETROCOMPATIBILITÀ) ---
-            if (prop.startsWith("open_review_modal_")) {
+            if (prop.startsWith("open_review_modal_") || prop.startsWith("open_review_modal")) {
                 return handleReviewBtn;
             }
-            if (prop.startsWith("submit_review_modal_")) {
+            if (prop.startsWith("submit_review_modal_") || prop.startsWith("submit_review_modal")) {
                 return handleReviewSub;
             }
         }
@@ -155,3 +158,4 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
+    

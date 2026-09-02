@@ -39,7 +39,6 @@ module.exports = {
             });
         }
 
-        // Rimuove l'elemento esatto in base all'indice della lista
         const removed = userData.warnings.splice(number - 1, 1);
         await userData.save();
 
@@ -52,7 +51,7 @@ module.exports = {
                 { name: "👤 Utente Interessato", value: `${user} (\`${user.id}\`)`, inline: false },
                 { name: "🛡️ Operatore Staff", value: `${interaction.user}`, inline: true },
                 { name: "📊 Warn Rimasti", value: `\` ${userData.warnings.length} \` attivi`, inline: true },
-                { name: "🗑️ Dettaglio del Warn Cancellato", value: `> *${removed[0].reason}* (Emesso originariamente da <@${removed[0].moderator}>)`, inline: false }
+                { name: "🗑️ Dettaglio del Warn Cancellato", value: `${removed[0].reason} (Emesso originariamente da <@${removed[0].moderator}>)`, inline: false }
             )
             .setFooter({ text: "Elegance Sponsoring • Gestione Sicurezza", iconURL: interaction.guild.iconURL() })
             .setTimestamp();

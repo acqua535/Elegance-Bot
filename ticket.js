@@ -390,8 +390,8 @@ module.exports = {
 
                     const reviewButtonRow = new ActionRowBuilder().addComponents(
                         new ButtonBuilder()
-                            .setCustomId(`open_review_modal_${ticket.claimedBy || 'none'}`)
-                            .setLabel('Lascia una Recensione')
+                            .setCustomId('open_review_modal')
+                            .setLabel('Recensisci')
                             .setStyle(ButtonStyle.Success)
                             .setEmoji('⭐')
                     );
@@ -463,13 +463,18 @@ module.exports = {
     },
 
     async handleReviewButton(interaction) {
-        if (!interaction.customId.startsWith('open_review_modal_')) return;
-
-        const staffId = interaction.customId.split('_')[3];
+        if (interaction.customId !== 'open_review_modal') return;
 
         const modal = new ModalBuilder()
-            .setCustomId(`submit_review_modal_${staffId}`)
+            .setCustomId('submit_review_modal')
             .setTitle('⭐ Recensione Supporto');
+
+        const staffInput = new TextInputBuilder()
+            .setCustomId('review_staff')
+            .setLabel('Chi vuoi recensire? (ID o Tag dello Staffer)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Es: @Neymar oppure 1504206598728323174')
+            .setRequired(true);
 
         const ratingInput = new TextInputBuilder()
             .setCustomId('review_rating')
@@ -488,6 +493,7 @@ module.exports = {
             .setRequired(true);
 
         modal.addComponents(
+            new ActionRowBuilder().addComponents(staffInput),
             new ActionRowBuilder().addComponents(ratingInput),
             new ActionRowBuilder().addComponents(detailsInput)
         );
@@ -496,9 +502,9 @@ module.exports = {
     },
 
     async handleReviewSubmit(interaction) {
-        if (!interaction.customId.startsWith('submit_review_modal_')) return;
+        if (interaction.customId !== 'submit_review_modal') return;
 
-        const staffId = interaction.customId.split('_')[3];
+        const rawStaff = interaction.fields.getTextInputValue('review_staff').trim().replace(/[<@!>]/g, '');
         const ratingStr = interaction.fields.getTextInputValue('review_rating').trim();
         const details = interaction.fields.getTextInputValue('review_details');
 
@@ -528,6 +534,12 @@ module.exports = {
             const reviewChannel = await interaction.client.channels.fetch(REVIEW_CHANNEL_ID).catch(() => null);
             if (!reviewChannel) return;
 
+            let staffDisplay = "`Non specificato`";
+            if (rawStaff) {
+                const memberCheck = await interaction.guild.members.fetch(rawStaff).catch(() => null);
+                staffDisplay = memberCheck ? `${memberCheck} (\`${rawStaff}\`)` : `<@${rawStaff}>`;
+            }
+
             const reviewEmbed = new EmbedBuilder()
                 .setTitle("✨ NUOVA RECENSIONE SUPPORTO")
                 .setColor(rating >= 4 ? 0x00FF99 : rating === 3 ? 0xFFCC00 : 0xFF3333)
@@ -535,17 +547,25 @@ module.exports = {
                 .setDescription(`Un utente ha espresso la propria opinione sulla qualità del supporto ricevuto.`)
                 .addFields(
                     { name: "👤 Utente", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
-                    { name: "🛡️ Staff in Carico", value: staffId !== 'none' ? `<@${staffId}>` : "`Non Specificato / Recensione libera`", inline: true },
+                    { name: "🛡️ Staff in Carico", value: staffDisplay, inline: true },
                     { name: "🏆 Valutazione", value: `**${starsVisual}**`, inline: false },
                     { name: "📝 Dettagli nella recensione", value: `${details}`, inline: false }
                 )
-                .setFooter({ text: "Elegance Sponsoring • Customer Feedback", iconURL: interaction.guild?.iconURL() })
+                .setFooter({ text: "Elegance Sponsoring • Customer Feedback", iconURL: interaction.guild?.iconURL() || null })
                 .setTimestamp();
 
-            await reviewChannel.send({ embeds: [reviewEmbed] });
+            const reviewButtonRow = new ActionRowBuilder().addComponents(
+                new ButtonBuilder()
+                    .setCustomId('open_review_modal')
+                    .setLabel('Recensisci')
+                    .setStyle(ButtonStyle.Success)
+                    .setEmoji('⭐')
+            );
+
+            await reviewChannel.send({ embeds: [reviewEmbed], components: [reviewButtonRow] });
         } catch (err) {
             console.error("[ERROR_REVIEW_SEND]", err);
         }
     }
 };
-                
+                                      

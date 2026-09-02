@@ -15,14 +15,13 @@ const {
 } = require('discord.js');
 const fs = require('fs');
 
-// ⚙️ COSTANTI E ID DEL TUO SERVER
 const DATA_PATH = './ticketsData.json';
 const STAFF_ROLE_ID = "1528576030783176835";
 const CATEGORY_ID = "1528582447443345560";
 const ALLOWED_CHANNEL_ID = "1528576161959907348";
 const LOG_CHANNEL_ID = "1528576197741772902";
+const REVIEW_CHANNEL_ID = "1544696093336539298";
 
-// 🔄 GESTIONE DATABASE JSON
 const getData = () => {
     try {
         if (!fs.existsSync(DATA_PATH)) fs.writeFileSync(DATA_PATH, '{}');
@@ -33,7 +32,6 @@ const getData = () => {
 };
 const saveData = (data) => fs.writeFileSync(DATA_PATH, JSON.stringify(data, null, 4));
 
-// 📜 LOG DI SISTEMA
 async function sendSystemLog(guild, embed, files = []) {
     try {
         const logChannel = await guild.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
@@ -43,12 +41,14 @@ async function sendSystemLog(guild, embed, files = []) {
     }
 }
 
+// ==========================================
+// PARTE 1: COMANDO PRINCIPALE, CREAZIONE & UTENTI
+// ==========================================
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('ticket')
         .setDescription('Invia il pannello di assistenza Elegance Sponsoring'),
 
-    // 1️⃣ PANNELLO PRINCIPALE (/ticket)
     async execute(interaction) {
         if (interaction.channelId !== ALLOWED_CHANNEL_ID) {
             return interaction.reply({ 
@@ -89,21 +89,25 @@ module.exports = {
         await interaction.reply({ embeds: [embed], components: [row] });
     },
 
-    // 2️⃣ APERTURA TICKET DAL MENU A TENDINA
     async categoryHandler(interaction) {
         await interaction.deferReply({ flags: MessageFlags.Ephemeral }).catch(() => {});
 
         const type = interaction.values[0];
-        const channelName = `︲🎫〞﹒${type}-${interaction.user.username}`;
-
-        // Controllo ticket già aperto
         const data = getData();
-        const userHasTicket = Object.keys(data).find(id => data[id].owner === interaction.user.id && data[id].status === 'open');
-        if (userHasTicket) {
-            return interaction.editReply({ content: `⚠️ Hai già una richiesta attiva nel sistema: <#${userHasTicket}>.` });
+
+        const activeTicketKey = Object.keys(data).find(channelId => data[channelId].owner === interaction.user.id && data[channelId].status === 'open');
+        
+        if (activeTicketKey) {
+            const existingChannel = await interaction.guild.channels.fetch(activeTicketKey).catch(() => null);
+            if (existingChannel) {
+                return interaction.editReply({ content: `⚠️ Hai già una richiesta attiva nel sistema: ${existingChannel}.` });
+            } else {
+                data[activeTicketKey].status = 'closed';
+                saveData(data);
+            }
         }
 
-        // Creazione canale ticket
+        const channelName = `︲🎫〞﹒${type}-${interaction.user.username}`;
         const channel = await interaction.guild.channels.create({
             name: channelName,
             type: ChannelType.GuildText,
@@ -115,7 +119,6 @@ module.exports = {
             ]
         });
 
-        // Salvataggio nel DB JSON
         data[channel.id] = { 
             owner: interaction.user.id, 
             status: 'open', 
@@ -125,7 +128,6 @@ module.exports = {
         };
         saveData(data);
 
-        // LOG DI APERTURA
         const openLogEmbed = new EmbedBuilder()
             .setTitle("📋 Nuova Richiesta Aperta")
             .addFields(
@@ -137,7 +139,6 @@ module.exports = {
             .setTimestamp();
         await sendSystemLog(interaction.guild, openLogEmbed);
 
-        // EMBED BENVENUTO IN TICKET
         const welcomeEmbed = new EmbedBuilder()
             .setTitle("💬 RICHIESTA DI SUPPORTO AVVIATA")
             .setDescription(
@@ -154,7 +155,6 @@ module.exports = {
             .setFooter({ text: "Elegance Sponsoring • Management System", iconURL: interaction.guild.iconURL() })
             .setTimestamp();
 
-        // MENU A TENDINA GESTIONE
         const manageMenuRow = new ActionRowBuilder().addComponents(
             new StringSelectMenuBuilder()
                 .setCustomId('ticket_manage_menu')
@@ -179,26 +179,78 @@ module.exports = {
         return interaction.editReply({ content: `✅ **Canale creato:** ${channel}` });
     },
 
-        // 3️⃣ GESTIONE SELEZIONI DAL MENU PRINCIPALE TICKET
+    async modalHandler(interaction) {
+        const id = interaction.customId;
+
+        if (id === 'ticket_modal_adduser') {
+            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
+            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+
+            if (!targetMember) {
+                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
+            }
+
+            await interaction.channel.permissionOverwrites.edit(targetMember.id, {
+                ViewChannel: true,
+                SendMessages: true,
+                ReadMessageHistory: true,
+                AttachFiles: true
+            });
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Utente Aggiunto al Ticket")
+                .addFields(
+                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
+                    { name: "🛡️ Aggiunto Da", value: `${interaction.user}`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
+
+            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato aggiunto alla sessione.` });
+        }
+
+        if (id === 'ticket_modal_removeuser') {
+            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
+            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+
+            if (!targetMember) {
+                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
+            }
+
+            await interaction.channel.permissionOverwrites.delete(targetMember.id);
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Utente Rimosso dal Ticket")
+                .addFields(
+                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
+                    { name: "🛡️ Rimosso Da", value: `${interaction.user}`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
+
+            return interaction.reply({ content: `✅ L'accesso è stato rimosso per ${targetMember}.` });
+        }
+    },
+
+        // ==========================================
+    // PARTE 2: GESTIONE AZIONI, LOG & RECENSIONI
+    // ==========================================
     async manageMenuHandler(interaction) {
         const action = interaction.values[0];
         const data = getData();
         const ticket = data[interaction.channel.id];
 
         if (!ticket) {
-            return interaction.reply({ 
-                content: "❌ **Errore:** Impossibile recuperare le informazioni della sessione.", 
-                flags: MessageFlags.Ephemeral 
-            });
+            return interaction.reply({ content: "❌ **Errore:** Impossibile recuperare le informazioni della sessione.", flags: MessageFlags.Ephemeral });
         }
 
-        // 🛡️ PRENDI IN CARICO
         if (action === 'action_claim') {
             if (ticket.claimedBy) {
-                return interaction.reply({ 
-                    content: `⚠️ Questa sessione è già in carico a <@${ticket.claimedBy}>.`, 
-                    flags: MessageFlags.Ephemeral 
-                });
+                return interaction.reply({ content: `⚠️ Questa sessione è già in carico a <@${ticket.claimedBy}>.`, flags: MessageFlags.Ephemeral });
             }
 
             ticket.claimedBy = interaction.user.id;
@@ -208,29 +260,24 @@ module.exports = {
                 .setTitle("🛡️ INCARICO ASSEGNATO")
                 .setDescription(`La richiesta è stata presa in carico da ${interaction.user}.`)
                 .setColor(0x00C8FF);
-
             await interaction.channel.send({ embeds: [claimEmbed] });
 
             const log = new EmbedBuilder()
-                .setTitle("📋 Ticket Assegnato")
+                .setTitle("📋 Ticket Preso in Carico")
                 .addFields(
-                    { name: "👤 Operatore", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                    { name: "🛡️ Operatore", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
                     { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
                 )
                 .setColor(0x00C8FF)
                 .setTimestamp();
-
             await sendSystemLog(interaction.guild, log);
+
             return interaction.reply({ content: "✅ Incarico registrato.", flags: MessageFlags.Ephemeral });
         }
 
-        // 🔓 RILASCIA INCARICO
         if (action === 'action_unclaim') {
             if (!ticket.claimedBy) {
-                return interaction.reply({ 
-                    content: "⚠️ Questa sessione non ha un operatore assegnato.", 
-                    flags: MessageFlags.Ephemeral 
-                });
+                return interaction.reply({ content: "⚠️ Questa sessione non ha un operatore assegnato.", flags: MessageFlags.Ephemeral });
             }
 
             ticket.claimedBy = null;
@@ -240,31 +287,44 @@ module.exports = {
                 .setTitle("🔓 INCARICO RILASCIATO")
                 .setDescription(`${interaction.user} ha rilasciato la gestione di questa richiesta.`)
                 .setColor(0x00C8FF);
-
             await interaction.channel.send({ embeds: [unclaimEmbed] });
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Ticket Rilasciato")
+                .addFields(
+                    { name: "🛡️ Operatore", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
+
             return interaction.reply({ content: "✅ Incarico rilasciato.", flags: MessageFlags.Ephemeral });
         }
 
-        // 📢 SOLLECITA RISPOSTA
         if (action === 'action_ping') {
             if (ticket.lastPing && (Date.now() - ticket.lastPing < 86400000)) {
-                return interaction.reply({ 
-                    content: "⏳ Puoi inviare un sollecito solo una volta ogni 24 ore.", 
-                    flags: MessageFlags.Ephemeral 
-                });
+                return interaction.reply({ content: "⏳ Puoi inviare un sollecito solo una volta ogni 24 ore.", flags: MessageFlags.Ephemeral });
             }
 
             ticket.lastPing = Date.now();
             saveData(data);
 
-            await interaction.channel.send({ 
-                content: `📢 <@&${STAFF_ROLE_ID}> | **Sollecito di assistenza** inviato dall'utente ${interaction.user}.` 
-            });
+            await interaction.channel.send({ content: `📢 <@&${STAFF_ROLE_ID}> | **Sollecito di assistenza** inviato dall'utente ${interaction.user}.` });
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Sollecito Inviato nel Ticket")
+                .addFields(
+                    { name: "👤 Utente", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
 
             return interaction.reply({ content: "✅ Sollecito inviato con successo.", flags: MessageFlags.Ephemeral });
         }
 
-        // 🔄 TRASFERISCI DIPARTIMENTO
         if (action === 'action_transfer') {
             const transferRow = new ActionRowBuilder().addComponents(
                 new StringSelectMenuBuilder()
@@ -277,48 +337,25 @@ module.exports = {
                         new StringSelectMenuOptionBuilder().setLabel('Segnalazioni').setValue('report').setEmoji('🚨')
                     ])
             );
-
-            return interaction.reply({
-                content: "🔄 **Seleziona il nuovo dipartimento di destinazione:**",
-                components: [transferRow],
-                flags: MessageFlags.Ephemeral
-            });
+            return interaction.reply({ content: "🔄 **Seleziona il nuovo dipartimento di destinazione:**", components: [transferRow], flags: MessageFlags.Ephemeral });
         }
 
-        // ➕ AGGIUNGI MEMBRO
         if (action === 'action_add_user') {
             const modal = new ModalBuilder().setCustomId('ticket_modal_adduser').setTitle('Aggiungi Membro');
-            const input = new TextInputBuilder()
-                .setCustomId('user_id_input')
-                .setLabel('ID o Menzione Utente')
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Inserisci l\'ID dell\'utente...')
-                .setRequired(true);
-
+            const input = new TextInputBuilder().setCustomId('user_id_input').setLabel('ID o Menzione Utente').setStyle(TextInputStyle.Short).setPlaceholder("Inserisci l'ID dell'utente...").setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
             return await interaction.showModal(modal);
         }
 
-        // ➖ RIMUOVI MEMBRO
         if (action === 'action_remove_user') {
             const modal = new ModalBuilder().setCustomId('ticket_modal_removeuser').setTitle('Rimuovi Membro');
-            const input = new TextInputBuilder()
-                .setCustomId('user_id_input')
-                .setLabel('ID o Menzione Utente')
-                .setStyle(TextInputStyle.Short)
-                .setPlaceholder('Inserisci l\'ID dell\'utente...')
-                .setRequired(true);
-
+            const input = new TextInputBuilder().setCustomId('user_id_input').setLabel('ID o Menzione Utente').setStyle(TextInputStyle.Short).setPlaceholder("Inserisci l'ID dell'utente...").setRequired(true);
             modal.addComponents(new ActionRowBuilder().addComponents(input));
             return await interaction.showModal(modal);
         }
 
-        // 🔒 CHIUDI E ARCHIVIA
         if (action === 'action_close') {
-            await interaction.reply({ 
-                content: "🔒 **Chiusura avviata.** Generazione della trascrizione in corso...", 
-                flags: MessageFlags.Ephemeral 
-            });
+            await interaction.reply({ content: "🔒 **Chiusura avviata.** Generazione della trascrizione in corso...", flags: MessageFlags.Ephemeral });
 
             let transcriptBuffer = null;
             let transcriptFileName = `transcript-${interaction.channel.name}.txt`;
@@ -332,26 +369,36 @@ module.exports = {
 
                 transcriptBuffer = Buffer.from(transcript, 'utf-8');
 
-                // Invio Transcript in DM
                 const ownerUser = await interaction.guild.members.fetch(ticket.owner).catch(() => null);
                 if (ownerUser) {
                     const dmEmbed = new EmbedBuilder()
-                        .setTitle("📂 RIEPILOGO RICHIESTA")
+                        .setTitle("📂 RIEPILOGO RICHIESTA DI SUPPORTO")
                         .setDescription(
                             `Gentile **${ownerUser.user.username}**,\n` +
-                            `La tua sessione di supporto su **${interaction.guild.name}** è stata conclusa.\n\n` +
-                            `In allegato trovi il file completo di trascrizione della conversazione.`
+                            `La tua sessione nel server **${interaction.guild.name}** è stata archiviata.\n\n` +
+                            `In allegato trovi il file di trascrizione completo della conversazione.\n\n` +
+                            `✨ **Ti è piaciuto il nostro servizio?**\n` +
+                            `Lascia una recensione rapida cliccando sul pulsante qui sotto per aiutarci a migliorare!`
                         )
                         .addFields(
                             { name: "📌 Canale", value: `\`${interaction.channel.name}\``, inline: true },
-                            { name: "👤 Chiuso Da", value: `${interaction.user}`, inline: true }
+                            { name: "🛡️ Gestito Da", value: ticket.claimedBy ? `<@${ticket.claimedBy}>` : "`Non Assegnato`", inline: true }
                         )
                         .setColor(0x00C8FF)
-                        .setFooter({ text: "Elegance Sponsoring • Support Archive" })
+                        .setFooter({ text: "Elegance Sponsoring • Sistema Feedback", iconURL: interaction.guild.iconURL() })
                         .setTimestamp();
+
+                    const reviewButtonRow = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder()
+                            .setCustomId(`open_review_modal_${ticket.claimedBy || 'none'}`)
+                            .setLabel('Lascia una Recensione')
+                            .setStyle(ButtonStyle.Success)
+                            .setEmoji('⭐')
+                    );
 
                     await ownerUser.send({ 
                         embeds: [dmEmbed], 
+                        components: [reviewButtonRow],
                         files: [{ attachment: transcriptBuffer, name: transcriptFileName }] 
                     }).catch(() => {});
                 }
@@ -359,12 +406,12 @@ module.exports = {
                 console.error("[ERROR_TRANSCRIPT]", err);
             }
 
-            // Log di Chiusura
             const closeLogEmbed = new EmbedBuilder()
                 .setTitle("📋 Sessione Archiviata")
                 .addFields(
                     { name: "📁 Dipartimento", value: `\`${ticket.type.toUpperCase()}\``, inline: true },
                     { name: "👤 Richiedente", value: `<@${ticket.owner}>`, inline: true },
+                    { name: "🛡️ Operatore", value: ticket.claimedBy ? `<@${ticket.claimedBy}>` : "`Nessuno`", inline: true },
                     { name: "🔒 Chiuso Da", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true }
                 )
                 .setColor(0x00C8FF)
@@ -381,7 +428,6 @@ module.exports = {
         }
     },
 
-    // 4️⃣ ESECUZIONE TRASFERIMENTO
     async transferHandler(interaction) {
         const newType = interaction.values[0];
         const data = getData();
@@ -401,44 +447,104 @@ module.exports = {
             .setTitle("🔄 DIPARTIMENTO AGGIORNATO")
             .setDescription(`Il ticket è stato trasferito con successo nel reparto \`${newType.toUpperCase()}\`.`)
             .setColor(0x00C8FF);
-
         await interaction.channel.send({ embeds: [transferEmbed] });
+
+        const log = new EmbedBuilder()
+            .setTitle("📋 Ticket Trasferito")
+            .addFields(
+                { name: "📁 Nuovo Dipartimento", value: `\`${newType.toUpperCase()}\``, inline: true },
+                { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+            )
+            .setColor(0x00C8FF)
+            .setTimestamp();
+        await sendSystemLog(interaction.guild, log);
+
         return interaction.reply({ content: `✅ Trasferimento completato.`, flags: MessageFlags.Ephemeral });
     },
 
-    // 5️⃣ GESTIONE MODALI (AGGIUNGI / RIMUOVI UTENTE)
-    async modalHandler(interaction) {
-        const id = interaction.customId;
+    async handleReviewButton(interaction) {
+        if (!interaction.customId.startsWith('open_review_modal_')) return;
 
-        if (id === 'ticket_modal_adduser') {
-            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
-            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+        const staffId = interaction.customId.split('_')[3];
 
-            if (!targetMember) {
-                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
-            }
+        const modal = new ModalBuilder()
+            .setCustomId(`submit_review_modal_${staffId}`)
+            .setTitle('⭐ Recensione Supporto');
 
-            await interaction.channel.permissionOverwrites.edit(targetMember.id, {
-                ViewChannel: true,
-                SendMessages: true,
-                ReadMessageHistory: true,
-                AttachFiles: true
+        const ratingInput = new TextInputBuilder()
+            .setCustomId('review_rating')
+            .setLabel('Voto (Inserisci un numero da 1 a 5)')
+            .setStyle(TextInputStyle.Short)
+            .setPlaceholder('Es: 5')
+            .setMinLength(1)
+            .setMaxLength(1)
+            .setRequired(true);
+
+        const detailsInput = new TextInputBuilder()
+            .setCustomId('review_details')
+            .setLabel('Dettagli nella recensione')
+            .setStyle(TextInputStyle.Paragraph)
+            .setPlaceholder('Scrivi cosa ne pensi del servizio ricevuto...')
+            .setRequired(true);
+
+        modal.addComponents(
+            new ActionRowBuilder().addComponents(ratingInput),
+            new ActionRowBuilder().addComponents(detailsInput)
+        );
+
+        await interaction.showModal(modal);
+    },
+
+    async handleReviewSubmit(interaction) {
+        if (!interaction.customId.startsWith('submit_review_modal_')) return;
+
+        const staffId = interaction.customId.split('_')[3];
+        const ratingStr = interaction.fields.getTextInputValue('review_rating').trim();
+        const details = interaction.fields.getTextInputValue('review_details');
+
+        const rating = parseInt(ratingStr);
+        if (isNaN(rating) || rating < 1 || rating > 5) {
+            return interaction.reply({
+                content: "❌ **Errore:** Il voto deve essere un numero compreso tra **1** e **5**.",
+                flags: MessageFlags.Ephemeral
             });
-
-            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato aggiunto alla sessione.` });
         }
 
-        if (id === 'ticket_modal_removeuser') {
-            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
-            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+        const starsMap = {
+            1: "⭐☆☆☆☆ (1/5)",
+            2: "⭐⭐☆☆☆ (2/5)",
+            3: "⭐⭐⭐☆☆ (3/5)",
+            4: "⭐⭐⭐⭐☆ (4/5)",
+            5: "⭐⭐⭐⭐⭐ (5/5)"
+        };
+        const starsVisual = starsMap[rating] || "⭐⭐⭐⭐⭐";
 
-            if (!targetMember) {
-                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
-            }
+        await interaction.reply({
+            content: "✅ **Grazie mille!** La tua recensione è stata inviata con successo nel canale dedicato.",
+            flags: MessageFlags.Ephemeral
+        });
 
-            await interaction.channel.permissionOverwrites.delete(targetMember.id);
+        try {
+            const reviewChannel = await interaction.client.channels.fetch(REVIEW_CHANNEL_ID).catch(() => null);
+            if (!reviewChannel) return;
 
-            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato rimosso dalla sessione.` });
+            const reviewEmbed = new EmbedBuilder()
+                .setTitle("✨ NUOVA RECENSIONE SUPPORTO")
+                .setColor(rating >= 4 ? 0x00FF99 : rating === 3 ? 0xFFCC00 : 0xFF3333)
+                .setThumbnail(interaction.user.displayAvatarURL({ dynamic: true }))
+                .setDescription(`Un utente ha espresso la propria opinione sulla qualità del supporto ricevuto.`)
+                .addFields(
+                    { name: "👤 Utente", value: `${interaction.user} (\`${interaction.user.id}\`)`, inline: true },
+                    { name: "🛡️ Staff in Carico", value: staffId !== 'none' ? `<@${staffId}>` : "`Non Specificato / Recensione libera`", inline: true },
+                    { name: "🏆 Valutazione", value: `**${starsVisual}**`, inline: false },
+                    { name: "📝 Dettagli nella recensione", value: `${details}`, inline: false }
+                )
+                .setFooter({ text: "Elegance Sponsoring • Customer Feedback", iconURL: interaction.guild.iconURL() })
+                .setTimestamp();
+
+            await reviewChannel.send({ embeds: [reviewEmbed] });
+        } catch (err) {
+            console.error("[ERROR_REVIEW_SEND]", err);
         }
     }
 };

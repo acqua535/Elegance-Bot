@@ -200,5 +200,11 @@ process.on("uncaughtException", (err) => {
     console.error("⚠️ [ANTI-CRASH] Uncaught Exception:", err);
 });
 
+// --- TEST DIAGNOSTICO INGRESSI ---
+client.on("guildMemberAdd", (member) => {
+    console.log(`🚨 [TEST DIAGNOSTICO] Rilevato ingresso di: ${member.user.tag} (${member.id})`);
+});
+
+
 client.login(process.env.TOKEN);
                 

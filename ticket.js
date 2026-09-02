@@ -176,65 +176,6 @@ module.exports = {
         return interaction.editReply({ content: `✅ **Canale creato:** ${channel}` });
     },
 
-    async modalHandler(interaction) {
-        const id = interaction.customId;
-
-        if (id === 'ticket_modal_adduser') {
-            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
-            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
-
-            if (!targetMember) {
-                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
-            }
-
-            await interaction.channel.permissionOverwrites.edit(targetMember.id, {
-                ViewChannel: true,
-                SendMessages: true,
-                ReadMessageHistory: true,
-                AttachFiles: true
-            });
-
-            const log = new EmbedBuilder()
-                .setTitle("📋 Utente Aggiunto al Ticket")
-                .addFields(
-                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
-                    { name: "🛡️ Aggiunto Da", value: `${interaction.user}`, inline: true },
-                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
-                )
-                .setColor(0x00C8FF)
-                .setTimestamp();
-            await sendSystemLog(interaction.guild, log);
-
-            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato aggiunto alla sessione.` });
-        }
-
-        if (id === 'ticket_modal_removeuser') {
-            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
-            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
-
-            if (!targetMember) {
-                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
-            }
-
-            await interaction.channel.permissionOverwrites.delete(targetMember.id);
-
-            const log = new EmbedBuilder()
-                .setTitle("📋 Utente Rimosso dal Ticket")
-                .addFields(
-                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
-                    { name: "🛡️ Rimosso Da", value: `${interaction.user}`, inline: true },
-                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
-                )
-                .setColor(0x00C8FF)
-                .setTimestamp();
-            await sendSystemLog(interaction.guild, log);
-
-            return interaction.reply({ content: `✅ L'accesso è stato rimosso per ${targetMember}.` });
-        }
-    }
-};
-
-module.exports = {
     async manageMenuHandler(interaction) {
         const action = interaction.values[0];
         const data = getData();
@@ -424,7 +365,7 @@ module.exports = {
         }
     },
 
-    async transferHandler(interaction) {
+        async transferHandler(interaction) {
         const newType = interaction.values[0];
         const data = getData();
         const ticket = data[interaction.channel.id];
@@ -456,6 +397,63 @@ module.exports = {
         await sendSystemLog(interaction.guild, log);
 
         return interaction.reply({ content: `✅ Trasferimento completato.`, flags: MessageFlags.Ephemeral });
+    },
+
+    async modalHandler(interaction) {
+        const id = interaction.customId;
+
+        if (id === 'ticket_modal_adduser') {
+            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
+            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+
+            if (!targetMember) {
+                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
+            }
+
+            await interaction.channel.permissionOverwrites.edit(targetMember.id, {
+                ViewChannel: true,
+                SendMessages: true,
+                ReadMessageHistory: true,
+                AttachFiles: true
+            });
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Utente Aggiunto al Ticket")
+                .addFields(
+                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
+                    { name: "🛡️ Aggiunto Da", value: `${interaction.user}`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
+
+            return interaction.reply({ content: `✅ L'utente ${targetMember} è stato aggiunto alla sessione.` });
+        }
+
+        if (id === 'ticket_modal_removeuser') {
+            const raw = interaction.fields.getTextInputValue('user_id_input').replace(/[<@!>]/g, '');
+            const targetMember = await interaction.guild.members.fetch(raw).catch(() => null);
+
+            if (!targetMember) {
+                return interaction.reply({ content: "❌ Utente non trovato nel server.", flags: MessageFlags.Ephemeral });
+            }
+
+            await interaction.channel.permissionOverwrites.delete(targetMember.id);
+
+            const log = new EmbedBuilder()
+                .setTitle("📋 Utente Rimosso dal Ticket")
+                .addFields(
+                    { name: "👤 Utente", value: `${targetMember} (\`${targetMember.id}\`)`, inline: true },
+                    { name: "🛡️ Rimosso Da", value: `${interaction.user}`, inline: true },
+                    { name: "📌 Canale", value: `${interaction.channel}`, inline: true }
+                )
+                .setColor(0x00C8FF)
+                .setTimestamp();
+            await sendSystemLog(interaction.guild, log);
+
+            return interaction.reply({ content: `✅ L'accesso è stato rimosso per ${targetMember}.` });
+        }
     },
 
     async handleReviewButton(interaction) {
@@ -603,4 +601,3 @@ module.exports = {
         }
     }
 };
-    

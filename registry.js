@@ -29,6 +29,13 @@ const handleRolePanelInteraction = async (interaction) => {
     }
 };
 
+const handlePollInteraction = async (interaction) => {
+    const pl = poll && typeof poll.handlePollInteraction === 'function' ? poll : loadSafe("./poll");
+    if (pl && typeof pl.handlePollInteraction === 'function') {
+        await pl.handlePollInteraction(interaction);
+    }
+};
+
 const baseRegistry = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
@@ -91,16 +98,8 @@ const baseRegistry = {
     "antilink_set_channel": antiLink.buttonHandler,
 
     // --- POLL SYSTEM ---
-    "poll_close_early": async (interaction) => {
-        if (poll && typeof poll.handlePollInteraction === 'function') {
-            await poll.handlePollInteraction(interaction);
-        }
-    },
-    "poll_voters_info": async (interaction) => {
-        if (poll && typeof poll.handlePollInteraction === 'function') {
-            await poll.handlePollInteraction(interaction);
-        }
-    }
+    "poll_close_early": handlePollInteraction,
+    "poll_voters_info": handlePollInteraction
 };
 
 const registryProxy = new Proxy(baseRegistry, {
@@ -119,11 +118,7 @@ const registryProxy = new Proxy(baseRegistry, {
                 return apply.buttonHandler;
             }
             if (prop.startsWith("poll_")) {
-                return async (interaction) => {
-                    if (poll && typeof poll.handlePollInteraction === 'function') {
-                        await poll.handlePollInteraction(interaction);
-                    }
-                };
+                return handlePollInteraction;
             }
             // --- GESTIONE DINAMICA RECENSIONI (TICKET) ---
             if (prop.startsWith("open_review_modal_")) {
@@ -138,4 +133,3 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-    

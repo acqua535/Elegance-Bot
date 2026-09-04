@@ -1,12 +1,20 @@
+// ==========================================
+// FILE: index.js (MEGA SUPER FIXATO + LOG EXTRA)
+// ==========================================
 const { Client, GatewayIntentBits, Partials, Collection, MessageFlags } = require("discord.js");
 const fs = require("fs");
 const path = require("path");
 require("dotenv").config();
 
+console.log("==================================================");
+console.log("🚀 [BOOT] Avvio del bot in corso...");
+console.log("==================================================");
+
 // --- GESTIONE E PULIZIA MONGO_URI ---
 let mongoUri = process.env.MONGO_URI;
 if (mongoUri && mongoUri.includes("MONGO_URI=")) {
     mongoUri = mongoUri.split("MONGO_URI=")[1].trim();
+    console.log("[CONFIG] 🧹 MONGO_URI pulita da prefissi ridondanti.");
 }
 
 // --- CONNESSIONE MONGODB ---
@@ -14,31 +22,35 @@ let mongoose = null;
 try {
     mongoose = require("mongoose");
 } catch (e) {
-    console.warn("⚠️ La libreria 'mongoose' non è installata.");
+    console.warn("⚠️ [DB] La libreria 'mongoose' non è installata.");
 }
 
 if (mongoose && mongoUri) {
-    console.log("🍃 Avvio connessione a MongoDB...");
+    console.log("🍃 [DB] Tentativo di connessione a MongoDB in corso...");
     mongoose.connect(mongoUri)
         .then(() => {
-            console.log("🍃 Connessione a MongoDB completata con successo!");
+            console.log("🍃 [DB] Connessione a MongoDB completata con successo!");
         })
         .catch((err) => {
-            console.error("❌ Errore durante la connessione a MongoDB:", err.message);
+            console.error("❌ [DB] Errore durante la connessione a MongoDB:", err.message);
         });
 } else if (!mongoUri) {
-    console.warn("⚠️ MONGO_URI non trovata nelle variabili d'ambiente!");
+    console.warn("⚠️ [DB] MONGO_URI non trovata nelle variabili d'ambiente!");
 }
 
 // --- CARICAMENTO MODULI DI SISTEMA ---
 function loadSafe(pathModule) {
     try {
-        return require(pathModule);
+        const mod = require(pathModule);
+        console.log(`[LOADER] ✅ Modulo caricato: ${pathModule}`);
+        return mod;
     } catch (e) {
         try {
-            return require(`./commands/${pathModule.replace('./', '')}`);
+            const mod = require(`./commands/${pathModule.replace('./', '')}`);
+            console.log(`[LOADER] ✅ Modulo caricato da ./commands/: ${pathModule}`);
+            return mod;
         } catch (err) {
-            console.warn(`[INDEX] Modulo opzionale non trovato: ${pathModule}`);
+            console.warn(`[LOADER] ⚠️ Modulo opzionale non trovato: ${pathModule}`);
             return {};
         }
     }
@@ -81,18 +93,39 @@ client.commands = new Collection();
 
 // --- EVENTO READY ---
 client.once("clientReady", async () => {
-    console.log(`⚜️ Bot connesso con successo come: ${client.user.tag}`);
+    console.log("--------------------------------------------------");
+    console.log(`⚜️ [READY] Bot connesso con successo come: ${client.user.tag} (ID: ${client.user.id})`);
+    console.log("--------------------------------------------------");
 
-    if (typeof deployCommands === "function") await deployCommands();
-    if (typeof loadCommands === "function") loadCommands(client);
+    if (typeof deployCommands === "function") {
+        console.log("[DEPLOY] 🔄 Avvio sincronizzazione comandi slash API...");
+        await deployCommands();
+    }
+    
+    if (typeof loadCommands === "function") {
+        console.log("[COMMANDS] 📂 Caricamento comandi nella Collection...");
+        loadCommands(client);
+    }
 
     if (entry && typeof entry.initEvents === "function") {
         console.log("[INDEX] 👤 Avvio dei listener per Entry System (Benvenuto/Addio/JailCard)...");
         entry.initEvents(client);
     }
-    if (logSystem && typeof logSystem.initEvents === "function") logSystem.initEvents(client);
-    if (typeof countingSystem === "function") countingSystem(client);
-    if (antiLink && typeof antiLink.initEvents === "function") antiLink.initEvents(client);
+    
+    if (logSystem && typeof logSystem.initEvents === "function") {
+        console.log("[INDEX] 📝 Avvio del sistema di Log...");
+        logSystem.initEvents(client);
+    }
+    
+    if (typeof countingSystem === "function") {
+        console.log("[INDEX] 🔢 Avvio del Counting System...");
+        countingSystem(client);
+    }
+    
+    if (antiLink && typeof antiLink.initEvents === "function") {
+        console.log("[INDEX] 🛡️ Avvio del sistema Anti-Link...");
+        antiLink.initEvents(client);
+    }
     
     if (stickyEvents && typeof stickyEvents.initEvents === "function") {
         console.log("[INDEX] 📌 Avvio del listener per eventi Sticky...");
@@ -103,6 +136,8 @@ client.once("clientReady", async () => {
     try {
         const now = Date.now();
         const activePolls = await Poll.find({ ended: false });
+        console.log(`[POLL-SYSTEM] 🔍 Controllo sondaggi attivi nel database: ${activePolls.length} trovati.`);
+        
         for (const poll of activePolls) {
             const timeLeft = poll.endTime - now;
             if (timeLeft <= 0) {
@@ -118,31 +153,49 @@ client.once("clientReady", async () => {
             }
         }
         if (activePolls.length > 0) {
-            console.log(`[INDEX] 📊 Ripristinati ${activePolls.length} sondaggi attivi.`);
+            console.log(`[POLL-SYSTEM] 📊 Ripristinati con successo ${activePolls.length} sondaggi attivi.`);
         }
     } catch (err) {
-        console.error("❌ Errore nel ripristino dei sondaggi:", err);
+        console.error("❌ [POLL-SYSTEM] Errore nel ripristino dei sondaggi:", err);
     }
 
-    console.log("📦 Inizializzazione completata e Bot totalmente operativo!");
+    console.log("==================================================");
+    console.log("📦 [READY] Inizializzazione completata e Bot totalmente operativo!");
+    console.log("==================================================");
 });
 
 // --- GESTIONE INTERAZIONI ---
 client.on("interactionCreate", async (interaction) => {
     try {
+        // 1. GESTIONE COMANDI SLASH (/)
         if (interaction.isChatInputCommand()) {
-            console.log(`[COMMAND] Rilevato comando: /${interaction.commandName} da @${interaction.user.tag}`);
+            console.log(`[INTERACTION] 💬 Comando ricevuto: /${interaction.commandName} da @${interaction.user.tag} (ID: ${interaction.user.id})`);
             const command = client.commands.get(interaction.commandName);
             if (!command) {
-                console.error(`[COMMAND] ❌ Comando non trovato in Collection: /${interaction.commandName}`);
+                console.error(`[INTERACTION] ❌ Comando non trovato nella Collection: /${interaction.commandName}`);
                 return interaction.reply({ content: "❌ Comando non trovato.", flags: MessageFlags.Ephemeral });
             }
             await command.execute(interaction);
+            console.log(`[INTERACTION] ✅ Esecuzione comando /${interaction.commandName} completata.`);
             return;
         }
 
+        // 2. GESTIONE DIRETTA BOTTONE JAIL CARD ANNOUNCEMENT (FIX DEFINITIVO)
+        if (interaction.isButton() && interaction.customId === "jail_card_announcement_btn") {
+            console.log(`[BUTTON-HANDLER] 🎁 Click rilevato su 'jail_card_announcement_btn' da @${interaction.user.tag} (ID: ${interaction.user.id})`);
+            const jailCard = loadSafe("./jailCard");
+            if (jailCard && typeof jailCard.buttonHandler === "function") {
+                await jailCard.buttonHandler(interaction);
+                console.log(`[BUTTON-HANDLER] ✅ Invio DM Jail Card eseguito con successo per @${interaction.user.tag}`);
+                return;
+            } else {
+                console.warn(`[BUTTON-HANDLER] ⚠️ Modulo jailCard o funzione buttonHandler non trovati!`);
+            }
+        }
+
+        // 3. GESTIONE MODAL SUBMIT
         if (interaction.isModalSubmit()) {
-            console.log(`[MODAL] Rilevato Modal Submit con customId: "${interaction.customId}" da @${interaction.user.tag}`);
+            console.log(`[MODAL] 📝 Modal Submit ricevuto con customId: "${interaction.customId}" da @${interaction.user.tag}`);
             
             if (interaction.customId === "sticky_modal_create") {
                 if (stickyEvents && typeof stickyEvents.handleInteraction === "function") {
@@ -173,7 +226,9 @@ client.on("interactionCreate", async (interaction) => {
             }
         }
 
+        // 4. GESTIONE GENERALE PULSANTI / SELECT MENU / ALTRE INTERAZIONI
         if (interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit()) {
+            console.log(`[INTERACTION] 🔘 Interazione UI generica ricevuta -> CustomID: "${interaction.customId}" (Tipo: ${interaction.type}) da @${interaction.user.tag}`);
             if (typeof buttonHandler === "function") {
                 await buttonHandler(interaction);
             }
@@ -181,8 +236,8 @@ client.on("interactionCreate", async (interaction) => {
         }
 
     } catch (error) {
-        console.error("🚨 ERRORE INTERAZIONE GLOBALE:", error);
-        const errorMessage = "❌ Si è verificato un errore imprevisto durante l'esecuzione.";
+        console.error("🚨 [CRITICAL ERROR] Errore critico durante la gestione dell'interazione:", error);
+        const errorMessage = "❌ Si è verificato un errore imprevisto durante l'esecuzione dell'interazione.";
         if (interaction.replied || interaction.deferred) {
             await interaction.followUp({ content: errorMessage, flags: MessageFlags.Ephemeral }).catch(() => {});
         } else {
@@ -192,19 +247,17 @@ client.on("interactionCreate", async (interaction) => {
 });
 
 // --- SISTEMA ANTI-CRASH ---
-process.on("unhandledRejection", (reason) => {
-    console.error("⚠️ [ANTI-CRASH] Unhandled Rejection:", reason);
+process.on("unhandledRejection", (reason, promise) => {
+    console.error("⚠️ [ANTI-CRASH] Unhandled Rejection rilevata:", reason);
 });
 
-process.on("uncaughtException", (err) => {
-    console.error("⚠️ [ANTI-CRASH] Uncaught Exception:", err);
+process.on("uncaughtException", (err, origin) => {
+    console.error("⚠️ [ANTI-CRASH] Uncaught Exception rilevata:", err, "Origine:", origin);
 });
 
 // --- TEST DIAGNOSTICO INGRESSI ---
 client.on("guildMemberAdd", (member) => {
-    console.log(`🚨 [TEST DIAGNOSTICO] Rilevato ingresso di: ${member.user.tag} (${member.id})`);
+    console.log(`👤 [DIAGNOSTICO MEMBRO] Nuovo utente entrato nel server: ${member.user.tag} (ID: ${member.id})`);
 });
 
-
 client.login(process.env.TOKEN);
-                

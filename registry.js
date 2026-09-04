@@ -60,6 +60,13 @@ const handleJailCardInteraction = async (interaction) => {
     }
 };
 
+const handleStaffJailApprove = async (interaction) => {
+    const ent = entry && typeof entry.handleStaffJailApprove === 'function' ? entry : loadSafe("./entry");
+    if (ent && typeof ent.handleStaffJailApprove === 'function') {
+        await ent.handleStaffJailApprove(interaction);
+    }
+};
+
 const baseRegistry = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
@@ -131,12 +138,12 @@ const baseRegistry = {
 };
 
 const registryProxy = new Proxy(baseRegistry, {
-    // Intercetta la verifica d'esistenza (es. 'use_jail_card' in registry)
     has(target, prop) {
         if (typeof prop === "string") {
             if (
                 prop === "use_jail_card" || 
                 prop.startsWith("use_jail_card") ||
+                prop.startsWith("staff_approve_jail_") ||
                 prop.startsWith("open_review_") ||
                 prop.startsWith("submit_review_") ||
                 prop.startsWith("select_") ||
@@ -150,7 +157,6 @@ const registryProxy = new Proxy(baseRegistry, {
         return prop in target;
     },
 
-    // Intercetta il recupero dell'handler
     get(target, prop) {
         if (prop === "use_jail_card") return handleJailCardInteraction;
         if (prop === "open_review_modal") return handleReviewBtn;
@@ -159,6 +165,9 @@ const registryProxy = new Proxy(baseRegistry, {
         if (typeof prop === "string") {
             if (prop === "use_jail_card" || prop.startsWith("use_jail_card")) {
                 return handleJailCardInteraction;
+            }
+            if (prop.startsWith("staff_approve_jail_")) {
+                return handleStaffJailApprove;
             }
             if (prop.startsWith("open_review_modal") || prop.startsWith("open_review_dm_")) {
                 return handleReviewBtn;

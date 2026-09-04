@@ -13,7 +13,7 @@ const {
 const { Setup } = require("./Setup");
 
 const STAFF_ROLE_ID = "1528576014446231683";
-const LOG_CHANNEL_ID = "1545430782489661470"; // Canale richieste/log Jail Card
+const LOG_CHANNEL_ID = "1545430782489661470";
 
 // Helper salvataggio MongoDB con Logging
 const saveEntrySetup = async (guildId, data) => {
@@ -118,7 +118,7 @@ module.exports = {
     },
 
     async buttonHandler(interaction) {
-        console.log(`[ENTRY SYSTEM] 🔘 Bottone premuto: ${interaction.customId} da ${interaction.user.tag}`);
+        console.log(`[ENTRY SYSTEM] 🔘 Bottone pannello premuto: ${interaction.customId} da ${interaction.user.tag}`);
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
@@ -150,91 +150,84 @@ module.exports = {
         await sendPanel(interaction, config, false);
     },
 
-    initEvents(client) {
-        // --- ASCOLTATORE BOTTONI (JAIL CARD) ---
-        client.on("interactionCreate", async (interaction) => {
-            if (!interaction.isButton()) return;
-            if (interaction.customId !== "use_jail_card") return;
+    // --- GESTORE JAIL CARD RICHIAMATO DA REGISTRY.JS ---
+    async handleJailCard(interaction) {
+        console.log(`[JAIL CARD] 🃏 Bottone riscatto premuto da ${interaction.user.tag}`);
 
-            console.log(`[JAIL CARD] 🃏 Bottone riscatto premuto da ${interaction.user.tag}`);
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-            try {
-                // Recupera la prima guild disponibile dove risiede il bot
-                const guild = client.guilds.cache.first();
-                if (!guild) {
-                    return interaction.editReply({
-                        content: "❌ Impossibile individuare il server di riferimento. Contatta uno staffer."
-                    });
-                }
-
-                // Cerca il membro nel server
-                const member = await guild.members.fetch(interaction.user.id).catch(() => null);
-                if (!member) {
-                    return interaction.editReply({
-                        content: "❌ Non risulti essere all'interno del server Elegance Sponsoring."
-                    });
-                }
-
-                // Verifica presenza di Timeout attivo
-                if (!member.communicationDisabledUntil || member.communicationDisabledUntil < new Date()) {
-                    return interaction.editReply({
-                        content: "ℹ️ Non hai alcun **Timeout** attivo da annullare al momento! Conserva la tua carta per quando ti servirà."
-                    });
-                }
-
-                // Rimuove il Timeout
-                await member.timeout(null, 'Utilizzo carta "Get Out of Jail Free"');
-
-                // Risposta di conferma all'utente
-                const userSuccessEmbed = new EmbedBuilder()
-                    .setTitle("🃏 CARTA GIOCATA CON SUCCESSO!")
-                    .setDescription(
-                        `Complimenti **${interaction.user.username}**! Hai giocato la tua **"Get Out of Jail Free" Card**.\n\n` +
-                        `✅ Il tuo **Timeout** sul server **${guild.name}** è stato rimosso istantaneamente!`
-                    )
-                    .setColor(0x00FF99)
-                    .setTimestamp();
-
-                await interaction.editReply({ embeds: [userSuccessEmbed] });
-
-                // Invio notifica di log nel canale dedicato
-                try {
-                    const logChannel = await client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
-                    if (logChannel) {
-                        const logEmbed = new EmbedBuilder()
-                            .setTitle("🚨 UTILIZZO CARTA JAIL DETECTED")
-                            .setDescription(
-                                `L'utente ${member} (**${member.user.tag}**) ha riscattato la sua carta di libertà!\n\n` +
-                                `👤 **Membro:** <@${member.id}> (ID: \`${member.id}\`)\n` +
-                                `🔓 **Azione:** Timeout annullato istantaneamente.\n` +
-                                `⏰ **Data/Ora:** <t:${Math.floor(Date.now() / 1000)}:F>`
-                            )
-                            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                            .setColor(0xFFAA00)
-                            .setFooter({ text: "Elegance Sponsoring • System Log" })
-                            .setTimestamp();
-
-                        await logChannel.send({ embeds: [logEmbed] });
-                        console.log(`[JAIL CARD] 📥 Notifica inoltrata nel canale log ${LOG_CHANNEL_ID}`);
-                    } else {
-                        console.log(`[JAIL CARD] ⚠️ Impossibile trovare il canale log con ID ${LOG_CHANNEL_ID}`);
-                    }
-                } catch (logErr) {
-                    console.error(`[JAIL CARD ❌ ERRORE LOG]:`, logErr);
-                }
-
-                console.log(`[JAIL CARD] ✅ Timeout rimosso con successo per ${interaction.user.tag}`);
-
-            } catch (error) {
-                console.error(`[JAIL CARD ❌ ERRORE]:`, error);
-                await interaction.editReply({
-                    content: "❌ Si è verificato un errore durante l'utilizzo della carta. Verifica che il bot abbia i permessi necessari di moderazione sul server."
+        try {
+            const guild = interaction.client.guilds.cache.first();
+            if (!guild) {
+                return interaction.editReply({
+                    content: "❌ Impossibile individuare il server di riferimento. Contatta uno staffer."
                 });
             }
-        });
 
+            const member = await guild.members.fetch(interaction.user.id).catch(() => null);
+            if (!member) {
+                return interaction.editReply({
+                    content: "❌ Non risulti essere all'interno del server Elegance Sponsoring."
+                });
+            }
+
+            // Verifica presenza di Timeout attivo
+            if (!member.communicationDisabledUntil || member.communicationDisabledUntil < new Date()) {
+                return interaction.editReply({
+                    content: "ℹ️ Non hai alcun **Timeout** attivo da annullare al momento! Conserva la tua carta per quando ti servirà."
+                });
+            }
+
+            // Rimuove il Timeout
+            await member.timeout(null, 'Utilizzo carta "Get Out of Jail Free"');
+
+            // Risposta di conferma all'utente
+            const userSuccessEmbed = new EmbedBuilder()
+                .setTitle("🃏 CARTA GIOCATA CON SUCCESSO!")
+                .setDescription(
+                    `Complimenti **${interaction.user.username}**! Hai giocato la tua **"Get Out of Jail Free" Card**.\n\n` +
+                    `✅ Il tuo **Timeout** sul server **${guild.name}** è stato rimosso istantaneamente!`
+                )
+                .setColor(0x00FF99)
+                .setTimestamp();
+
+            await interaction.editReply({ embeds: [userSuccessEmbed] });
+
+            // Invio notifica nel canale log dedicato
+            try {
+                const logChannel = await interaction.client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+                if (logChannel) {
+                    const logEmbed = new EmbedBuilder()
+                        .setTitle("🚨 UTILIZZO CARTA JAIL DETECTED")
+                        .setDescription(
+                            `L'utente ${member} (**${member.user.tag}**) ha riscattato la sua carta di libertà!\n\n` +
+                            `👤 **Membro:** <@${member.id}> (ID: \`${member.id}\`)\n` +
+                            `🔓 **Azione:** Timeout annullato istantaneamente.\n` +
+                            `⏰ **Data/Ora:** <t:${Math.floor(Date.now() / 1000)}:F>`
+                        )
+                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                        .setColor(0xFFAA00)
+                        .setFooter({ text: "Elegance Sponsoring • System Log" })
+                        .setTimestamp();
+
+                    await logChannel.send({ embeds: [logEmbed] });
+                    console.log(`[JAIL CARD] 📥 Notifica inoltrata nel canale log ${LOG_CHANNEL_ID}`);
+                }
+            } catch (logErr) {
+                console.error(`[JAIL CARD ❌ ERRORE LOG]:`, logErr);
+            }
+
+            console.log(`[JAIL CARD] ✅ Timeout rimosso con successo per ${interaction.user.tag}`);
+
+        } catch (error) {
+            console.error(`[JAIL CARD ❌ ERRORE]:`, error);
+            await interaction.editReply({
+                content: "❌ Si è verificato un errore durante l'utilizzo della carta. Verifica che il bot abbia i permessi necessari di moderazione sul server."
+            });
+        }
+    },
+
+    initEvents(client) {
         // --- ASCOLTATORE BENVENUTO ---
         client.on("guildMemberAdd", async (member) => {
             console.log(`[ENTRY SYSTEM] 👤 Trigger Benvenuto: Entrato ${member.user.tag}`);
@@ -353,4 +346,4 @@ module.exports = {
         });
     }
 };
-                        
+            

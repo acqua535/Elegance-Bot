@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: registry.js
+// FILE: registry.js (COMPLETO E FIXATO)
 // ==========================================
 function loadSafe(path) {
     try {
@@ -72,6 +72,8 @@ const handleJailAnnouncementBtn = async (interaction) => {
     const jc = jailCard && typeof jailCard.buttonHandler === 'function' ? jailCard : loadSafe("./jailCard");
     if (jc && typeof jc.buttonHandler === 'function') {
         await jc.buttonHandler(interaction);
+    } else {
+        console.error("[REGISTRY] ❌ Impossibile trovare la funzione buttonHandler in jailCard.js");
     }
 };
 
@@ -152,6 +154,7 @@ const registryProxy = new Proxy(baseRegistry, {
             if (
                 prop === "use_jail_card" || 
                 prop.startsWith("use_jail_card") ||
+                prop === "jail_card_announcement_btn" ||
                 prop.startsWith("jail_card_announcement_btn") ||
                 prop.startsWith("staff_approve_jail_") ||
                 prop.startsWith("open_review_") ||
@@ -214,4 +217,3 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-    

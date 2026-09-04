@@ -7,37 +7,35 @@ const {
     ButtonBuilder, 
     ButtonStyle, 
     PermissionFlagsBits,
-    EmbedBuilder 
+    EmbedBuilder,
+    MessageFlags 
 } = require("discord.js");
-
-// ID Utente con utilizzi illimitati (nessun cooldown)
-const BYPASS_USER_ID = "1504206598728323174";
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("jail-card")
-        .setDescription("Invia l'annuncio per permettere agli utenti di ricevere la Jail Card in DM")
+        .setDescription("Invia l'annuncio per la Jail Card regalo")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Devi essere un Amministratore per inviare questo annuncio.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
         }
 
         const announcementText = 
             `﹒✦〞﹒ɴ ᴜ ᴏ ᴠ ᴀ   ꜰ ᴜ ɴ ᴢ ɪ ᴏ ɴ ᴇ   ᴇ   ʀ ᴇ ɢ ᴀ ʟ ᴏ\n\n` +
-            `Per il ritorno della nostra community, ho deciso di darvi un bellissimo regalo inviato direttamente in DM dal bot!\n\n` +
+            `Per il ritorno della nostra community ho deciso di darvi un bellissimo regalo in DM dal bot. Basta cliccare il bottone sottostante.\n` +
+            `Niente spoiler (:\n\n` +
             `────────────────────────────────────\n\n` +
             `✦  ᴄ ᴏ ᴍ ᴇ  ʀ ɪ ᴄ ᴇ ᴠ ᴇ ʀ ʟ ᴏ\n` +
-            `• Basta semplicemente cliccare il bottone qui sotto.\n` +
-            `• Riceverai subito un messaggio privato dal bot con la tua speciale carta ed il relativo pulsante per utilizzarla.\n` +
-            `• Niente spoiler... scopri in DM di cosa si tratta! 😉\n\n` +
+            `• Clicca sul pulsante **"Ricevi il Regalo in DM"** qui sotto.\n` +
+            `• Riceverai subito la tua speciale **"Get Out of Jail Free" Card** nei messaggi privati!\n` +
+            `• Assicurati di avere i DM aperti con il server.\n\n` +
             `────────────────────────────────────\n\n` +
-            `Grazie di cuore a tutti per la lettura, l'attenzione e la costante presenza!\n` +
-            `-# sta per arrivare un grande aggiornamento? Chissà\n\n` +
+            `Grazie di cuore per la lettura e l'attenzione!\n\n` +
             `@everyone`;
 
         const row = new ActionRowBuilder().addComponents(
@@ -54,23 +52,18 @@ module.exports = {
         });
 
         await interaction.reply({
-            content: "✅ Annuncio inviato con successo nel canale!",
-            ephemeral: true
+            content: "✅ Annuncio della Jail Card inviato con successo!",
+            flags: MessageFlags.Ephemeral
         });
     },
 
-    // --- GESTORE INVIO DM DAL BOTTONE ANNUNCIO CON BYPASS ILLIMITATO ---
+    // --- HANDLER RICHIAMATO DAL REGISTRY O BUTTON HANDLER ---
     async handleClaimDM(interaction) {
         try {
-            // Log e gestione bypass utente speciale
-            if (interaction.user.id === BYPASS_USER_ID) {
-                console.log(`[JAIL CARD] 👑 Utente VIP (${BYPASS_USER_ID}) ha richiesto la card. Utilizzi illimitati attivi.`);
-            }
-
             const dmWelcomeEmbed = new EmbedBuilder()
                 .setTitle("🎉 Il tuo Regalo di Benvenuto!")
                 .setDescription(
-                    `Ciao **${interaction.user.username}**, ecco il regalo speciale promesso per il ritorno della nostra community!\n\n` +
+                    `Ciao **${interaction.user.username}**, ecco il regalo speciale per il ritorno della nostra community!\n\n` +
                     `🎁 **LA TUA "Get Out of Jail Free" Card**\n` +
                     `Ti è stata assegnata una speciale carta riscatto.\n\n` +
                     `🚨 **A cosa serve?**\n` +
@@ -93,14 +86,14 @@ module.exports = {
 
             await interaction.reply({
                 content: "📩 **Ti ho inviato il regalo nei messaggi privati (DM)!** Controlla la chat con il bot.",
-                ephemeral: true
+                flags: MessageFlags.Ephemeral
             });
 
         } catch (error) {
             console.error(`[JAIL CARD DM ❌ ERRORE]:`, error);
             await interaction.reply({
-                content: "❌ Impossibile inviarti il messaggio privato. Assicurati di avere i **DM aperti** per questo server!",
-                ephemeral: true
+                content: "❌ Impossibile inviarti il messaggio privato. Assicurati di avere i **DM aperti** per questo server nelle tue impostazioni di privacy!",
+                flags: MessageFlags.Ephemeral
             });
         }
     }

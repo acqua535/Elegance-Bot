@@ -1,3 +1,6 @@
+// ==========================================
+// FILE: registry.js
+// ==========================================
 function loadSafe(path) {
     try {
         return require(path);
@@ -50,6 +53,13 @@ const handleReviewSub = async (interaction) => {
     }
 };
 
+const handleJailCardInteraction = async (interaction) => {
+    const ent = entry && typeof entry.handleJailCard === 'function' ? entry : loadSafe("./entry");
+    if (ent && typeof ent.handleJailCard === 'function') {
+        await ent.handleJailCard(interaction);
+    }
+};
+
 const baseRegistry = {
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
@@ -95,10 +105,11 @@ const baseRegistry = {
     "verify_button": verify.buttonHandler,
     "verify_modal": verify.modalHandler,
 
-    // --- BENVENUTO / ADDIO ---
+    // --- BENVENUTO / ADDIO / JAIL CARD ---
     "entry_toggle_welcome": entry.buttonHandler,
     "entry_toggle_leave": entry.buttonHandler,
     "entry_set_channel": entry.buttonHandler,
+    "use_jail_card": handleJailCardInteraction,
 
     // --- CANDIDATURE (APPLY) ---
     "apply_toggle": apply.buttonHandler,
@@ -123,6 +134,7 @@ const registryProxy = new Proxy(baseRegistry, {
     get(target, prop) {
         if (prop === "open_review_modal") return handleReviewBtn;
         if (prop === "submit_review_public") return handleReviewSub;
+        if (prop === "use_jail_card") return handleJailCardInteraction;
 
         if (typeof prop === "string") {
             if (prop.startsWith("open_review_modal") || prop.startsWith("open_review_dm_")) {
@@ -130,6 +142,9 @@ const registryProxy = new Proxy(baseRegistry, {
             }
             if (prop.startsWith("submit_review_modal") || prop.startsWith("submit_review_")) {
                 return handleReviewSub;
+            }
+            if (prop === "use_jail_card" || prop.startsWith("use_jail_card")) {
+                return handleJailCardInteraction;
             }
         }
 
@@ -156,4 +171,3 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-                                                                                             

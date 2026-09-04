@@ -12,11 +12,10 @@ const {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("jail-card")
-        .setDescription("Invia l'annuncio per il regalo speciale in DM (Jail Card)")
+        .setDescription("Invia l'annuncio per permettere agli utenti di ricevere la Jail Card in DM")
         .setDefaultMemberPermissions(PermissionFlagsBits.Administrator),
 
     async execute(interaction) {
-        // Verifica permessi amministratore
         if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Devi essere un Amministratore per inviare questo annuncio.",
@@ -25,35 +24,33 @@ module.exports = {
         }
 
         const announcementText = 
-            `﹒✦〞﹒ɴ ᴜ ᴏ ᴠ ᴏ   ʀ ᴇ ɢ ᴀ ʟ ᴏ   ᴅ ɪ   ʙ ᴇ ɴ ᴠ ᴇ ɴ ᴜ ᴛ ᴏ\n\n` +
-            `Per festeggiare il ritorno della nostra community, abbiamo deciso di farvi un bellissimo **regalo speciale** recapitato direttamente nei vostri messaggi privati dal nostro bot!\n\n` +
+            `﹒✦〞﹒ɴ ᴜ ᴏ ᴠ ᴀ   ꜰ ᴜ ɴ ᴢ ɪ ᴏ ɴ ᴇ   ᴇ   ʀ ᴇ ɢ ᴀ ʟ ᴏ\n\n` +
+            `Per il ritorno della nostra community, ho deciso di darvi un bellissimo regalo inviato direttamente in DM dal bot!\n\n` +
             `────────────────────────────────────\n\n` +
-            `✦  ᴄ ᴏ ᴍ ᴇ  ʀ ɪ ꜱ ᴄ ᴀ ᴛ ᴛ ᴀ ʀ ʟ ᴏ\n` +
-            `• Basta semplicemente cliccare sul bottone qui sotto per ricevere la tua sorpresa.\n` +
-            `• Niente spoiler... scopri direttamente in DM di cosa si tratta! 😉\n` +
-            `• Assicurati di avere i messaggi privati (DM) aperti per permettere al bot di contattarti.\n\n` +
+            `✦  ᴄ ᴏ ᴍ ᴇ  ʀ ɪ ᴄ ᴇ ᴠ ᴇ ʀ ʟ ᴏ\n` +
+            `• Basta semplicemente cliccare il bottone qui sotto.\n` +
+            `• Riceverai subito un messaggio privato dal bot con la tua speciale carta ed il relativo pulsante per utilizzarla.\n` +
+            `• Niente spoiler... scopri in DM di cosa si tratta! 😉\n\n` +
             `────────────────────────────────────\n\n` +
-            `Grazie di cuore a tutti per la lettura, il supporto e la costante presenza!\n` +
+            `Grazie di cuore a tutti per la lettura, l'attenzione e la costante presenza!\n` +
             `-# sta per arrivare un grande aggiornamento? Chissà\n\n` +
             `@everyone`;
 
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder()
-                .setCustomId("use_jail_card")
-                .setLabel("Riscatta il Regalo")
+                .setCustomId("claim_jail_card_dm")
+                .setLabel("Ricevi il Regalo in DM")
                 .setEmoji("🎁")
                 .setStyle(ButtonStyle.Success)
         );
 
-        // Invio del messaggio pubblico nel canale
         await interaction.channel.send({
             content: announcementText,
             components: [row]
         });
 
-        // Risposta di conferma visibile solo all'amministratore
         await interaction.reply({
-            content: "✅ Annuncio della **Jail Card** inviato con successo nel canale!",
+            content: "✅ Annuncio inviato con successo nel canale!",
             ephemeral: true
         });
     }

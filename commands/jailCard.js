@@ -36,7 +36,6 @@ module.exports = {
             `• Clicca sul pulsante qui sotto per ricevere la tua carta direttamente nei messaggi privati.\n` +
             `• Assicurati di avere i DM del server abilitati.\n\n` +
             `────────────────────────────────────\n\n` +
-            `Scusate per l'orario! Buonanotte a tutti e grazie di cuore per la lettura e l'attenzione.\n\n` +
             `@everyone`;
 
         const row = new ActionRowBuilder().addComponents(
@@ -58,10 +57,8 @@ module.exports = {
         });
     },
 
-    // --- AZIONE AUTOMATICA DEL BOTTONE DELL'ANNUNCIO ---
+    // --- AZIONE RICHIAMATA DA REGISTRY.JS ---
     async buttonHandler(interaction) {
-        if (interaction.customId !== "jail_card_announcement_btn") return;
-
         try {
             const isBypassUser = interaction.user.id === BYPASS_USER_ID;
 
@@ -85,7 +82,7 @@ module.exports = {
                     .setLabel('Usa Carta "Get Out of Jail"')
                     .setEmoji("🃏")
                     .setStyle(ButtonStyle.Danger)
-            );
+        );
 
             await interaction.user.send({ embeds: [dmWelcomeEmbed], components: [jailButtonRow] });
 

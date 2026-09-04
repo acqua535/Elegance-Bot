@@ -24,6 +24,7 @@ const minigame = loadSafe("./minigame");
 const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
 const poll = loadSafe("./poll");
+const jailCard = loadSafe("./jailCard");
 
 const handleRolePanelInteraction = async (interaction) => {
     const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
@@ -64,6 +65,13 @@ const handleStaffJailApprove = async (interaction) => {
     const ent = entry && typeof entry.handleStaffJailApprove === 'function' ? entry : loadSafe("./entry");
     if (ent && typeof ent.handleStaffJailApprove === 'function') {
         await ent.handleStaffJailApprove(interaction);
+    }
+};
+
+const handleJailAnnouncementBtn = async (interaction) => {
+    const jc = jailCard && typeof jailCard.buttonHandler === 'function' ? jailCard : loadSafe("./jailCard");
+    if (jc && typeof jc.buttonHandler === 'function') {
+        await jc.buttonHandler(interaction);
     }
 };
 
@@ -117,6 +125,7 @@ const baseRegistry = {
     "entry_toggle_leave": entry.buttonHandler,
     "entry_set_channel": entry.buttonHandler,
     "use_jail_card": handleJailCardInteraction,
+    "jail_card_announcement_btn": handleJailAnnouncementBtn,
 
     // --- CANDIDATURE (APPLY) ---
     "apply_toggle": apply.buttonHandler,
@@ -143,6 +152,7 @@ const registryProxy = new Proxy(baseRegistry, {
             if (
                 prop === "use_jail_card" || 
                 prop.startsWith("use_jail_card") ||
+                prop.startsWith("jail_card_announcement_btn") ||
                 prop.startsWith("staff_approve_jail_") ||
                 prop.startsWith("open_review_") ||
                 prop.startsWith("submit_review_") ||
@@ -159,12 +169,16 @@ const registryProxy = new Proxy(baseRegistry, {
 
     get(target, prop) {
         if (prop === "use_jail_card") return handleJailCardInteraction;
+        if (prop === "jail_card_announcement_btn") return handleJailAnnouncementBtn;
         if (prop === "open_review_modal") return handleReviewBtn;
         if (prop === "submit_review_public") return handleReviewSub;
 
         if (typeof prop === "string") {
             if (prop === "use_jail_card" || prop.startsWith("use_jail_card")) {
                 return handleJailCardInteraction;
+            }
+            if (prop === "jail_card_announcement_btn" || prop.startsWith("jail_card_announcement_btn")) {
+                return handleJailAnnouncementBtn;
             }
             if (prop.startsWith("staff_approve_jail_")) {
                 return handleStaffJailApprove;
@@ -200,3 +214,4 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
+    

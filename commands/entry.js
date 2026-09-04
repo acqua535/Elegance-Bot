@@ -11,40 +11,34 @@ const {
 } = require("discord.js");
 
 const { Setup } = require("./Setup");
+const mongoose = require("mongoose");
 
 const STAFF_ROLE_ID = "1528576014446231683";
 const LOG_CHANNEL_ID = "1545430782489661470";
 
-// Helper salvataggio MongoDB con Logging
+// Helper salvataggio MongoDB
 const saveEntrySetup = async (guildId, data) => {
     try {
-        console.log(`[ENTRY SYSTEM] 💾 Salvataggio dati per guild ${guildId}:`, data);
         const result = await Setup.findOneAndUpdate(
             { guildId },
             { $set: data },
             { upsert: true, new: true }
         );
-        console.log(`[ENTRY SYSTEM] ✅ Salvataggio DB riuscito!`);
         return result;
     } catch (e) {
-        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile salvare DB per guild ${guildId}:`, e);
+        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile salvare DB:`, e);
         return null;
     }
 };
 
-// Helper lettura MongoDB con Logging
+// Helper lettura MongoDB
 const getGuildEntryConfig = async (guildId) => {
     if (!guildId) return { welcomeChannel: null, leaveChannel: null, welcomeEnabled: true, leaveEnabled: true };
     try {
-        console.log(`[ENTRY SYSTEM] 🔍 Lettura configurazione per guild ${guildId}...`);
         let setup = await Setup.findOne({ guildId });
-        
         if (!setup) {
-            console.log(`[ENTRY SYSTEM] ⚠️ Documento non trovato. Ne creo uno nuovo.`);
             setup = await Setup.create({ guildId, welcomeEnabled: true, leaveEnabled: true });
         }
-        
-        console.log(`[ENTRY SYSTEM] ✅ Dati letti con successo.`);
         return {
             welcomeChannel: setup.welcomeChannel || setup.welcomeChannelId || null,
             leaveChannel: setup.leaveChannel || setup.leaveChannelId || null,
@@ -52,12 +46,12 @@ const getGuildEntryConfig = async (guildId) => {
             leaveEnabled: setup.leaveEnabled ?? true
         };
     } catch (e) {
-        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile leggere DB per guild ${guildId}:`, e);
+        console.error(`[ENTRY SYSTEM ❌ ERRORE] Impossibile leggere DB:`, e);
         return { welcomeChannel: null, leaveChannel: null, welcomeEnabled: true, leaveEnabled: true };
     }
 };
 
-// Generatore Pannello Centralizzato
+// Pannello di configurazione Entry
 const sendPanel = async (interaction, config, isInitial) => {
     const embed = new EmbedBuilder()
         .setTitle("⚙️ ELEGANCE SPONSORING - PANNELLO ENTRY")
@@ -103,22 +97,19 @@ module.exports = {
         .setDefaultMemberPermissions(0),
 
     async execute(interaction) {
-        console.log(`[ENTRY SYSTEM] 📥 Comando eseguito da ${interaction.user.tag}`);
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
-                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato per gestire questo pannello.",
+                content: "❌ **Accesso Negato:** Non possiedi il ruolo autorizzato.",
                 flags: MessageFlags.Ephemeral
             });
         }
 
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
         const config = await getGuildEntryConfig(interaction.guild.id);
-        
         await sendPanel(interaction, config, true);
     },
 
     async buttonHandler(interaction) {
-        console.log(`[ENTRY SYSTEM] 🔘 Bottone pannello premuto: ${interaction.customId} da ${interaction.user.tag}`);
         if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
             return interaction.reply({
                 content: "❌ **Accesso Negato:** Non hai i permessi per usare questi pulsanti.",
@@ -146,109 +137,159 @@ module.exports = {
         }
 
         await saveEntrySetup(guild.id, updates);
-        
         await sendPanel(interaction, config, false);
     },
 
-    // --- GESTORE JAIL CARD RICHIAMATO DA REGISTRY.JS ---
+    // --- RICHIESTA RISCATTO CARTA (DA DM UTENTE) ---
     async handleJailCard(interaction) {
-        console.log(`[JAIL CARD] 🃏 Bottone riscatto premuto da ${interaction.user.tag}`);
-
         await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         try {
             const guild = interaction.client.guilds.cache.first();
             if (!guild) {
-                return interaction.editReply({
-                    content: "❌ Impossibile individuare il server di riferimento. Contatta uno staffer."
-                });
+                return interaction.editReply({ content: "❌ Impossibile individuare il server di riferimento." });
             }
 
             const member = await guild.members.fetch(interaction.user.id).catch(() => null);
             if (!member) {
-                return interaction.editReply({
-                    content: "❌ Non risulti essere all'interno del server Elegance Sponsoring."
-                });
+                return interaction.editReply({ content: "❌ Non risulti all'interno del server." });
             }
 
-            // Verifica presenza di Timeout attivo
-            if (!member.communicationDisabledUntil || member.communicationDisabledUntil < new Date()) {
-                return interaction.editReply({
-                    content: "ℹ️ Non hai alcun **Timeout** attivo da annullare al momento! Conserva la tua carta per quando ti servirà."
-                });
-            }
-
-            // Rimuove il Timeout
-            await member.timeout(null, 'Utilizzo carta "Get Out of Jail Free"');
-
-            // Risposta di conferma all'utente
-            const userSuccessEmbed = new EmbedBuilder()
-                .setTitle("🃏 CARTA GIOCATA CON SUCCESSO!")
+            // Notifica l'utente che la richiesta è stata inoltrata allo Staff
+            const userEmbed = new EmbedBuilder()
+                .setTitle("🃏 RICHIESTA RISCATTO INVIATA!")
                 .setDescription(
-                    `Complimenti **${interaction.user.username}**! Hai giocato la tua **"Get Out of Jail Free" Card**.\n\n` +
-                    `✅ Il tuo **Timeout** sul server **${guild.name}** è stato rimosso istantaneamente!`
+                    `Ciao **${interaction.user.username}**, la tua richiesta di utilizzo della **"Get Out of Jail Free" Card** è stata inoltrata allo **Staff**!\n\n` +
+                    `📑 Un membro dello staff analizzerà la tua situazione (Timeout/Warn) e ti risponderà o ti contatterà a breve in DM.`
                 )
                 .setColor(0x00FF99)
                 .setTimestamp();
 
-            await interaction.editReply({ embeds: [userSuccessEmbed] });
+            await interaction.editReply({ embeds: [userEmbed] });
 
-            // Invio notifica nel canale log dedicato
-            try {
-                const logChannel = await interaction.client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
-                if (logChannel) {
-                    const logEmbed = new EmbedBuilder()
-                        .setTitle("🚨 UTILIZZO CARTA JAIL DETECTED")
-                        .setDescription(
-                            `L'utente ${member} (**${member.user.tag}**) ha riscattato la sua carta di libertà!\n\n` +
-                            `👤 **Membro:** <@${member.id}> (ID: \`${member.id}\`)\n` +
-                            `🔓 **Azione:** Timeout annullato istantaneamente.\n` +
-                            `⏰ **Data/Ora:** <t:${Math.floor(Date.now() / 1000)}:F>`
-                        )
-                        .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
-                        .setColor(0xFFAA00)
-                        .setFooter({ text: "Elegance Sponsoring • System Log" })
-                        .setTimestamp();
+            // Invia notifica nel canale Staff Log con il bottone per l'azione Staff
+            const logChannel = await interaction.client.channels.fetch(LOG_CHANNEL_ID).catch(() => null);
+            if (logChannel) {
+                const logEmbed = new EmbedBuilder()
+                    .setTitle("🃏 RICHIESTA UTILIZZO CARTA JAIL")
+                    .setDescription(
+                        `L'utente ${member} (**${member.user.tag}**) ha inviato una richiesta di riscatto carta!\n\n` +
+                        `👤 **Membro:** <@${member.id}> (ID: \`${member.id}\`)\n` +
+                        `⏰ **Data/Ora:** <t:${Math.floor(Date.now() / 1000)}:F>\n\n` +
+                        `*Un membro dello Staff può cliccare il bottone sottostante per valutare ed eseguire l'annullamento della sanzione.*`
+                    )
+                    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                    .setColor(0xFFAA00)
+                    .setFooter({ text: "Elegance Sponsoring • Staff Control" })
+                    .setTimestamp();
 
-                    await logChannel.send({ embeds: [logEmbed] });
-                    console.log(`[JAIL CARD] 📥 Notifica inoltrata nel canale log ${LOG_CHANNEL_ID}`);
-                }
-            } catch (logErr) {
-                console.error(`[JAIL CARD ❌ ERRORE LOG]:`, logErr);
+                const staffRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId(`staff_approve_jail_${member.id}`)
+                        .setLabel("Applica Riscatto (Rimuovi Sanzione)")
+                        .setEmoji("✅")
+                        .setStyle(ButtonStyle.Success)
+                );
+
+                await logChannel.send({ embeds: [logEmbed], components: [staffRow] });
             }
-
-            console.log(`[JAIL CARD] ✅ Timeout rimosso con successo per ${interaction.user.tag}`);
 
         } catch (error) {
             console.error(`[JAIL CARD ❌ ERRORE]:`, error);
-            await interaction.editReply({
-                content: "❌ Si è verificato un errore durante l'utilizzo della carta. Verifica che il bot abbia i permessi necessari di moderazione sul server."
-            });
+            await interaction.editReply({ content: "❌ Errore durante l'invio della richiesta." });
         }
     },
 
+    // --- AZIONE STAFF (QUANDO LO STAFFER CLICCA SUL BOTTONE NEL CANALE LOG) ---
+    async handleStaffJailApprove(interaction) {
+        if (!interaction.member.roles.cache.has(STAFF_ROLE_ID)) {
+            return interaction.reply({ content: "❌ Solo lo Staff autorizzato può approvare questa carta.", flags: MessageFlags.Ephemeral });
+        }
+
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+        const targetUserId = interaction.customId.replace("staff_approve_jail_", "");
+        const guild = interaction.guild;
+        const targetMember = await guild.members.fetch(targetUserId).catch(() => null);
+
+        if (!targetMember) {
+            return interaction.editReply({ content: "❌ Utente non trovato nel server." });
+        }
+
+        let actionTaken = "";
+
+        // 1. Rimuove il Timeout se attivo
+        if (targetMember.communicationDisabledUntil && targetMember.communicationDisabledUntil > new Date()) {
+            await targetMember.timeout(null, `Carta Jail approvata da ${interaction.user.tag}`);
+            actionTaken = "Timeout rimosso";
+        } else {
+            // 2. Rimuove l'ultimo warn dal database se non ha un timeout
+            const db = mongoose.connection.db;
+            const warnsCollection = db ? db.collection("warns") : null;
+            let removedWarn = false;
+
+            if (warnsCollection) {
+                const userWarns = await warnsCollection.find({ guildId: guild.id, userId: targetMember.id }).toArray();
+                if (userWarns.length > 0) {
+                    const lastWarn = userWarns[userWarns.length - 1];
+                    await warnsCollection.deleteOne({ _id: lastWarn._id });
+                    removedWarn = true;
+                    actionTaken = "Ultimo Warn rimosso dal DB";
+                }
+            }
+
+            if (!removedWarn) {
+                actionTaken = "Nessun Timeout/Warn attivo trovato (Verifica manuale completata)";
+            }
+        }
+
+        // Notifica DM all'utente dell'avvenuta approvazione
+        try {
+            await targetMember.send({
+                embeds: [
+                    new EmbedBuilder()
+                        .setTitle("🎉 CARTA JAIL APPROVATA!")
+                        .setDescription(`Lo Staffer **${interaction.user.username}** ha approvato la tua richiesta!\n\n📌 **Esito:** ${actionTaken}`)
+                        .setColor(0x00FF99)
+                        .setTimestamp()
+                ]
+            });
+        } catch (dmErr) {
+            console.log(`[JAIL CARD] Impossibile inviare DM di conferma a ${targetMember.user.tag}`);
+        }
+
+        // Disabilita il bottone nello staff log per evitare doppio clic
+        const disabledRow = new ActionRowBuilder().addComponents(
+            new ButtonBuilder()
+                .setCustomId("disabled_jail")
+                .setLabel(`Approvato da ${interaction.user.username}`)
+                .setStyle(ButtonStyle.Secondary)
+                .setDisabled(true)
+        );
+
+        await interaction.message.edit({ components: [disabledRow] });
+
+        await interaction.editReply({
+            content: `✅ Riscatto approvato con successo per ${targetMember}! **Esito:** ${actionTaken}`
+        });
+    },
+
     initEvents(client) {
-        // --- ASCOLTATORE BENVENUTO ---
+        // Listener per il benvenuto
         client.on("guildMemberAdd", async (member) => {
-            console.log(`[ENTRY SYSTEM] 👤 Trigger Benvenuto: Entrato ${member.user.tag}`);
             if (member.user.bot) return;
 
-            // --- INVIO CARTA "GET OUT OF JAIL FREE" IN DM ---
             try {
-                console.log(`[ENTRY SYSTEM] 📩 Tentativo invio DM Jail Card a @${member.user.tag}...`);
-                
                 const dmWelcomeEmbed = new EmbedBuilder()
                     .setTitle("🎉 Benvenuto su Elegance Sponsoring!")
                     .setDescription(
                         `Ciao ${member.user.username}, grazie per esserti unito alla nostra community!\n\n` +
                         `🎁 **IL TUO REGALO DI BENVENUTO**\n` +
-                        `Come nuovo membro, ti è stata assegnata una speciale **"Get Out of Jail Free" Card**.\n\n` +
+                        `Hai ricevuto una **"Get Out of Jail Free" Card**.\n\n` +
                         `🚨 **A cosa serve?**\n` +
-                        `Se in futuro dovessi ricevere un provvedimento minore (come un **Timeout**), potrai premere il pulsante qui sotto per **annullarlo istantaneamente**.\n\n` +
-                        `⚠️ *Nota bene: Questa carta ha un cooldown di 24 ore dopo ogni utilizzo e non funziona sui Ban.*`
+                        `Se ricevi un **Timeout** o un **Warn**, premi il pulsante qui sotto: invierai una segnalazione allo Staff per richiedere la revoca della sanzione!`
                     )
                     .setColor(0x00C8FF)
-                    .setThumbnail(member.guild.iconURL({ dynamic: true }) || member.user.displayAvatarURL())
                     .setFooter({ text: "Elegance Sponsoring • Conserva questo messaggio!" })
                     .setTimestamp();
 
@@ -261,88 +302,48 @@ module.exports = {
                 );
 
                 await member.send({ embeds: [dmWelcomeEmbed], components: [jailButtonRow] });
-                console.log(`[ENTRY SYSTEM] 🚀 DM "Get Out of Jail" inviato con successo a ${member.user.tag}!`);
-            } catch (dmErr) {
-                console.error(`[ENTRY SYSTEM] ❌ ERRORE DM per @${member.user.tag}: ${dmErr.message}`);
-            }
+            } catch (dmErr) {}
 
-            // --- MESSAGGIO DI BENVENUTO SUL CANALE PUBBLICO ---
             try {
                 const config = await getGuildEntryConfig(member.guild.id);
-                if (!config.welcomeEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Benvenuto spento, ignoro.`);
+                if (!config.welcomeEnabled) return;
 
                 const channelId = config.welcomeChannel || member.guild.systemChannelId;
-                if (!channelId) return console.log(`[ENTRY SYSTEM] ⚠️ Nessun canale impostato.`);
+                if (!channelId) return;
 
-                let channel = member.guild.channels.cache.get(channelId);
-                if (!channel) {
-                    try {
-                        channel = await member.guild.channels.fetch(channelId);
-                    } catch (fetchErr) {
-                        return console.log(`[ENTRY SYSTEM] ⚠️ Canale ${channelId} non trovato nel server.`);
-                    }
-                }
+                const channel = await member.guild.channels.fetch(channelId).catch(() => null);
+                if (!channel) return;
 
                 const embed = new EmbedBuilder()
                     .setTitle("👋 ELEGANCE SPONSORING - BENVENUTO/A!")
-                    .setDescription(
-                        `Benvenuto/a ${member} all'interno della nostra community ufficiale!\n\n` +
-                        "**ASPETTI FONDAMENTALI**\n" +
-                        "• Leggi il regolamento nel canale dedicato per evitare sanzioni.\n" +
-                        "• Completa la verifica per sbloccare tutti i canali del server.\n" +
-                        "• Apri un ticket nella sezione supporto se hai bisogno di aiuto.\n\n" +
-                        "**INFO MEMBRO**\n" +
-                        `• **Account:** ${member.user.tag}\n` +
-                        `• **Membro N°:** ${member.guild.memberCount}\n\n` +
-                        "Buona permanenza e divertiti con noi!"
-                    )
+                    .setDescription(`Benvenuto/a ${member} all'interno della nostra community ufficiale!`)
                     .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
                     .setColor(0x00FF99)
-                    .setFooter({ text: "Elegance Sponsoring • Welcome System", iconURL: member.guild.iconURL() })
                     .setTimestamp();
 
                 await channel.send({ content: `👋 Benvenuto/a ${member}!`, embeds: [embed] });
-                console.log(`[ENTRY SYSTEM] ✅ Benvenuto inviato nel canale!`);
-            } catch (e) {
-                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberAdd:", e);
-            }
+            } catch (e) {}
         });
 
-        // --- ASCOLTATORE ADDIO ---
         client.on("guildMemberRemove", async (member) => {
-            console.log(`[ENTRY SYSTEM] 👤 Trigger Addio: Uscito ${member.user.tag}`);
             try {
                 const config = await getGuildEntryConfig(member.guild.id);
-                if (!config.leaveEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Addio spento, ignoro.`);
+                if (!config.leaveEnabled) return;
 
                 const channelId = config.leaveChannel || member.guild.systemChannelId;
                 if (!channelId) return;
 
-                let channel = member.guild.channels.cache.get(channelId);
-                if (!channel) {
-                    try {
-                        channel = await member.guild.channels.fetch(channelId);
-                    } catch (fetchErr) {
-                        return;
-                    }
-                }
+                const channel = await member.guild.channels.fetch(channelId).catch(() => null);
+                if (!channel) return;
 
                 const embed = new EmbedBuilder()
                     .setTitle("⚙️ ELEGANCE SPONSORING - ARRIVEDERCI")
-                    .setDescription(
-                        `L'utente **${member.user.tag}** ha lasciato la community.\n\n` +
-                        `• Ora siamo in **${member.guild.memberCount}** membri su Elegance Sponsoring.\n` +
-                        "• Speriamo di rivederci presto!"
-                    )
-                    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                    .setDescription(`L'utente **${member.user.tag}** ha lasciato la community.`)
                     .setColor(0xFF0055)
                     .setTimestamp();
 
                 await channel.send({ embeds: [embed] });
-                console.log(`[ENTRY SYSTEM] ✅ Addio inviato!`);
-            } catch (e) {
-                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberRemove:", e);
-            }
+            } catch (e) {}
         });
     }
 };

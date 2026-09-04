@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: entry.js
+// FILE: entry.js (PARTE 1/2)
 // ==========================================
 const { 
     SlashCommandBuilder, 
@@ -16,7 +16,7 @@ const mongoose = require("mongoose");
 const STAFF_ROLE_ID = "1528576014446231683";
 const LOG_CHANNEL_ID = "1545430782489661470";
 
-// --- SCHEMA & MODELLO MONGO DB PER IL COOLDOWN (DEFINITO DIRETTAMENTE IN ENTRY.JS) ---
+// --- SCHEMA & MODELLO MONGO DB PER IL COOLDOWN ---
 const jailCooldownSchema = new mongoose.Schema({
     userId: { type: String, required: true, unique: true },
     lastUsed: { type: Date, required: true }
@@ -208,7 +208,7 @@ module.exports = {
                 }
             }
 
-            // 2. SALVA / AGGIORNA IL COOLDOWN SU MONGODB
+                    // 2. SALVA / AGGIORNA IL COOLDOWN SU MONGODB
             await JailCooldown.findOneAndUpdate(
                 { userId },
                 { lastUsed: now },
@@ -418,4 +418,53 @@ module.exports = {
                         `• **Membro N°:** ${member.guild.memberCount}\n\n` +
                         "Buona permanenza e divertiti con noi!"
                     )
-                 
+                    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                    .setColor(0x00FF99)
+                    .setFooter({ text: "Elegance Sponsoring • Welcome System", iconURL: member.guild.iconURL() })
+                    .setTimestamp();
+
+                await channel.send({ content: `👋 Benvenuto/a ${member}!`, embeds: [embed] });
+                console.log(`[ENTRY SYSTEM] ✅ Benvenuto inviato nel canale!`);
+            } catch (e) {
+                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberAdd:", e);
+            }
+        });
+
+        // --- ASCOLTATORE ADDIO COMPLETO ESTESO ---
+        client.on("guildMemberRemove", async (member) => {
+            console.log(`[ENTRY SYSTEM] 👤 Trigger Addio: Uscito ${member.user.tag}`);
+            try {
+                const config = await getGuildEntryConfig(member.guild.id);
+                if (!config.leaveEnabled) return console.log(`[ENTRY SYSTEM] 🛑 Sistema Addio spento, ignoro.`);
+
+                const channelId = config.leaveChannel || member.guild.systemChannelId;
+                if (!channelId) return;
+
+                let channel = member.guild.channels.cache.get(channelId);
+                if (!channel) {
+                    try {
+                        channel = await member.guild.channels.fetch(channelId);
+                    } catch (fetchErr) {
+                        return;
+                    }
+                }
+
+                const embed = new EmbedBuilder()
+                    .setTitle("⚙️ ELEGANCE SPONSORING - ARRIVEDERCI")
+                    .setDescription(
+                        `L'utente **${member.user.tag}** ha lasciato la community.\n\n` +
+                        `• Ora siamo in **${member.guild.memberCount}** membri su Elegance Sponsoring.\n` +
+                        "• Speriamo di rivederci presto!"
+                    )
+                    .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+                    .setColor(0xFF0055)
+                    .setTimestamp();
+
+                await channel.send({ embeds: [embed] });
+                console.log(`[ENTRY SYSTEM] ✅ Addio inviato!`);
+            } catch (e) {
+                console.error("[ENTRY SYSTEM ❌ ERRORE] guildMemberRemove:", e);
+            }
+        });
+    }
+};

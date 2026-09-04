@@ -131,20 +131,40 @@ const baseRegistry = {
 };
 
 const registryProxy = new Proxy(baseRegistry, {
+    // Intercetta la verifica d'esistenza (es. 'use_jail_card' in registry)
+    has(target, prop) {
+        if (typeof prop === "string") {
+            if (
+                prop === "use_jail_card" || 
+                prop.startsWith("use_jail_card") ||
+                prop.startsWith("open_review_") ||
+                prop.startsWith("submit_review_") ||
+                prop.startsWith("select_") ||
+                prop.startsWith("rolepanel_") ||
+                prop.startsWith("apply_") ||
+                prop.startsWith("poll_")
+            ) {
+                return true;
+            }
+        }
+        return prop in target;
+    },
+
+    // Intercetta il recupero dell'handler
     get(target, prop) {
+        if (prop === "use_jail_card") return handleJailCardInteraction;
         if (prop === "open_review_modal") return handleReviewBtn;
         if (prop === "submit_review_public") return handleReviewSub;
-        if (prop === "use_jail_card") return handleJailCardInteraction;
 
         if (typeof prop === "string") {
+            if (prop === "use_jail_card" || prop.startsWith("use_jail_card")) {
+                return handleJailCardInteraction;
+            }
             if (prop.startsWith("open_review_modal") || prop.startsWith("open_review_dm_")) {
                 return handleReviewBtn;
             }
             if (prop.startsWith("submit_review_modal") || prop.startsWith("submit_review_")) {
                 return handleReviewSub;
-            }
-            if (prop === "use_jail_card" || prop.startsWith("use_jail_card")) {
-                return handleJailCardInteraction;
             }
         }
 

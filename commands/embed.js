@@ -15,7 +15,7 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName("descrizione")
-                .setDescription("Descrizione dell'embed")
+                .setDescription("Descrizione dell'embed (usa \\n per andare a capo)")
                 .setRequired(true)
         )
         .addStringOption(option =>
@@ -24,12 +24,12 @@ module.exports = {
                 .setDescription("Scegli un colore acceso per l'embed")
                 .setRequired(false)
                 .addChoices(
-                    { name: '🔵 Blu Elettrico', value: '#0055FF' },
-                    { name: '🔴 Rosso Fuoco', value: '#FF0033' },
-                    { name: '🟢 Verde Neon', value: '#00FF66' },
-                    { name: '🟣 Viola Acceso', value: '#9900FF' },
-                    { name: '🟡 Giallo Sole', value: '#FFCC00' },
-                    { name: '🟠 Arancione Vivo', value: '#FF6600' }
+                    { name: 'Blu Elettrico', value: '#0055FF' },
+                    { name: 'Rosso Fuoco', value: '#FF0033' },
+                    { name: 'Verde Neon', value: '#00FF66' },
+                    { name: 'Viola Acceso', value: '#9900FF' },
+                    { name: 'Giallo Sole', value: '#FFCC00' },
+                    { name: 'Arancione Vivo', value: '#FF6600' }
                 )
         ),
 
@@ -47,12 +47,12 @@ module.exports = {
             const titolo = interaction.options.getString("titolo");
             const descrizione = interaction.options.getString("descrizione");
             
-            // Prende il colore scelto dal menu a tendina, oppure usa un grigio scuro di default se lascia vuoto
+            // Prende il colore scelto dal menu a tendina o usa un grigio scuro di default
             const coloreFinale = interaction.options.getString("colore") || "#2f3136";
 
             const embed = new EmbedBuilder()
                 .setTitle(titolo)
-                .setDescription(descrizione.replace(/\\n/g, "\n")) // Supporto per a capo con \n
+                .setDescription(descrizione.replace(/\\n/g, "\n")) // Supporto per i a capo corretti
                 .setColor(coloreFinale)
                 .setFooter({ text: `Creato da ${interaction.user.tag}`, iconURL: interaction.user.displayAvatarURL() })
                 .setTimestamp();

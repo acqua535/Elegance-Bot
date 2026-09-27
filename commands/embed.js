@@ -21,12 +21,21 @@ module.exports = {
         .addStringOption(option =>
             option
                 .setName("colore")
-                .setDescription("Colore HEX dell'embed (es: #5865F2)")
+                .setDescription("Scegli un colore acceso per l'embed")
                 .setRequired(false)
+                .addChoices(
+                    { name: '🔵 Blu Elettrico', value: '#0055FF' },
+                    { name: '🔴 Rosso Fuoco', value: '#FF0033' },
+                    { name: '🟢 Verde Neon', value: '#00FF66' },
+                    { name: '🟣 Viola Acceso', value: '#9900FF' },
+                    { name: '🟡 Giallo Sole', value: '#FFCC00' },
+                    { name: '🟠 Arancione Vivo', value: '#FF6600' }
+                )
         ),
 
     async execute(interaction) {
         try {
+            // Controllo permessi ruolo
             if (!interaction.member.roles.cache.has(EMBED_ROLE_ID)) {
                 console.warn(`[SECURITY] Tentativo di esecuzione non autorizzata del comando /embed da parte di ${interaction.user.tag} (${interaction.user.id})`);
                 return interaction.reply({
@@ -37,15 +46,9 @@ module.exports = {
 
             const titolo = interaction.options.getString("titolo");
             const descrizione = interaction.options.getString("descrizione");
-            let coloreInput = interaction.options.getString("colore") || "#2f3136";
-
-            // Normalizzazione e validazione HEX color
-            if (!coloreInput.startsWith("#")) {
-                coloreInput = `#${coloreInput}`;
-            }
-
-            const hexRegex = /^#([0-9A-F]{3}){1,2}$/i;
-            const coloreFinale = hexRegex.test(coloreInput) ? coloreInput : "#2f3136";
+            
+            // Prende il colore scelto dal menu a tendina, oppure usa un grigio scuro di default se lascia vuoto
+            const coloreFinale = interaction.options.getString("colore") || "#2f3136";
 
             const embed = new EmbedBuilder()
                 .setTitle(titolo)

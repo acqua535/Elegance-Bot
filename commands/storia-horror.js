@@ -7,7 +7,6 @@ const {
     MessageFlags
 } = require("discord.js");
 
-// Array Storie Horror (Parte 1: Storie 1-7)
 const storie = [
     {
         id: "storia_1",
@@ -35,7 +34,7 @@ const storie = [
         label: "4. L'Avatar Scomparso",
         emoji: "👤",
         titolo: "👤 L'Avatar Scomparso",
-        testo: "Da circa un mese, un utente di nome Leo aveva notato qualcosa di estremamente bizzarro nell'avatar di un suo vecchio compagno di gilda su Discord, che risultava offline da oltre due mesi dopo un misterioso incidente stradale.\n\nLa foto profilo dell'amico raffigurava l'interno di un lungo corridoio buio con una porta socchiusa in fondo. All'inizio sembrava una semplice immagine trovata su Pinterest, ma Leo notò che ogni giorno la figura sfuocata che si intravedeva nella porta sembrava leggermente più vicina al primo piano dell'immagine. Era come se l'avatar fosse un fotogramma in movimento rallentato che avanzava giorno dopo giorno.\n\nLa sera del 31 Ottobre, Leo decise di ingrandire nuovamente l'avatar: la porta nell'immagine era spalancata e la figura era completamente sparita dal quadro. Il corridoio nella foto era vuoto. Un secondo dopo, la corrente di tutta la casa saltò improvvisamente, spegnendo luci, router e computer.\n\nNel buio pesto della sua camera, illuminato solo dai lampi del temporale all'esterno, Leo sentì il suono inconfondibile di un cellulare che riceveva una notifica. Guardò lo schermo dello smartphone: era un messaggio privato di Discord inviato dall'account dell'amico offline. Il testo diceva semplicemente: *'Sono finalmente uscito dalla foto. Sono nel tuo corridoio'*. Subito dopo, dal corridoio reale di casa sua, risuonarono dei passi bagnati e pesanti che avanzavano lentamente verso la sua porta..."
+        testo: "Da circa un mese, un utente di nome Leo aveva notato qualcosa di estremamente bizzarro nell'avatar di un suo vecchio compagno di gilda su Discord, che risultava offline da oltre due mesi dopo un misterioso incidente stradale.\n\nLa foto profilo dell'amico raffigurava l'interno di un lungo corridoio buio con una porta socchiusa in fondo. All'inizio sembrava una semplice immagine trovata su Pinterest, ma Leo notò che ogni giorno la figura sfuocata che si intravedeva nella porta sembrava leggermente più vicina al primo piano dell'immagine. Era come se l'avatar fosse un fotogramma in movimento rallentato che avanzava giorno dopo giorno.\n\nLa sera del 31 Ottobre, Leo decise di ingrandire nuovamente l'avatar: la porta nell'immagine era spalancata e la figura era completamente sparita dal quadro. Il corridoio nella foto era vuoto. Un secondo dopo, la corrente di tutta la casa saltò improvvisamente, spegnendo luci, router e computer.\n\nNel buio pesto della sua camera, illuminato solo dai lampi del temporale all'esterno, Leo sentì il suono inconfondibile di un cellulare che riceveva una notifica. Guardò lo schermo dello smartphone: era un messaggio privato di Discord inviato dall'account dell'amico offline. Il testo diceva semplicemente: *'Sono finalmente uscito dalla foto. Sono nel tuo corridoio'*. Subito dopo, dal corridoio reale di casa sua, risuonaronono dei passi bagnati e pesanti che avanzavano lentamente verso la sua porta..."
     },
     {
         id: "storia_5",
@@ -56,7 +55,7 @@ const storie = [
         label: "7. Lo Stream dell'Oltretomba",
         emoji: "📹",
         titolo: "📹 Lo Stream dell'Oltretomba",
-        testo: "Durante una maratona di streaming per la notte di Halloween, uno streamer da cinquemila spettatori contemporanei stava giocando a un nuovo titolo horror indipendente. La chat Twitch e il server Discord collegato stavano viaggiando a una velocità pazzesca, con centinaia di emote e commenti al secondo.\n\nVerso le due di notte, la chat iniziò improvvisamente a rallentare. I messaggi normali sparirono, rimpiazzati da centinaia di utenti che scrivevano la stessa identica frase: **'CHI È QUELLA PERSONA DIETRO DI TE?'**.\n\nLo streamer sorrise, pensando al classico scherzo coordinato organizzato dai mod per farlo spaventare. *'Bravi ragazzi, bel tentativo, ma non ci cado!'* disse ridendo verso la webcam. Per stare al gioco, aprì la finestra di anteprima di OBS sul monitor secondario per mostrare che dietro di lui c'era solo la parete bianca della stanza.\n\nMa quando guardò l'anteprima, il sorriso gli si congelò sulle labbra. Riflessa chiaramente nell'inquadratura, proprio sopra la sua spalla destra, c'era un'alta figura umanoide priva di volto, totalmente nera, con le mani giunte sul suo collo come se stesse per strangolarlo. Lo streamer paralizzato non riusciva a muovere un muscolo. La figura nell'anteprima si piegò verso l'auricolare del microfono e bisbigliò un'unica parola che risuonata in diretta davanti a cinquemila persone: *'Trovato'*. Un secondo dopo, la trasmissione si oscurò per sempre."
+        testo: "Durante una maratona di streaming per la notte di Halloween, uno streamer da cinquemila spettatori contemporanei stava giocando a un nuovo titolo horror indipendente. La chat Twitch e il server Discord collegato stavano viaggiando a una velocità pazzesca, con centinaia di emote e commenti al secondo.\n\nVerso le due di notte, la chat iniziò improvvisamente a rallentare. I messaggi normali sparirono, rimpiazzati da centinaia di utenti che scrivevano la stessa identica frase: **'CHI È QUELLA PERSONA DIETRO DI TE?'**.\n\nLo streamer sorrise, pensando al classico scherzo coordinato organizzato dai mod per farlo spaventare. *'Bravi ragazzi, bel tentativo, ma non ci cado!'* disse ridendo verso la webcam. Per stare al gioco, aprì la finestra di anteprima di OBS sul monitor secondario per mostrare che dietro di lui c'era solo la parete bianca della stanza.\n\nMa quando guardò l'anteprima, il sorriso gli si congelò sulle labbra. Riflessa chiaramente nell'inquadratura, proprio sopra la sua spalla destra, c'era un'alta figura umanoide priva di volto, totalmente nera, con le mani giunte sul suo collo come se stesse per strangolarlo. Lo streamer paralizzato non riusciva a muovere un muscolo. La figura nell'anteprima si piegò verso l'auricolare del microfono e bisbigliò un'unica parola che risuonò in diretta davanti a cinquemila persone: *'Trovato'*. Un secondo dopo, la trasmissione si oscurò per sempre."
     },
 
         {
@@ -128,7 +127,7 @@ const storie = [
         label: "17. Il File Corrotto",
         emoji: "📁",
         titolo: "📁 Il File Corrotto",
-        testo: "Un membro del server scaricò un file archivio chiamato `Halloween_Rewards_VIP.zip` inviato da un utente anonimo all'interno del canale chat generale.\n\nTentando di estrarre l'archivio, l'antivirus di Windows bloccò immediatamente l'operazione, mostrando un avviso di sicurezza critico che il ragazzo non aveva mai visto prima: `Attenzione: Il file contiene codice genetico non identificato`.\n\nPensando a un falso positivo causato da qualche crack, il ragazzo disattivò incautamente la protezione e aprì l'archivio. Il desktop venne istantaneamente sommerso da centinaia di finestre di prompt dei comandi che si aprivano e chiudedevano a catena.\n\nOgnuna di quelle finestre riproduceva in loop un file audio registrato in tempo reale all'interno della stanza dell'utente: il suono dei suoi sospiri, il rumore del suo condizionatore, le sue battute sulla tastiera e persino il ritmo accelerato del suo battito cardiaco. Il file aveva infettato il sistema, trasformando il PC in una cassa di risonanza per le presenze nascoste nella casa."
+        testo: "Un membro del server scaricò un file archivio chiamato `Halloween_Rewards_VIP.zip` inviato da un utente anonimo all'interno del canale chat generale.\n\nTentando di estrarre l'archivio, l'antivirus di Windows bloccò immediatamente l'operazione, mostrando un avviso di sicurezza critico che il ragazzo non aveva mai visto prima: `Attenzione: Il file contiene codice genetico non identificato`.\n\nPensando a un falso positivo causato da qualche crack, il ragazzo disattivò incautamente la protezione e aprì l'archivio. Il desktop venne istantaneamente sommerso da centinaia di finestre di prompt dei comandi che si aprivano e chiudevano a catena.\n\nOgnuna di quelle finestre riproduceva in loop un file audio registrato in tempo reale all'interno della stanza dell'utente: il suono dei suoi sospiri, il rumore del suo condizionatore, le sue battute sulla tastiera e persino il ritmo accelerato del suo battito cardiaco. Il file aveva infettato il sistema, trasformando il PC in una cassa di risonanza per le presenze nascoste nella casa."
     },
     {
         id: "storia_18",
@@ -158,7 +157,6 @@ module.exports = {
         .setName("storia-horror")
         .setDescription("Scegli e sblocca una storia horror dal menu interattivo 🎃📖"),
 
-    // Esecuzione del comando /storia-horror
     async execute(interaction) {
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId("select_storia_horror")
@@ -182,12 +180,8 @@ module.exports = {
         });
     },
 
-    // Handler integrato con registry.js (CON DEFER PER EVITARE TIMEOUT)
     async selectMenuHandler(interaction) {
         if (!interaction.isStringSelectMenu()) return;
-
-        // Risposta immediata a Discord per evitare il messaggio "Elegance Sponsoring in corso..."
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const storiaScelta = storie.find(s => s.id === interaction.values[0]);
 
@@ -200,12 +194,14 @@ module.exports = {
                 .setFooter({ text: "Elegance Sponsoring • Storie di Halloween 🎃" })
                 .setTimestamp();
 
-            await interaction.editReply({
-                embeds: [storyEmbed]
+            await interaction.reply({
+                embeds: [storyEmbed],
+                flags: MessageFlags.Ephemeral
             });
         } else {
-            await interaction.editReply({
-                content: "⚠️ Impossibile caricare questa storia horror."
+            await interaction.reply({
+                content: "⚠️ Impossibile caricare questa storia horror.",
+                flags: MessageFlags.Ephemeral
             });
         }
     }

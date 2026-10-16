@@ -4,7 +4,6 @@ const {
     StringSelectMenuBuilder, 
     StringSelectMenuOptionBuilder, 
     ActionRowBuilder, 
-    ComponentType,
     MessageFlags
 } = require("discord.js");
 
@@ -57,7 +56,7 @@ const storie = [
         label: "7. Lo Stream dell'Oltretomba",
         emoji: "📹",
         titolo: "📹 Lo Stream dell'Oltretomba",
-        testo: "Durante una maratona di streaming su Twitch per Halloween, uno streamer molto seguito stava giocando ad un horror indipendente. La chat stava viaggiando a mille all'ora, quando improvvisamente i messaggi iniziarono a rallentare. Tutti gli spettatori scrivevano la stessa identica cosa: 'CHI È QUELLA PERSONA DIETRO DI TE?'.\n\nLo streamer sorrise pensando a uno scherzo coordinato della community e guardò la sua webcam nella schermata di anteprima. Riflessa nelle lenti dei suoi occhiali, c'era un'alta figura priva di volto, totalmente nera, china sulla sua spalla. Prima che potesse girarsi o staccare la spina della corrente, lo stream si oscurò e gli altoparlanti riprodussero un risucchio soffocato."
+        testo: "Durante una maratona di streaming su Twitch per Halloween, uno streamer molto seguito stava giocando ad un horror indipendente. La chat stava viaggiando a mille all'ora, quando improvvisamente i messaggi iniziarono a rallentare. Tutti gli spettatori scrivevano la stessa identica cosa: 'CHI È QUELLA PERSONA DIETRO DITE?'.\n\nLo streamer sorrise pensando a uno scherzo coordinato della community e guardò la sua webcam nella schermata di anteprima. Riflessa nelle lenti dei suoi occhiali, c'era un'alta figura priva di volto, totalmente nera, china sulla sua spalla. Prima che potesse girarsi o staccare la spina della corrente, lo stream si oscurò e gli altoparlanti riprodussero un risucchio soffocato."
     },
     {
         id: "storia_8",
@@ -141,14 +140,14 @@ const storie = [
         label: "19. Il Ruolo Maledetto",
         emoji: "🔮",
         titolo: "🔮 Il Ruolo Maledetto",
-        testo: "Durante l'evento di Halloween, un utente riuscì ad aggiudicarsi un ruolo segreto dal nome 'Anima Tormentata'. Inizialmente era felice per il colore unico del nome nella lista utenti, ma presto le cose presero una piega inquietante.\n\nOgni volta che provava a digitare un messaggio in qualsiasi canale, le sue parole venivano automaticamente modificate dal bot in frasi d'aiuto disperate. Tenta di abbandonare il server, ma la pagina si ricaricava continuamente mantenendolo all'interno. Sul suo profilo apparve uno stato personalizzato mai scritto da lui: 'Socio a vita dell'Oltretomba'."
+        testo: "Durante l'evento di Halloween, un utente riuscì ad aggiudicarsi un ruolo segreto dal nome 'Anima Tormentata'. Inizialmente era felice per il colore unico del nome nella lista utenti, ma presto le cose presero una piega inquietante.\n\nOgni volta che provava a digitare un messaggio in qualsiasi canale, le sue parole venivano automaticamente modificate dal bot in frasi d'aiuto disperate. Tenta di abbandonare il server, ma la pagina si ricaricava continuamente mantenendolo all'interno. Sullo profilo apparve uno stato personalizzato mai scritto da lui: 'Socio a vita dell'Oltretomba'."
     },
     {
         id: "storia_20",
         label: "20. La Fine del Server",
         emoji: "🎃",
         titolo: "🎃 La Fine del Server",
-        testo: "Allo scoccare della mezzanotte del 31 Ottobre, l'intera grafica del server *Elegance Sponsoring* cambiò colore diventando nero pece ed arancione scuro. Le icone dei ruoli mutarono in piccoli teschi e le stanze testuali vennero rimpiazzate da un unico canale chiamatosi '#il-giudizio-finale'.\n\nTutti gli utenti connessi in quel momento riceverono un messaggio in sovrimpressione che recitava: 'Il tempo è scaduto. Spegnete i monitor o ciò che abbiamo liberato stasera rimarrà con voi nelle vostre stanze per sempre'. Chi non spense subito il PC raccontò di aver sentito colpi fortissimi battere dal di dentro del proprio vetro del monitor..."
+        testo: "Allo scoccare della mezzanotte del 31 Ottobre, l'intera grafica del server *Elegance Sponsoring* cambiò colore diventando nero pece ed arancione scuro. Le icone dei ruoli mutarono in piccoli teschi e le stanze testuali vennero rimpiazzate da un unico canale chiamatosi '#il-giudizio-finale'.\n\nTutti gli utenti connessi in quel momento ricevettero un messaggio in sovrimpressione che recitava: 'Il tempo è scaduto. Spegnete i monitor o ciò che abbiamo liberato stasera rimarrà con voi nelle vostre stanze per sempre'. Chi non spense subito il PC raccontò di aver sentito colpi fortissimi battere dal di dentro del proprio vetro del monitor..."
     }
 ];
 
@@ -157,8 +156,8 @@ module.exports = {
         .setName("storia-horror")
         .setDescription("Scegli e sblocca una storia horror dal menu interattivo 🎃📖"),
 
+    // Esecuzione del comando /storia-horror
     async execute(interaction) {
-        // Costruzione del Menu a Tendina (Select Menu) con le 20 storie
         const selectMenu = new StringSelectMenuBuilder()
             .setCustomId("select_storia_horror")
             .setPlaceholder("🎃 Scegli quale incubo vuoi sbloccare oggi...");
@@ -174,45 +173,32 @@ module.exports = {
 
         const row = new ActionRowBuilder().addComponents(selectMenu);
 
-        // Messaggio iniziale con il menu (Ephemeral per non intasare la chat)
-        const response = await interaction.reply({
+        await interaction.reply({
             content: "Scegli quale incubo vuoi sbloccare oggi (Mancano pochi giorni ad Halloween)... 🎃🕸️",
             components: [row],
             flags: MessageFlags.Ephemeral
         });
+    },
 
-        // Collettore per gestire la selezione dell'utente
-        const collector = response.createMessageComponentCollector({
-            componentType: ComponentType.StringSelect,
-            time: 120000 // Menu attivo per 2 minuti
-        });
+    // Handler chiamato dal registry quando l'utente seleziona una storia dal menu
+    async selectMenuHandler(interaction) {
+        if (!interaction.isStringSelectMenu()) return;
 
-        collector.on("collect", async (i) => {
-            const storiaScelta = storie.find(s => s.id === i.values[0]);
+        const storiaScelta = storie.find(s => s.id === interaction.values[0]);
 
-            if (storiaScelta) {
-                const storyEmbed = new EmbedBuilder()
-                    .setTitle(storiaScelta.titolo)
-                    .setDescription(storiaScelta.testo)
-                    .setColor("#1A1A1A")
-                    .setThumbnail("https://media.giphy.com/media/13GdXy1FkvHjoc/giphy.gif")
-                    .setFooter({ text: "Elegance Sponsoring • Storie di Halloween 🎃" })
-                    .setTimestamp();
+        if (storiaScelta) {
+            const storyEmbed = new EmbedBuilder()
+                .setTitle(storiaScelta.titolo)
+                .setDescription(storiaScelta.testo)
+                .setColor("#1A1A1A")
+                .setThumbnail("https://media.giphy.com/media/13GdXy1FkvHjoc/giphy.gif")
+                .setFooter({ text: "Elegance Sponsoring • Storie di Halloween 🎃" })
+                .setTimestamp();
 
-                await i.reply({
-                    embeds: [storyEmbed],
-                    flags: MessageFlags.Ephemeral
-                });
-            }
-        });
-
-        collector.on("end", async () => {
-            selectMenu.setDisabled(true);
-            const disabledRow = new ActionRowBuilder().addComponents(selectMenu);
-            await interaction.editReply({
-                components: [disabledRow]
-            }).catch(() => {});
-        });
+            await interaction.reply({
+                embeds: [storyEmbed],
+                flags: MessageFlags.Ephemeral
+            });
+        }
     }
 };
-          

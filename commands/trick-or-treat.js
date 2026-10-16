@@ -62,7 +62,7 @@ module.exports = {
                 .setTitle("🦇 RIFUTATO DALL'OLTRETOMBA!")
                 .setDescription("🍬 **Hai già ricevuto il tuo dolcetto, non fare il furbetto!**\n\n*La tomba non concede doppi regali ai mortali goliardici...*")
                 .setColor("#FF0033")
-                .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815320.png")
+                .setImage("https://media.giphy.com/media/3ohjV8JRMcNVGYK10I/giphy.gif") // GIF Warning
                 .setFooter({ text: "Elegance Sponsoring • Halloween Night 🎃" });
 
             return interaction.reply({
@@ -76,7 +76,7 @@ module.exports = {
             .setTitle("🔮 LA ROULETTE DELLE ANIME")
             .setDescription(`🕸️ **${member}** si fa avanti nella nebbia di Halloween...\n\n*💭 Ummmh... Dolcetto o Scherzetto?*`)
             .setColor("#FF6600")
-            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setImage("https://media.giphy.com/media/13GdXy1FkvHjoc/giphy.gif") // GIF Suspense
             .setFooter({ text: "Elegance Sponsoring • Estrazione in corso..." });
 
         await interaction.reply({ embeds: [suspenseEmbed] });
@@ -106,8 +106,8 @@ module.exports = {
                         `*Festeggia finché le ombre te lo permettono!*`
                     )
                     .setColor("#FFD700") // Oro brillante
-                    .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815228.png")
-                    .setFooter({ text: "Elegance Sponsoring •🎃 GG e Buona Fortuna!" })
+                    .setImage("https://media.giphy.com/media/ds7ltUbHYLxjW/giphy.gif") // GIF Vittoria
+                    .setFooter({ text: "Elegance Sponsoring • GG e Buona Fortuna! 🎃" })
                     .setTimestamp();
 
                 return interaction.editReply({ embeds: [victoryEmbed] });
@@ -116,7 +116,7 @@ module.exports = {
                 console.error("Errore assegnazione ruoli:", err);
                 const errorEmbed = new EmbedBuilder()
                     .setTitle("⚠️ MALEDIZIONE NEI PERMESSI!")
-                    .setDescription(`🍬 **${member}** ha vinto il dolcetto, ma gli spiriti del bot non riescono ad assegnare il ruolo! Metti il ruolo del bot più in alto!`)
+                    .setDescription(`🍬 **${member}** ha vinto il dolcetto, ma gli spiriti del bot non riescono ad assegnare il ruolo! Assicurati di mettere il ruolo del bot più in alto nella lista ruoli di Discord!`)
                     .setColor("#FF0000");
 
                 return interaction.editReply({ embeds: [errorEmbed] });
@@ -139,8 +139,8 @@ module.exports = {
                         `*Muahaha! Tutti all'inferno ad acclamare il nuovo mostro!*`
                     )
                     .setColor("#9900FF") // Viola oscuro horror
-                    .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815234.png")
-                    .setFooter({ text: "Elegance Sponsoring •🎃 Sei stato marchiato!" })
+                    .setImage("https://media.giphy.com/media/67tyJbqnsNH9uHBkUq/giphy.gif") // GIF Sconfitta
+                    .setFooter({ text: "Elegance Sponsoring • Sei stato marchiato! 🎃" })
                     .setTimestamp();
 
                 return interaction.editReply({ embeds: [prankEmbed] });
@@ -150,7 +150,7 @@ module.exports = {
                     .setTitle("🛡️ SCUDO ANTI-MALEDIZIONE!")
                     .setDescription(
                         `🦇 **SCHERZETTO INTERROTTO!**\n\n` +
-                        `Volevo trasformare ${member} in **\`${randomNickname}\`**, ma la sia aura da Admin / Ruolo Superiore lo protegge...\n\n` +
+                        `Volevo cambiare il nome a ${member} in **\`${randomNickname}\`**, ma la sua aura da Admin o il suo ruolo superiore lo proteggono...\n\n` +
                         `*Salvo per questo giro, mortale!* 🙄`
                     )
                     .setColor("#333333")

@@ -7,7 +7,7 @@ const {
     MessageFlags
 } = require("discord.js");
 
-// Array con le 20 storie horror LUNGHE, dettagliate e immersive (Storie 1-10)
+// Array Storie Horror (Parte 1: Storie 1-7)
 const storie = [
     {
         id: "storia_1",
@@ -58,7 +58,8 @@ const storie = [
         titolo: "📹 Lo Stream dell'Oltretomba",
         testo: "Durante una maratona di streaming per la notte di Halloween, uno streamer da cinquemila spettatori contemporanei stava giocando a un nuovo titolo horror indipendente. La chat Twitch e il server Discord collegato stavano viaggiando a una velocità pazzesca, con centinaia di emote e commenti al secondo.\n\nVerso le due di notte, la chat iniziò improvvisamente a rallentare. I messaggi normali sparirono, rimpiazzati da centinaia di utenti che scrivevano la stessa identica frase: **'CHI È QUELLA PERSONA DIETRO DI TE?'**.\n\nLo streamer sorrise, pensando al classico scherzo coordinato organizzato dai mod per farlo spaventare. *'Bravi ragazzi, bel tentativo, ma non ci cado!'* disse ridendo verso la webcam. Per stare al gioco, aprì la finestra di anteprima di OBS sul monitor secondario per mostrare che dietro di lui c'era solo la parete bianca della stanza.\n\nMa quando guardò l'anteprima, il sorriso gli si congelò sulle labbra. Riflessa chiaramente nell'inquadratura, proprio sopra la sua spalla destra, c'era un'alta figura umanoide priva di volto, totalmente nera, con le mani giunte sul suo collo come se stesse per strangolarlo. Lo streamer paralizzato non riusciva a muovere un muscolo. La figura nell'anteprima si piegò verso l'auricolare del microfono e bisbigliò un'unica parola che risuonata in diretta davanti a cinquemila persone: *'Trovato'*. Un secondo dopo, la trasmissione si oscurò per sempre."
     },
-    {
+
+        {
         id: "storia_8",
         label: "8. Il Bot Posseduto",
         emoji: "🤖",
@@ -79,8 +80,7 @@ const storie = [
         titolo: "⏱️ Il Ping alle 03:33",
         testo: "Esattamente alle **03:33** di una fredda notte di pioggia, il telefono di Marco emesse un segnale acuto. Era un messaggio privato su Discord inviato da un account privo di avatar, il cui nome utente era una sequenza illeggibile di caratteri ASCII corrotti.\n\nIl messaggio conteneva un piccolo file audio chiamato `listening_you.mp3` e una sola riga di testo scritto in grassetto: **'So cosa fai quando credi che nessuno ti stia guardando'**.\n\nPensando a un virus o a un tentativo di phishing, Marco decise comunque, spinto da una morbosa curiosità, di scaricare il file ed eseguirlo su un ambiente sandbox protetto. Quando premette Play, non sentì alcuna musica o voce distorta. Sentì soltanto la registrazione ambientale ultra-nitida della sua stanza registrata negli ultimi quindici minuti: il suono dei suoi tasti premuti sulla tastiera, il suo respiro leggero, il sorso d'acqua preso dal bicchiere...\n\nMa verso il terzo minuto del file audio, si sentì un rumore che Marco non aveva mai percepito dal vivo: il suono di una cerniera zip che si apriva lentamente, seguito da una voce profonda che bisbigliava a pochissimi centimetri dal microfono delle sue cuffie: *'Ora che ha finito di ascoltare il file, posso finalmente toccarlo'*. Marco sentì due mani gelide e umide posarsi pesantemente sulle sue spalle."
     },
-
-        {
+    {
         id: "storia_11",
         label: "11. Lo Specchio Digitale",
         emoji: "🪞",
@@ -108,15 +108,15 @@ const storie = [
         titolo: "🔨 La Stanza delle Banned Soul",
         testo: "Tutti gli utenti di Discord credono che quando un membro viene bannato da un server, il suo profilo venga semplicemente scollegato e rimosso dal database della community. Ma un ex-moderatore di *Elegance Sponsoring*, frugando tra i file di configurazione del bot di gestione, fece una scoperta da incubo.\n\nIl codice del bot non eliminava gli utenti bannati: li reindirizzava in un canale nascosto e invisibile agli utenti normali, chiamato **'#fossa-comune-ban'**.\n\nGli utenti bannati non potevano disconnettersi, chiudere l'app o abbandonare il server. I loro account venivano bloccati in un loop continuo. L'ex-mod riuscì a sbloccare temporaneamente la visione di quel canale per soli dieci secondi: vide migliaia di messaggi di aiuto inviati a raffica da utenti bannati anni prima, che supplicavano di essere liberati da una prigione digitale che continuava a tormentarli anche quando i loro computer reali erano spenti.\n\nPrima che il bot si accorgesse della sua intrusione e gli revocasse i permessi, l'ex-mod lesse un messaggio inviato dal suo stesso account... datato con la data del giorno successivo."
     },
-    {
+
+        {
         id: "storia_15",
         label: "15. Il Tasto Sconosciuto",
         emoji: "⌨️",
         titolo: "⌨️ Il Tasto Sconosciuto",
         testo: "Un collezionista di hardware vintage comprò per pochi euro ad una fiera dell'usato una vecchia tastiera meccanica custom senza marca, caratterizzata da un layout strano e da tasti pesanti in plastica nera.\n\nMentre la puliva con un panno, notò un tasto sconosciuto situato nella parte inferiore, posizionato esattamente tra il tasto Ctrl sinistro e la barra spaziatrice. Sul tasto non c'era alcuna lettera, ma soltanto un piccolo teschio inciso a fuoco nel materiale.\n\nMosso dalla solita curiosità tecnica, collegò la tastiera al suo PC da gaming e premette con decisione quel tasto misterioso. Improvvisamente, tutte le luci di casa sua si spensero in un corto circuito violento. I LED della tastiera si illuminarono di una luce rosso sangue intensissima, e dagli altoparlanti del monitor partì una voce gutturale che fece tremare le pareti:\n\n*'Rito di connessione avviato. Hai premuto il tasto di richiamo. La tua tastiera è ora collegata direttamente alla rete neurale dell'Oltretomba. Ogni tasto che premerai da adesso in poi costerà un battito al tuo cuore'*. Il ragazzo provò a staccare le mani, ma le sue dita erano letteralmente incollate ai tasti."
     },
-
-        {
+    {
         id: "storia_16",
         label: "16. La Chiamata di Gruppo Vuota",
         emoji: "👥",
@@ -128,7 +128,7 @@ const storie = [
         label: "17. Il File Corrotto",
         emoji: "📁",
         titolo: "📁 Il File Corrotto",
-        testo: "Un membro del server scaricò un file archivio chiamato `Halloween_Rewards_VIP.zip` inviato da un utente anonimo all'interno del canale chat generale.\n\nTentando di estrarre l'archivio, l'antivirus di Windows bloccò immediatamente l'operazione, mostrando un avviso di sicurezza critico che il ragazzo non aveva mai visto prima: `Attenzione: Il file contiene codice genetico non identificato`.\n\nPensando a un falso positivo causato da qualche crack, il ragazzo disattivò incautamente la protezione e aprì l'archivio. Il desktop venne istantaneamente sommerso da centinaia di finestre di prompt dei comandi che si aprivano e chiudevano a catena.\n\nOgnuna di quelle finestre riproduceva in loop un file audio registrato in tempo reale all'interno della stanza dell'utente: il suono dei suoi sospiri, il rumore del suo condizionatore, le sue battute sulla tastiera e persino il ritmo accelerato del suo battito cardiaco. Il file aveva infettato il sistema, trasformando il PC in una cassa di risonanza per le presenze nascoste nella casa."
+        testo: "Un membro del server scaricò un file archivio chiamato `Halloween_Rewards_VIP.zip` inviato da un utente anonimo all'interno del canale chat generale.\n\nTentando di estrarre l'archivio, l'antivirus di Windows bloccò immediatamente l'operazione, mostrando un avviso di sicurezza critico che il ragazzo non aveva mai visto prima: `Attenzione: Il file contiene codice genetico non identificato`.\n\nPensando a un falso positivo causato da qualche crack, il ragazzo disattivò incautamente la protezione e aprì l'archivio. Il desktop venne istantaneamente sommerso da centinaia di finestre di prompt dei comandi che si aprivano e chiudedevano a catena.\n\nOgnuna di quelle finestre riproduceva in loop un file audio registrato in tempo reale all'interno della stanza dell'utente: il suono dei suoi sospiri, il rumore del suo condizionatore, le sue battute sulla tastiera e persino il ritmo accelerato del suo battito cardiaco. Il file aveva infettato il sistema, trasformando il PC in una cassa di risonanza per le presenze nascoste nella casa."
     },
     {
         id: "storia_18",
@@ -182,9 +182,12 @@ module.exports = {
         });
     },
 
-    // Handler integrato con registry.js
+    // Handler integrato con registry.js (CON DEFER PER EVITARE TIMEOUT)
     async selectMenuHandler(interaction) {
         if (!interaction.isStringSelectMenu()) return;
+
+        // Risposta immediata a Discord per evitare il messaggio "Elegance Sponsoring in corso..."
+        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
         const storiaScelta = storie.find(s => s.id === interaction.values[0]);
 
@@ -197,9 +200,12 @@ module.exports = {
                 .setFooter({ text: "Elegance Sponsoring • Storie di Halloween 🎃" })
                 .setTimestamp();
 
-            await interaction.reply({
-                embeds: [storyEmbed],
-                flags: MessageFlags.Ephemeral
+            await interaction.editReply({
+                embeds: [storyEmbed]
+            });
+        } else {
+            await interaction.editReply({
+                content: "⚠️ Impossibile caricare questa storia horror."
             });
         }
     }

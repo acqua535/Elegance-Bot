@@ -1,4 +1,4 @@
-const { SlashCommandBuilder, MessageFlags } = require("discord.js");
+const { SlashCommandBuilder, EmbedBuilder, MessageFlags } = require("discord.js");
 
 // Funzione helper per la suspense
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
@@ -6,7 +6,7 @@ const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 // ID del Ruolo BASE (assegnato SEMPRE quando si vince il dolcetto)
 const MAIN_TREAT_ROLE = "1560577641898053653";
 
-// ID dei 5 ruoli a rarità per lo "Bonus Dolcetto"
+// ID dei 5 ruoli a rarità per il Bonus Dolcetto
 const BONUS_ROLES = [
     { id: "1560577086605754439", name: "👑 Re di Halloween", weight: 5 },    // 5% Leggendario
     { id: "1560576934897909850", name: "🎃 Zucca VIP", weight: 15 },         // 15% Raro
@@ -51,64 +51,112 @@ function getRandomBonusRole() {
 module.exports = {
     data: new SlashCommandBuilder()
         .setName("trick-or-treat")
-        .setDescription("Tenta la fortuna: Dolcetto o Scherzetto? 🎃"),
+        .setDescription("Tenta la fortuna alla Roulette di Halloween! 🎃🕸️"),
 
     async execute(interaction) {
         const member = interaction.member;
 
-        // 1. Controllo se l'utente ha già il ruolo dolcetto base
+        // 1. Controllo Furbetto (SOLO VISIBILE A CHI FA IL COMANDO)
         if (member.roles.cache.has(MAIN_TREAT_ROLE)) {
+            const warningEmbed = new EmbedBuilder()
+                .setTitle("🦇 RIFUTATO DALL'OLTRETOMBA!")
+                .setDescription("🍬 **Hai già ricevuto il tuo dolcetto, non fare il furbetto!**\n\n*La tomba non concede doppi regali ai mortali goliardici...*")
+                .setColor("#FF0033")
+                .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815320.png")
+                .setFooter({ text: "Elegance Sponsoring • Halloween Night 🎃" });
+
             return interaction.reply({
-                content: "🍬 Hai già ricevuto il tuo dolcetto, non fare il furbetto!",
+                embeds: [warningEmbed],
                 flags: MessageFlags.Ephemeral
             });
         }
 
-        // Risposta immediata in Ephemeral per gestire l'edit con la suspense
-        await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+        // 2. EMBED DI SUSPENSE INIZIALE (PUBBLICO)
+        const suspenseEmbed = new EmbedBuilder()
+            .setTitle("🔮 LA ROULETTE DELLE ANIME")
+            .setDescription(`🕸️ **${member}** si fa avanti nella nebbia di Halloween...\n\n*💭 Ummmh... Dolcetto o Scherzetto?*`)
+            .setColor("#FF6600")
+            .setThumbnail(member.user.displayAvatarURL({ dynamic: true }))
+            .setFooter({ text: "Elegance Sponsoring • Estrazione in corso..." });
 
-        // 2. Suspense a intervalli di 1.5 secondi
-        await interaction.editReply({ content: "💭 Umhh... dolcetto o scherzetto?" });
-        await sleep(1500);
-        await interaction.editReply({ content: "🤔 Fammi pensare..." });
+        await interaction.reply({ embeds: [suspenseEmbed] });
         await sleep(1500);
 
-        // 3. Estrazione: 30% Dolcetto, 70% Scherzetto
-        const isTreat = Math.random() < 0.30;
+        suspenseEmbed.setDescription(`🕸️ **${member}** attende il suo destino...\n\n*🤔 Le streghe stanno decidendo la tua sorte...*`);
+        await interaction.editReply({ embeds: [suspenseEmbed] });
+        await sleep(1500);
+
+        // 3. Estrazione: 40% Dolcetto, 60% Scherzetto
+        const isTreat = Math.random() < 0.40;
 
         if (isTreat) {
-            // --- DOLCETTO (30%) ---
+            // --- DOLCETTO (40%) ---
             const bonusRole = getRandomBonusRole();
 
             try {
-                // Assegniamo il ruolo base a prescindere + il ruolo bonus estratto
+                // Assegnazione ruoli
                 await member.roles.add([MAIN_TREAT_ROLE, bonusRole.id]);
 
-                return interaction.editReply({
-                    content: `🎉 **DOLCETTO!** Ti è powders andata di lusso! 🍬\n\n` +
-                             `✅ Ti è stato assegnato il ruolo Dolcetto Base!\n` +
-                             `🎁 **BONUS EXTRA:** Hai sbloccato anche il ruolo **${bonusRole.name}**! GG!`
-                });
+                const victoryEmbed = new EmbedBuilder()
+                    .setTitle("🎉 DOLCETTO CONCESSO! 🍬")
+                    .setDescription(
+                        `✨ **Le tenebre sorridono a ${member}!**\n\n` +
+                        `✅ **Ruolo Base Sbloccato:** <@&${MAIN_TREAT_ROLE}>\n` +
+                        `🎁 **BONUS RITUALISTICO:** Ti sei aggiudicato anche **${bonusRole.name}**!\n\n` +
+                        `*Festeggia finché le ombre te lo permettono!*`
+                    )
+                    .setColor("#FFD700") // Oro brillante
+                    .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815228.png")
+                    .setFooter({ text: "Elegance Sponsoring •🎃 GG e Buona Fortuna!" })
+                    .setTimestamp();
+
+                return interaction.editReply({ embeds: [victoryEmbed] });
+
             } catch (err) {
                 console.error("Errore assegnazione ruoli:", err);
-                return interaction.editReply({
-                    content: "🍬 È uscito il dolcetto, ma c'è un problema coi permessi del bot nella gerarchia dei ruoli! Assicurati che il ruolo del bot sia in ALTO nella lista dei ruoli."
-                });
+                const errorEmbed = new EmbedBuilder()
+                    .setTitle("⚠️ MALEDIZIONE NEI PERMESSI!")
+                    .setDescription(`🍬 **${member}** ha vinto il dolcetto, ma gli spiriti del bot non riescono ad assegnare il ruolo! Metti il ruolo del bot più in alto!`)
+                    .setColor("#FF0000");
+
+                return interaction.editReply({ embeds: [errorEmbed] });
             }
 
         } else {
-            // --- SCHERZETTO (70%) ---
+            // --- SCHERZETTO (60%) ---
             const randomNickname = SCARY_NICKNAMES[Math.floor(Math.random() * SCARY_NICKNAMES.length)];
 
             try {
                 await member.setNickname(randomNickname);
-                return interaction.editReply({
-                    content: `🦇 **SCHERZETTO!** Ti sei beccato la sfortuna! Da oggi il tuo nuovo nome nel server è **${randomNickname}** (fino al 31 Ottobre)! Muahaha! 💀`
-                });
+
+                const prankEmbed = new EmbedBuilder()
+                    .setTitle("💀 SCHERZETTO MACABRO! 🦇")
+                    .setDescription(
+                        `😈 **La sfortuna ha divorato ${member}!**\n\n` +
+                        `🩸 Il tuo nome umano è stato cancellato.\n` +
+                        `🏷️ Fino al **31 Ottobre** sarai conosciuto come:\n` +
+                        `👉 **\`${randomNickname}\`**\n\n` +
+                        `*Muahaha! Tutti all'inferno ad acclamare il nuovo mostro!*`
+                    )
+                    .setColor("#9900FF") // Viola oscuro horror
+                    .setThumbnail("https://cdn-icons-png.flaticon.com/512/3815/3815234.png")
+                    .setFooter({ text: "Elegance Sponsoring •🎃 Sei stato marchiato!" })
+                    .setTimestamp();
+
+                return interaction.editReply({ embeds: [prankEmbed] });
+
             } catch (err) {
-                return interaction.editReply({
-                    content: `🦇 **SCHERZETTO!** Volevo cambiarti il nome in **${randomNickname}**, ma la gerarchia dei ruoli o i tuoi permessi da Admin mi impediscono di toccarti... Salvato per un pelo! 🙄`
-                });
+                const blockedEmbed = new EmbedBuilder()
+                    .setTitle("🛡️ SCUDO ANTI-MALEDIZIONE!")
+                    .setDescription(
+                        `🦇 **SCHERZETTO INTERROTTO!**\n\n` +
+                        `Volevo trasformare ${member} in **\`${randomNickname}\`**, ma il suo aura da Admin / Ruolo Superiore lo protegge...\n\n` +
+                        `*Salvo per questo giro, mortale!* 🙄`
+                    )
+                    .setColor("#333333")
+                    .setFooter({ text: "Elegance Sponsoring • Gerarchia Intatta" });
+
+                return interaction.editReply({ embeds: [blockedEmbed] });
             }
         }
     }

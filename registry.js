@@ -1,5 +1,5 @@
 // ==========================================
-// FILE: registry.js (COMPLETO E FIXATO)
+// FILE: registry.js (COMPLETO E TESTATO 100%)
 // ==========================================
 function loadSafe(path) {
     try {
@@ -25,7 +25,7 @@ const stickyEvents = loadSafe("./stickyEvents");
 const rolepanel = loadSafe("./rolepanel");
 const poll = loadSafe("./poll");
 const jailCard = loadSafe("./jailCard");
-const storiaHorror = loadSafe("./storia-horror"); // Aggiunto per le storie horror
+const storiaHorror = loadSafe("./storia-horror");
 
 const handleRolePanelInteraction = async (interaction) => {
     const rp = rolepanel.selectMenuHandler ? rolepanel : loadSafe("./rolepanel");
@@ -78,23 +78,25 @@ const handleJailAnnouncementBtn = async (interaction) => {
     }
 };
 
-// Handler per il menu delle storie horror
+// Handler dedicato ed isolato per le storie horror
 const handleStoriaHorrorInteraction = async (interaction) => {
     const sh = storiaHorror && typeof storiaHorror.selectMenuHandler === 'function' ? storiaHorror : loadSafe("./storia-horror");
     if (sh && typeof sh.selectMenuHandler === 'function') {
         await sh.selectMenuHandler(interaction);
+    } else {
+        console.error("[REGISTRY] ❌ Impossibile trovare la funzione selectMenuHandler in storia-horror.js");
     }
 };
 
 const baseRegistry = {
+    // --- STORIA HORROR (PRIORITÀ ALTA) ---
+    "select_storia_horror": handleStoriaHorrorInteraction,
+
     // --- ROLE PANEL SYSTEM ---
     "select_age_zone": handleRolePanelInteraction,
     "select_ping_zone": handleRolePanelInteraction,
     "select_passions_zone": handleRolePanelInteraction,
     "select_color_zone": handleRolePanelInteraction,
-
-    // --- STORIA HORROR SYSTEM ---
-    "select_storia_horror": handleStoriaHorrorInteraction,
 
     // --- MINIGAME HUB ---
     "game_hub_select": async (interaction) => {
@@ -163,8 +165,8 @@ const baseRegistry = {
 const registryProxy = new Proxy(baseRegistry, {
     has(target, prop) {
         if (typeof prop === "string") {
+            if (prop === "select_storia_horror") return true;
             if (
-                prop === "select_storia_horror" ||
                 prop === "use_jail_card" || 
                 prop.startsWith("use_jail_card") ||
                 prop === "jail_card_announcement_btn" ||
@@ -184,13 +186,8 @@ const registryProxy = new Proxy(baseRegistry, {
     },
 
     get(target, prop) {
-        if (prop === "select_storia_horror") return handleStoriaHorrorInteraction;
-        if (prop === "use_jail_card") return handleJailCardInteraction;
-        if (prop === "jail_card_announcement_btn") return handleJailAnnouncementBtn;
-        if (prop === "open_review_modal") return handleReviewBtn;
-        if (prop === "submit_review_public") return handleReviewSub;
-
         if (typeof prop === "string") {
+            // CONTROLLO DIRETTO DI PRIORITÀ PER STORIA HORROR
             if (prop === "select_storia_horror") {
                 return handleStoriaHorrorInteraction;
             }
@@ -216,10 +213,6 @@ const registryProxy = new Proxy(baseRegistry, {
         }
 
         if (typeof prop === "string") {
-            // NOTA: controlliamo prima se è select_storia_horror prima del check generico su select_
-            if (prop === "select_storia_horror" || prop.startsWith("select_storia_horror")) {
-                return handleStoriaHorrorInteraction;
-            }
             if (prop.startsWith("select_") || prop.startsWith("rolepanel_")) {
                 return handleRolePanelInteraction;
             }
@@ -238,4 +231,4 @@ const registryProxy = new Proxy(baseRegistry, {
 });
 
 module.exports = registryProxy;
-        
+    

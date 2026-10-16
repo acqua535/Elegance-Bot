@@ -150,7 +150,7 @@ module.exports = {
                     .setTitle("🛡️ SCUDO ANTI-MALEDIZIONE!")
                     .setDescription(
                         `🦇 **SCHERZETTO INTERROTTO!**\n\n` +
-                        `Volevo trasformare ${member} in **\`${randomNickname}\`**, ma il suo aura da Admin / Ruolo Superiore lo protegge...\n\n` +
+                        `Volevo trasformare ${member} in **\`${randomNickname}\`**, ma la sia aura da Admin / Ruolo Superiore lo protegge...\n\n` +
                         `*Salvo per questo giro, mortale!* 🙄`
                     )
                     .setColor("#333333")
